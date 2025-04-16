@@ -79,7 +79,7 @@ public class ColorManager
 			if (varP != -1)
 			{
 				int value = client.getVarpValue(varP);
-				// TODO: Make sure black works (theoretically == 0)
+				// 0 is returned if the client hasn't set a value - As a color 0 should only correspond to transparent black so we should be ok
 				if (value != 0)
 				{
 					value -= 1; // Not sure why but core does this

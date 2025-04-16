@@ -214,10 +214,12 @@ public class CleanChatChannelsPlugin extends Plugin
 			if (!name.isEmpty())
 			{
 				int imgIndex = name.indexOf('>');
-				// TODO: This probably breaks for 2 or 1 character names
 				if (imgIndex == -1)
 				{
-					name = name.charAt(0) + "<col=normal>" + name.substring(1) + "</col>";
+					if (name.length() > 1) {
+						name = name.charAt(0) + "<col=normal>" + name.substring(1) + "</col>";
+					}
+					// Not sure how to handle 1 character names ¯\_(ツ)_/¯
 				}
 				else
 				{
