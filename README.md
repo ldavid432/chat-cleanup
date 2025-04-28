@@ -1,9 +1,5 @@
 # Clean Chat
 
-Hide clan name and more to keep your chat channels clean, includes GIM, friends, and clan chats
-
-## Functions
-
 All the below options are toggleable
 
 - Misc
