@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -297,13 +298,52 @@ public class CleanChatChannelsPlugin extends Plugin
 				name +=  ": ";
 			}
 
-			client.addChatMessage(
+			MessageNode newNode = client.addChatMessage(
 				newType,
 				name + CLAN_CHALLENGE_ENTRY_HIDER,
 				name + ColorUtil.wrapWithColorTag(event.getMessage(), messageColor),
 				CLEAN_CHAT_SENDER,
 				false
 			);
+
+			if (event.getMessage().startsWith("!")) {
+				log.debug("Replaceable chat command found, starting detection loop lasting {}s.", config.chatCommandTimeout());
+
+				final MessageNode oldNode = event.getMessageNode();
+				final String playerName = name;
+				final String oldNodeOriginalMessage = oldNode.getValue();
+				final String oldNodeOriginalRLFormatMessage = oldNode.getRuneLiteFormatMessage();
+
+				Executors.newSingleThreadExecutor().execute(() -> {
+					final int timeout = config.chatCommandTimeout();
+					for (int i = 0; i < timeout; i++)
+					{
+						try
+						{
+							Thread.sleep(1_000);
+						}
+						catch (InterruptedException ignored)
+						{
+						}
+
+						if (!Objects.equals(oldNode.getRuneLiteFormatMessage(), oldNodeOriginalRLFormatMessage) && oldNode.getRuneLiteFormatMessage() != null) {
+							newNode.setRuneLiteFormatMessage(playerName + ColorUtil.wrapWithColorTag(oldNode.getRuneLiteFormatMessage(), messageColor));
+							client.refreshChat();
+							break;
+						}
+
+						if (!Objects.equals(oldNode.getValue(), oldNodeOriginalMessage) && oldNode.getValue() != null) {
+							newNode.setRuneLiteFormatMessage(playerName + ColorUtil.wrapWithColorTag(oldNode.getValue(), messageColor));
+							client.refreshChat();
+							break;
+						}
+
+						if (i == timeout - 1) {
+							log.debug("No chat command update found after waiting {}s", timeout);
+						}
+					}
+				});
+			}
 		}
 	}
 
