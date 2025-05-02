@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -73,6 +74,8 @@ public class CleanChatChannelsPlugin extends Plugin
 	@Inject
 	private ChatIconManager chatIconManager;
 
+	private ExecutorService executorService;
+
 	@Provides
 	CleanChatChannelsConfig provideConfig(ConfigManager configManager)
 	{
@@ -92,11 +95,22 @@ public class CleanChatChannelsPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
+		if (executorService == null || executorService.isShutdown()) {
+			executorService = Executors.newFixedThreadPool(5);
+		}
+
 		if (client.getGameState() == GameState.LOGGED_IN)
 		{
 			log.debug("Plugin enabled. Refreshing chat.");
 			processAllChatHistory();
 		}
+	}
+
+	@Override
+	protected void shutDown() throws Exception
+	{
+		executorService.shutdownNow();
+		executorService = null;
 	}
 
 	@Subscribe
@@ -301,48 +315,13 @@ public class CleanChatChannelsPlugin extends Plugin
 			MessageNode newNode = client.addChatMessage(
 				newType,
 				name + CLAN_CHALLENGE_ENTRY_HIDER,
-				name + ColorUtil.wrapWithColorTag(event.getMessage(), messageColor),
+				name + ColorUtil.colorTag(messageColor) + event.getMessage(),
 				CLEAN_CHAT_SENDER,
 				false
 			);
 
 			if (event.getMessage().startsWith("!")) {
-				log.debug("Replaceable chat command found, starting detection loop lasting {}s.", config.chatCommandTimeout());
-
-				final MessageNode oldNode = event.getMessageNode();
-				final String playerName = name;
-				final String oldNodeOriginalMessage = oldNode.getValue();
-				final String oldNodeOriginalRLFormatMessage = oldNode.getRuneLiteFormatMessage();
-
-				Executors.newSingleThreadExecutor().execute(() -> {
-					final int timeout = config.chatCommandTimeout();
-					for (int i = 0; i < timeout; i++)
-					{
-						try
-						{
-							Thread.sleep(1_000);
-						}
-						catch (InterruptedException ignored)
-						{
-						}
-
-						if (!Objects.equals(oldNode.getRuneLiteFormatMessage(), oldNodeOriginalRLFormatMessage) && oldNode.getRuneLiteFormatMessage() != null) {
-							newNode.setRuneLiteFormatMessage(playerName + ColorUtil.wrapWithColorTag(oldNode.getRuneLiteFormatMessage(), messageColor));
-							client.refreshChat();
-							break;
-						}
-
-						if (!Objects.equals(oldNode.getValue(), oldNodeOriginalMessage) && oldNode.getValue() != null) {
-							newNode.setRuneLiteFormatMessage(playerName + ColorUtil.wrapWithColorTag(oldNode.getValue(), messageColor));
-							client.refreshChat();
-							break;
-						}
-
-						if (i == timeout - 1) {
-							log.debug("No chat command update found after waiting {}s", timeout);
-						}
-					}
-				});
+				processChatCommand(event.getMessageNode(), newNode, name, messageColor);
 			}
 		}
 	}
@@ -402,5 +381,52 @@ public class CleanChatChannelsPlugin extends Plugin
 				ChatMessage event = new ChatMessage(messageNode, type, messageNode.getName(), messageNode.getValue(), messageNode.getSender(), messageNode.getTimestamp());
 				clientThread.invoke(() -> processor.accept(event));
 			});
+	}
+
+	private void processChatCommand(final MessageNode oldNode, final MessageNode newNode, final String name, final Color messageColor)
+	{
+		final int timeout = config.chatCommandTimeout();
+
+		log.debug("Replaceable chat command found, waiting up to {}s for it to update.", timeout);
+
+		final String oldNodeOriginalMessage = oldNode.getValue();
+		final String oldNodeOriginalRLFormatMessage = oldNode.getRuneLiteFormatMessage();
+
+		if (executorService == null) return;
+
+		executorService.submit(() -> {
+
+			for (int i = 0; i < (timeout + 2); i++)
+			{
+				try
+				{
+					// First 2s retry every 500ms
+					if (i < 4) {
+						Thread.sleep(500);
+					} else {
+						Thread.sleep(1_000);
+					}
+				}
+				catch (InterruptedException ignored)
+				{
+				}
+
+				if (!Objects.equals(oldNode.getRuneLiteFormatMessage(), oldNodeOriginalRLFormatMessage) && oldNode.getRuneLiteFormatMessage() != null) {
+					newNode.setRuneLiteFormatMessage(name + ColorUtil.colorTag(messageColor) + oldNode.getRuneLiteFormatMessage());
+					client.refreshChat();
+					break;
+				}
+
+				if (!Objects.equals(oldNode.getValue(), oldNodeOriginalMessage) && oldNode.getValue() != null) {
+					newNode.setRuneLiteFormatMessage(name + ColorUtil.colorTag(messageColor) + oldNode.getValue());
+					client.refreshChat();
+					break;
+				}
+
+				if (i == timeout - 1) {
+					log.debug("No chat command update found after waiting {}s", timeout);
+				}
+			}
+		});
 	}
 }

@@ -190,12 +190,11 @@ public interface CleanChatChannelsConfig extends Config
 		keyName = "chatCommandTimeout",
 		name = "Chat command timeout",
 		description = "Time in seconds to stop waiting for a chat command to update.<br>" +
-			"If you have a slow connection and chat commands don't work you can try increasing this.<br>" +
-			"Maxes out at 30s to prevent too many extra Threads from being created.",
+			"If you have a slow connection and chat commands don't work you can try increasing this.",
 		section = debugSection,
 		position = 0
 	)
-	@Range(min = 1, max = 30)
+	@Range(min = 2, max = 30)
 	default int chatCommandTimeout()
 	{
 		return 10;
