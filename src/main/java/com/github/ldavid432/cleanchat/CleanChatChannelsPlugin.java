@@ -320,6 +320,8 @@ public class CleanChatChannelsPlugin extends Plugin
 				false
 			);
 
+			newNode.setTimestamp(event.getMessageNode().getTimestamp());
+
 			if (event.getMessage().startsWith("!")) {
 				processChatCommand(event.getMessageNode(), newNode, name, messageColor);
 			}
@@ -392,7 +394,7 @@ public class CleanChatChannelsPlugin extends Plugin
 		final String oldNodeOriginalMessage = oldNode.getValue();
 		final String oldNodeOriginalRLFormatMessage = oldNode.getRuneLiteFormatMessage();
 
-		if (executorService == null) return;
+		if (executorService == null || executorService.isShutdown()) return;
 
 		executorService.submit(() -> {
 

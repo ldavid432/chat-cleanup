@@ -31,8 +31,8 @@ However, when changed, colors will not be updated in older messages.
 
 #### World Hopping / Re-Logging with the `Chat History` plugin enabled
 
-- When enabling the plugin or re-logging or hopping worlds, with any of the remove channel name options enabled, then all the respective channel chats will be moved to the bottom of the chat (as if they were just sent).
-  This makes the time sent wrong as well as messes up the ordering compared to chats from any other chat tabs (i.e. public), but in the individual tab the ordering should remain the same.
+- When enabling the plugin or re-logging or hopping worlds (with any of the remove channel name options enabled) the ordering of the `All` chat tab will become incorrect with all the channel chats being moved to the bottom.
+  The respective channel tabs ordering and timestamps should remain correct though.
 
 - You'll also notice it takes a few seconds for messages to be cleaned after re-logging/hopping.
   This is because we have to wait for your client to connect to each channel so that we can retrieve icon information
