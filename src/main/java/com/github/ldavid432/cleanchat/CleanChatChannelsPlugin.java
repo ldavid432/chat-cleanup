@@ -306,15 +306,17 @@ public class CleanChatChannelsPlugin extends Plugin
 
 			removeChatMessage(event.getType(), event.getMessageNode());
 
+			String menuName = name + CLAN_CHALLENGE_ENTRY_HIDER;
+
 			if (!sanitizeUsername(name).isBlank() && nameIsUsername)
 			{
 				name = ColorUtil.wrapWithColorTag(name, usernameColor);
-				name +=  ": ";
+				name += ": ";
 			}
 
 			MessageNode newNode = client.addChatMessage(
 				newType,
-				name + CLAN_CHALLENGE_ENTRY_HIDER,
+				menuName,
 				name + ColorUtil.colorTag(messageColor) + event.getMessage(),
 				CLEAN_CHAT_SENDER,
 				false
