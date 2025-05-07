@@ -12,8 +12,8 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -74,7 +74,7 @@ public class CleanChatChannelsPlugin extends Plugin
 	@Inject
 	private ChatIconManager chatIconManager;
 
-	private ExecutorService executorService;
+	private Timer chatCommandTimer;
 
 	@Provides
 	CleanChatChannelsConfig provideConfig(ConfigManager configManager)
@@ -95,8 +95,8 @@ public class CleanChatChannelsPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
-		if (executorService == null || executorService.isShutdown()) {
-			executorService = Executors.newFixedThreadPool(5);
+		if (chatCommandTimer == null) {
+			chatCommandTimer = new Timer();
 		}
 
 		if (client.getGameState() == GameState.LOGGED_IN)
@@ -109,8 +109,8 @@ public class CleanChatChannelsPlugin extends Plugin
 	@Override
 	protected void shutDown() throws Exception
 	{
-		executorService.shutdownNow();
-		executorService = null;
+		chatCommandTimer.cancel();
+		chatCommandTimer = null;
 	}
 
 	@Subscribe
@@ -391,46 +391,36 @@ public class CleanChatChannelsPlugin extends Plugin
 	{
 		final int timeout = config.chatCommandTimeout();
 
-		log.debug("Replaceable chat command found, waiting up to {}s for it to update.", timeout);
+		log.debug("Replaceable chat command found, waiting up to {}.25s for it to update.", timeout);
 
 		final String oldNodeOriginalMessage = oldNode.getValue();
 		final String oldNodeOriginalRLFormatMessage = oldNode.getRuneLiteFormatMessage();
 
-		if (executorService == null || executorService.isShutdown()) return;
+		if (chatCommandTimer == null) return;
 
-		executorService.submit(() -> {
-
-			for (int i = 0; i < (timeout + 2); i++)
-			{
-				try
-				{
-					// First 2s retry every 500ms
-					if (i < 4) {
-						Thread.sleep(500);
-					} else {
-						Thread.sleep(1_000);
-					}
-				}
-				catch (InterruptedException ignored)
-				{
-				}
-
+		TimerTask task = new FixedCountTask(
+			(cancel) -> {
 				if (!Objects.equals(oldNode.getRuneLiteFormatMessage(), oldNodeOriginalRLFormatMessage) && oldNode.getRuneLiteFormatMessage() != null) {
 					newNode.setRuneLiteFormatMessage(name + ColorUtil.colorTag(messageColor) + oldNode.getRuneLiteFormatMessage());
 					client.refreshChat();
-					break;
+					cancel.run();
+					return;
 				}
 
 				if (!Objects.equals(oldNode.getValue(), oldNodeOriginalMessage) && oldNode.getValue() != null) {
 					newNode.setRuneLiteFormatMessage(name + ColorUtil.colorTag(messageColor) + oldNode.getValue());
 					client.refreshChat();
-					break;
+					cancel.run();
+					return;
 				}
+			},
+			timeout * 2,
+			() -> log.debug("No chat command update found after waiting {}.25s", timeout)
+		);
 
-				if (i == timeout - 1) {
-					log.debug("No chat command update found after waiting {}s", timeout);
-				}
-			}
-		});
+		// This is probably not needed but, just to be safe
+		chatCommandTimer.purge();
+
+		chatCommandTimer.scheduleAtFixedRate(task, 250, 500);
 	}
 }
