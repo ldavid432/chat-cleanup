@@ -317,7 +317,7 @@ public class CleanChatChannelsPlugin extends Plugin
 			MessageNode newNode = client.addChatMessage(
 				newType,
 				menuName,
-				name + ColorUtil.colorTag(messageColor) + event.getMessage(),
+				name + ColorUtil.colorTag(messageColor) + event.getMessageNode().getValue(),
 				CLEAN_CHAT_SENDER,
 				false
 			);
