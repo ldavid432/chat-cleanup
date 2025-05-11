@@ -12,8 +12,9 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -74,7 +75,7 @@ public class CleanChatChannelsPlugin extends Plugin
 	@Inject
 	private ChatIconManager chatIconManager;
 
-	private Timer chatCommandTimer;
+	private ScheduledExecutorService executor;
 
 	@Provides
 	CleanChatChannelsConfig provideConfig(ConfigManager configManager)
@@ -95,8 +96,8 @@ public class CleanChatChannelsPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
-		if (chatCommandTimer == null) {
-			chatCommandTimer = new Timer();
+		if (executor == null || executor.isShutdown()) {
+			executor = Executors.newSingleThreadScheduledExecutor();
 		}
 
 		if (client.getGameState() == GameState.LOGGED_IN)
@@ -109,8 +110,8 @@ public class CleanChatChannelsPlugin extends Plugin
 	@Override
 	protected void shutDown() throws Exception
 	{
-		chatCommandTimer.cancel();
-		chatCommandTimer = null;
+		executor.shutdown();
+		executor = null;
 	}
 
 	@Subscribe
@@ -396,9 +397,9 @@ public class CleanChatChannelsPlugin extends Plugin
 		final String oldNodeOriginalMessage = oldNode.getValue();
 		final String oldNodeOriginalRLFormatMessage = oldNode.getRuneLiteFormatMessage();
 
-		if (chatCommandTimer == null) return;
+		if (executor == null || executor.isShutdown()) return;
 
-		TimerTask task = new FixedCountTask(
+		Runnable task = new FixedCountRunnable(
 			(cancel) -> {
 				if (!Objects.equals(oldNode.getRuneLiteFormatMessage(), oldNodeOriginalRLFormatMessage) && oldNode.getRuneLiteFormatMessage() != null) {
 					newNode.setRuneLiteFormatMessage(name + ColorUtil.colorTag(messageColor) + oldNode.getRuneLiteFormatMessage());
@@ -418,9 +419,6 @@ public class CleanChatChannelsPlugin extends Plugin
 			() -> log.debug("No chat command update found after waiting {}.25s", timeout)
 		);
 
-		// This is probably not needed but, just to be safe
-		chatCommandTimer.purge();
-
-		chatCommandTimer.scheduleAtFixedRate(task, 250, 500);
+		executor.scheduleAtFixedRate(task, 250, 500, TimeUnit.MILLISECONDS);
 	}
 }

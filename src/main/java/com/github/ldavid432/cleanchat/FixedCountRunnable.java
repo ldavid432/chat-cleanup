@@ -1,11 +1,11 @@
 package com.github.ldavid432.cleanchat;
 
-import java.util.TimerTask;
+import java.util.concurrent.CancellationException;
 import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-class FixedCountTask extends TimerTask
+class FixedCountRunnable implements Runnable
 {
 
 	private final Consumer<Runnable> command;
@@ -14,7 +14,7 @@ class FixedCountTask extends TimerTask
 
 	private int executionCount = 0;
 
-	FixedCountTask(Consumer<Runnable> command, int totalExecutionCount, Runnable onFailure)
+	FixedCountRunnable(Consumer<Runnable> command, int totalExecutionCount, Runnable onFailure)
 	{
 		this.command = command;
 		this.totalExecutionCount = totalExecutionCount;
@@ -33,5 +33,9 @@ class FixedCountTask extends TimerTask
 			onFailure.run();
 			cancel();
 		}
+	}
+
+	private void cancel() {
+		throw new CancellationException();
 	}
 }
