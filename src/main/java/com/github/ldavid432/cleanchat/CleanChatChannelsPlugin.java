@@ -25,6 +25,7 @@ import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.FriendsChatManager;
 import net.runelite.api.FriendsChatMember;
+import net.runelite.api.FriendsChatRank;
 import net.runelite.api.GameState;
 import net.runelite.api.MenuAction;
 import net.runelite.api.MenuEntry;
@@ -259,7 +260,7 @@ public class CleanChatChannelsPlugin extends Plugin
 							.findFirst()
 							.orElse(null);
 
-						if (member != null)
+						if (member != null && member.getRank() != FriendsChatRank.UNRANKED)
 						{
 							name = imageTag(chatIconManager.getIconNumber(member.getRank())) + name;
 						}

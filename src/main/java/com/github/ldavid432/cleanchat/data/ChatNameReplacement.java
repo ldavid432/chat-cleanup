@@ -30,7 +30,7 @@ public enum ChatNameReplacement implements ChatTypeModifier
 	FRIENDS_CHAT_NAME(
 		CleanChatChannelsConfig::removeFriendsChatName,
 		ChatMessageType.FRIENDSCHAT,
-		ChatMessageType.FRIENDSCHATNOTIFICATION
+		ChatMessageType.CHALREQ_FRIENDSCHAT
 	),
 
 	IRON_GROUP_NAME(
