@@ -281,7 +281,11 @@ public class CleanChatChannelsPlugin extends Plugin
 
 						if (member != null)
 						{
-							name = imageTag(chatIconManager.getIconNumber(clanSettings.titleForRank(member.getRank()))) + name;
+							ClanTitle title = clanSettings.titleForRank(member.getRank());
+							if (title != null)
+							{
+								name = imageTag(chatIconManager.getIconNumber(title)) + name;
+							}
 						}
 					}
 					break;
