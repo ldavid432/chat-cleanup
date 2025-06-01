@@ -34,6 +34,7 @@ import net.runelite.api.clan.ClanChannel;
 import net.runelite.api.clan.ClanChannelMember;
 import net.runelite.api.clan.ClanID;
 import net.runelite.api.clan.ClanSettings;
+import net.runelite.api.clan.ClanTitle;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.ClientTick;
 import net.runelite.client.callback.ClientThread;
@@ -97,7 +98,8 @@ public class CleanChatChannelsPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
-		if (executor == null || executor.isShutdown()) {
+		if (executor == null || executor.isShutdown())
+		{
 			executor = Executors.newSingleThreadScheduledExecutor();
 		}
 
@@ -215,7 +217,7 @@ public class CleanChatChannelsPlugin extends Plugin
 		ChatNameReplacement replacement = getNameReplacement(event);
 		if (replacement != null)
 		{
-
+			MessageNode oldMessageNode = event.getMessageNode();
 			ChatMessageType newType = replacement.getToChatMessageType();
 			log.debug("Got replaceable message, replacing {} to {} for {}", event.getType(), newType, event.getMessage());
 			Color messageColor = colorManager.getMessageColor(event.getType());
@@ -233,7 +235,8 @@ public class CleanChatChannelsPlugin extends Plugin
 				int imgIndex = name.indexOf('>');
 				if (imgIndex == -1)
 				{
-					if (name.length() > 1) {
+					if (name.length() > 1)
+					{
 						name = name.charAt(0) + "<col=normal>" + name.substring(1) + "</col>";
 					}
 					// Not sure how to handle 1 character names ¯\_(ツ)_/¯
@@ -310,7 +313,7 @@ public class CleanChatChannelsPlugin extends Plugin
 					break;
 			}
 
-			removeChatMessage(event.getType(), event.getMessageNode());
+			removeChatMessage(event.getType(), oldMessageNode);
 
 			String menuName = name + CLAN_CHALLENGE_ENTRY_HIDER;
 
@@ -320,8 +323,8 @@ public class CleanChatChannelsPlugin extends Plugin
 				name += ": ";
 			}
 
-			String message = event.getMessageNode().getValue();
-			String rlFormatMessage = event.getMessageNode().getRuneLiteFormatMessage();
+			String message = oldMessageNode.getValue();
+			String rlFormatMessage = oldMessageNode.getRuneLiteFormatMessage();
 
 			MessageNode newNode = client.addChatMessage(
 				newType,
@@ -333,8 +336,9 @@ public class CleanChatChannelsPlugin extends Plugin
 
 			newNode.setTimestamp(event.getMessageNode().getTimestamp());
 
-			if (event.getMessage().startsWith("!")) {
-				processChatCommand(event.getMessageNode(), newNode, name, messageColor, message, rlFormatMessage);
+			if (event.getMessage().startsWith("!"))
+			{
+				processChatCommand(oldMessageNode, newNode, name, messageColor, message, rlFormatMessage);
 			}
 		}
 	}
@@ -405,18 +409,23 @@ public class CleanChatChannelsPlugin extends Plugin
 
 		log.debug("Replaceable chat command found, waiting up to {}.25s for it to update.", timeout);
 
-		if (executor == null || executor.isShutdown()) return;
+		if (executor == null || executor.isShutdown())
+		{
+			return;
+		}
 
 		Runnable task = new FixedCountRunnable(
 			(cancel) -> {
-				if (!Objects.equals(oldNode.getRuneLiteFormatMessage(), oldNodeOriginalRLFormatMessage) && oldNode.getRuneLiteFormatMessage() != null) {
+				if (!Objects.equals(oldNode.getRuneLiteFormatMessage(), oldNodeOriginalRLFormatMessage) && oldNode.getRuneLiteFormatMessage() != null)
+				{
 					newNode.setRuneLiteFormatMessage(name + ColorUtil.colorTag(messageColor) + oldNode.getRuneLiteFormatMessage());
 					client.refreshChat();
 					cancel.run();
 					return;
 				}
 
-				if (!Objects.equals(oldNode.getValue(), oldNodeOriginalMessage) && oldNode.getValue() != null) {
+				if (!Objects.equals(oldNode.getValue(), oldNodeOriginalMessage) && oldNode.getValue() != null)
+				{
 					newNode.setRuneLiteFormatMessage(name + ColorUtil.colorTag(messageColor) + oldNode.getValue());
 					client.refreshChat();
 					cancel.run();
