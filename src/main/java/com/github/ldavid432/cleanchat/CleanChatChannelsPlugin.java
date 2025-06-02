@@ -1,5 +1,12 @@
 package com.github.ldavid432.cleanchat;
 
+import static com.github.ldavid432.cleanchat.CleanChatUtil.CA_ID_PREFIX;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.FULL_CA_PATTERN;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.PREFIX_CA_PATTERN;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.TARGET_CA_PATTERN;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.caTag;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.createCaMenuEntry;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.getCancelEntry;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.getChatLineBuffer;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.imageTag;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.sanitizeUsername;
@@ -16,6 +23,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Inject;
@@ -27,7 +35,6 @@ import net.runelite.api.FriendsChatManager;
 import net.runelite.api.FriendsChatMember;
 import net.runelite.api.FriendsChatRank;
 import net.runelite.api.GameState;
-import net.runelite.api.MenuAction;
 import net.runelite.api.MenuEntry;
 import net.runelite.api.MessageNode;
 import net.runelite.api.clan.ClanChannel;
@@ -45,6 +52,7 @@ import net.runelite.client.game.ChatIconManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.util.ColorUtil;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 @Slf4j
@@ -174,15 +182,44 @@ public class CleanChatChannelsPlugin extends Plugin
 
 		MenuEntry[] menuEntries = client.getMenu().getMenuEntries();
 
-		// Since clan chat type gets mapped to the clan challenge type we want to block the challenge entry so it seems like a normal message
-		MenuEntry[] newEntries = Arrays.stream(menuEntries)
-			.filter(e -> !(Objects.equals(e.getOption(), "Accept challenge") && e.getTarget().contains(CLAN_CHALLENGE_ENTRY_HIDER)))
-			.toArray(MenuEntry[]::new);
+		MenuEntry[] newEntries = menuEntries;
 
 		// Hide all entries for clan broadcasts, except cancel
 		if (Arrays.stream(menuEntries).anyMatch(e -> e.getTarget().contains(CLAN_MESSAGE_ENTRY_HIDER)))
 		{
-			newEntries = Arrays.stream(newEntries).filter(e -> e.getType() == MenuAction.CANCEL).toArray(MenuEntry[]::new);
+			newEntries = getCancelEntry(client);
+		}
+		// Add back Open and View Task to CA broadcasts
+		else if (Arrays.stream(menuEntries).anyMatch(e -> e.getTarget().contains(CA_ID_PREFIX)))
+		{
+			MenuEntry caEntry = Arrays.stream(menuEntries).filter(e -> e.getTarget().contains(CA_ID_PREFIX)).findFirst().orElse(null);
+			if (caEntry != null)
+			{
+				Matcher matcher = TARGET_CA_PATTERN.matcher(caEntry.getTarget());
+
+				if (matcher.matches() && matcher.group(1) != null)
+				{
+					try
+					{
+						int caId = Integer.parseInt(matcher.group(1));
+
+						newEntries = ArrayUtils.addAll(
+							getCancelEntry(client),
+							createCaMenuEntry(client, 7, "Open", caId),
+							createCaMenuEntry(client, 6, "View", caId));
+					}
+					catch (NumberFormatException ignored)
+					{
+					}
+				}
+			}
+		}
+		// Since clan chat type gets mapped to the clan challenge type we want to block the challenge entry so it seems like a normal message
+		else if (Arrays.stream(menuEntries).anyMatch(e -> e.getTarget().contains(CLAN_CHALLENGE_ENTRY_HIDER)))
+		{
+			newEntries = Arrays.stream(menuEntries)
+				.filter(e -> !(Objects.equals(e.getOption(), "Accept challenge") && e.getTarget().contains(CLAN_CHALLENGE_ENTRY_HIDER)))
+				.toArray(MenuEntry[]::new);
 		}
 
 		client.getMenu().setMenuEntries(newEntries);
@@ -309,7 +346,27 @@ public class CleanChatChannelsPlugin extends Plugin
 					}
 					break;
 				case CLAN_MESSAGE:
-					name += CLAN_MESSAGE_ENTRY_HIDER;
+					if (event.getMessage().startsWith(CA_ID_PREFIX))
+					{
+						Matcher matcher = FULL_CA_PATTERN.matcher(event.getMessage());
+						if (matcher.matches() && matcher.groupCount() == 1)
+						{
+							name += caTag(matcher.group(1));
+
+						}
+
+						oldMessageNode.setValue(oldMessageNode.getValue().replaceFirst(PREFIX_CA_PATTERN, ""));
+
+						if (oldMessageNode.getRuneLiteFormatMessage() != null)
+						{
+							oldMessageNode.setRuneLiteFormatMessage(oldMessageNode.getRuneLiteFormatMessage().replaceFirst(PREFIX_CA_PATTERN, ""));
+						}
+					}
+					else
+					{
+						name += CLAN_MESSAGE_ENTRY_HIDER;
+					}
+
 					break;
 			}
 
@@ -334,7 +391,7 @@ public class CleanChatChannelsPlugin extends Plugin
 				false
 			);
 
-			newNode.setTimestamp(event.getMessageNode().getTimestamp());
+			newNode.setTimestamp(oldMessageNode.getTimestamp());
 
 			if (event.getMessage().startsWith("!"))
 			{
