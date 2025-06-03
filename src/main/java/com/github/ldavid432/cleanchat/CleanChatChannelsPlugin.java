@@ -5,6 +5,7 @@ import static com.github.ldavid432.cleanchat.CleanChatUtil.getTextLength;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.sanitizeUsername;
 import com.github.ldavid432.cleanchat.data.ChannelNameReplacement;
 import com.github.ldavid432.cleanchat.data.ChatBlock;
+import static com.github.ldavid432.cleanchat.data.ChatBlock.getBlockedMessageTypes;
 import com.github.ldavid432.cleanchat.data.ChatChannel;
 import com.google.inject.Provides;
 import java.util.Arrays;
@@ -13,7 +14,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import lombok.Getter;
@@ -51,7 +51,6 @@ public class CleanChatChannelsPlugin extends Plugin
 	private Client client;
 
 	@Inject
-	@Getter
 	private CleanChatChannelsConfig config;
 
 	@Inject
@@ -69,25 +68,11 @@ public class CleanChatChannelsPlugin extends Plugin
 	private String groupIronName = null;
 	private boolean inFriendsChat = false;
 
-	private List<String> getNamesToRemove()
-	{
-		return Stream.of(
-				config.removeClanName() ? clanName : null,
-				config.removeGuestClanName() ? guestClanName : null,
-				config.removeFriendsChatName() ? friendsChatName : null,
-				config.removeGroupIronName() ? groupIronName : null)
-			.filter(Objects::nonNull)
-			.map(name -> name.replace('\u00A0', ' '))
-			.collect(Collectors.toList());
-	}
-
 	@Provides
 	CleanChatChannelsConfig provideConfig(ConfigManager configManager)
 	{
 		return configManager.getConfig(CleanChatChannelsConfig.class);
 	}
-
-	private static final List<ChatMessageType> CHAT_MESSAGE_TYPES_TO_PROCESS = Arrays.stream(ChatBlock.values()).map(ChatBlock::getChatMessageType).distinct().collect(Collectors.toList());
 
 	@Override
 	protected void startUp() throws Exception
@@ -126,8 +111,7 @@ public class CleanChatChannelsPlugin extends Plugin
 	@Subscribe
 	public void onChatMessage(ChatMessage event)
 	{
-		// Avoid stack overflow, ignore other types
-		if (!CHAT_MESSAGE_TYPES_TO_PROCESS.contains(event.getType()))
+		if (!getBlockedMessageTypes(config).contains(event.getType()) || event.getType() == ChatMessageType.WELCOME)
 		{
 			return;
 		}
@@ -153,45 +137,6 @@ public class CleanChatChannelsPlugin extends Plugin
 		}
 	}
 
-	private boolean shouldBlockMessage(ChatMessage event)
-	{
-		return Stream.of(ChatBlock.values()).anyMatch(it -> it.appliesTo(config, event));
-	}
-
-	private void removeChatMessage(ChatMessageType chatMessageType, MessageNode messageNode)
-	{
-		ChatLineBuffer buffer = getChatLineBuffer(client, chatMessageType);
-		if (buffer != null)
-		{
-			buffer.removeMessageNode(messageNode);
-		}
-	}
-
-	private void processChatHistory()
-	{
-		CHAT_MESSAGE_TYPES_TO_PROCESS.stream()
-			.flatMap(type -> {
-				ChatLineBuffer buffer = getChatLineBuffer(client, type);
-				if (buffer == null)
-				{
-					return Stream.empty();
-				}
-				return Arrays.stream(buffer.getLines().clone()).filter(Objects::nonNull).map(node -> Pair.of(type, node));
-			})
-			.sorted(Comparator.comparingInt(pair -> pair.getValue().getTimestamp()))
-			.forEach(pair -> {
-				MessageNode messageNode = pair.getValue();
-				ChatMessageType type = pair.getKey();
-				// Ignore message types that don't match (this will only happen with gim chat vs clan chat)
-				if (messageNode == null || type != messageNode.getType())
-				{
-					return;
-				}
-				ChatMessage event = new ChatMessage(messageNode, type, messageNode.getName(), messageNode.getValue(), messageNode.getSender(), messageNode.getTimestamp());
-				clientThread.invoke(() -> processBlocks(event));
-			});
-	}
-
 	private ChatChannel getSelectedChannel()
 	{
 		return ChatChannel.of(client.getVarcIntValue(41));
@@ -201,7 +146,14 @@ public class CleanChatChannelsPlugin extends Plugin
 	public void onScriptPostFired(ScriptPostFired event)
 	{
 		// TODO: Find better script to run after?
-		if (event.getScriptId() != 84 || getNamesToRemove().isEmpty())
+		if (event.getScriptId() != 84)
+		{
+			return;
+		}
+
+		List<ChannelNameReplacement> replacements = ChannelNameReplacement.getEnabledReplacements(config);
+
+		if (replacements.isEmpty())
 		{
 			return;
 		}
@@ -250,7 +202,7 @@ public class CleanChatChannelsPlugin extends Plugin
 				Widget widget = chatWidgets[i];
 				if (!widget.getText().isBlank())
 				{
-					for (ChannelNameReplacement channelNameToReplace : ChannelNameReplacement.getEnabledReplacements(config))
+					for (ChannelNameReplacement channelNameToReplace : replacements)
 					{
 						String name = channelNameToReplace.getName(this);
 						String formattedName = "[" + name + "]";
@@ -329,6 +281,45 @@ public class CleanChatChannelsPlugin extends Plugin
 				}
 			}
 		}
+	}
+
+	private boolean shouldBlockMessage(ChatMessage event)
+	{
+		return Stream.of(ChatBlock.values()).anyMatch(it -> it.appliesTo(config, event));
+	}
+
+	private void removeChatMessage(ChatMessageType chatMessageType, MessageNode messageNode)
+	{
+		ChatLineBuffer buffer = getChatLineBuffer(client, chatMessageType);
+		if (buffer != null)
+		{
+			buffer.removeMessageNode(messageNode);
+		}
+	}
+
+	private void processChatHistory()
+	{
+		getBlockedMessageTypes(config).stream()
+			.flatMap(type -> {
+				ChatLineBuffer buffer = getChatLineBuffer(client, type);
+				if (buffer == null)
+				{
+					return Stream.empty();
+				}
+				return Arrays.stream(buffer.getLines().clone()).filter(Objects::nonNull).map(node -> Pair.of(type, node));
+			})
+			.sorted(Comparator.comparingInt(pair -> pair.getValue().getTimestamp()))
+			.forEach(pair -> {
+				MessageNode messageNode = pair.getValue();
+				ChatMessageType type = pair.getKey();
+				// Ignore message types that don't match (this will only happen with gim chat vs clan chat)
+				if (messageNode == null || type != messageNode.getType())
+				{
+					return;
+				}
+				ChatMessage event = new ChatMessage(messageNode, type, messageNode.getName(), messageNode.getValue(), messageNode.getSender(), messageNode.getTimestamp());
+				clientThread.invoke(() -> processBlocks(event));
+			});
 	}
 
 	private void processWidget(int index, Widget[] chatWidgets, int removedWidth, int removedHeight, boolean hideLine)

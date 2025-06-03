@@ -1,8 +1,10 @@
 package com.github.ldavid432.cleanchat.data;
 
 import com.github.ldavid432.cleanchat.CleanChatChannelsConfig;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import net.runelite.api.ChatMessageType;
@@ -67,5 +69,13 @@ public enum ChatBlock
 	public List<ChatMessageType> getFromChatMessageTypes()
 	{
 		return List.of(chatMessageType);
+	}
+
+	public static List<ChatMessageType> getBlockedMessageTypes(CleanChatChannelsConfig config)
+	{
+		return Arrays.stream(ChatBlock.values())
+			.filter(chatBlock -> chatBlock.isEnabled(config))
+			.map(ChatBlock::getChatMessageType).distinct()
+			.collect(Collectors.toList());
 	}
 }
