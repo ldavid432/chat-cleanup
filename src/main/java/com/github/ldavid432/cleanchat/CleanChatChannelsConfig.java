@@ -99,8 +99,7 @@ public interface CleanChatChannelsConfig extends Config
 	@ConfigItem(
 		keyName = "removeGroupIronName",
 		name = "Remove GIM name",
-		description = "Remove GIM name from GIM chat messages.<br>" +
-			"Enabling this also enables 'Move GIM broadcasts', which removes GIM broadcasts from the clan tab.",
+		description = "Remove GIM name from GIM chat messages",
 		section = ironSection,
 		position = 1
 	)
@@ -112,8 +111,7 @@ public interface CleanChatChannelsConfig extends Config
 	@ConfigItem(
 		keyName = "moveGroupIronBroadcasts",
 		name = "Move GIM broadcasts",
-		description = "Remove GIM broadcasts from the clan chat tab, only display them in the group tab.<br>" +
-			"This is always enabled if 'Remove GIM name' is enabled.",
+		description = "Remove GIM broadcasts from the clan chat tab, only display them in the group tab",
 		section = ironSection,
 		position = 2
 	)

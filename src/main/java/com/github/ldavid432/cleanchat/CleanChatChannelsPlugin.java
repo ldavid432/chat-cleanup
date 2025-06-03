@@ -191,7 +191,6 @@ public class CleanChatChannelsPlugin extends Plugin
 						{
 							boolean hideLine = config.removeGroupIronFromClan() && selectedChatChannel == SelectedChatChannel.CLAN && channelNameToReplace == ChannelNameReplacement.GROUP_IRON;
 
-							// There seems to be some additional space even after removing spaces so remove 2 additional pixels
 							int removedWidth = getTextLength(formattedName);
 
 							String newText = widget.getText()
