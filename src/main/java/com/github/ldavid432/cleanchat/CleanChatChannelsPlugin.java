@@ -1,49 +1,36 @@
 package com.github.ldavid432.cleanchat;
 
-import static com.github.ldavid432.cleanchat.CleanChatUtil.CA_ID_PREFIX;
-import static com.github.ldavid432.cleanchat.CleanChatUtil.FULL_CA_PATTERN;
-import static com.github.ldavid432.cleanchat.CleanChatUtil.PREFIX_CA_PATTERN;
-import static com.github.ldavid432.cleanchat.CleanChatUtil.TARGET_CA_PATTERN;
-import static com.github.ldavid432.cleanchat.CleanChatUtil.caTag;
-import static com.github.ldavid432.cleanchat.CleanChatUtil.createCaMenuEntry;
-import static com.github.ldavid432.cleanchat.CleanChatUtil.getCancelEntry;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.getChatLineBuffer;
-import static com.github.ldavid432.cleanchat.CleanChatUtil.imageTag;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.getTextLength;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.sanitizeUsername;
 import com.github.ldavid432.cleanchat.data.ChatBlock;
-import com.github.ldavid432.cleanchat.data.ChatNameReplacement;
-import com.github.ldavid432.cleanchat.data.ChatStartupTrigger;
+import com.github.ldavid432.cleanchat.data.NameReplacement;
 import com.google.inject.Provides;
-import java.awt.Color;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Inject;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatLineBuffer;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.FriendsChatManager;
-import net.runelite.api.FriendsChatMember;
-import net.runelite.api.FriendsChatRank;
 import net.runelite.api.GameState;
-import net.runelite.api.MenuEntry;
 import net.runelite.api.MessageNode;
-import net.runelite.api.clan.ClanChannel;
-import net.runelite.api.clan.ClanChannelMember;
 import net.runelite.api.clan.ClanID;
-import net.runelite.api.clan.ClanSettings;
-import net.runelite.api.clan.ClanTitle;
 import net.runelite.api.events.ChatMessage;
-import net.runelite.api.events.ClientTick;
+import net.runelite.api.events.ClanChannelChanged;
+import net.runelite.api.events.CommandExecuted;
+import net.runelite.api.events.FriendsChatChanged;
+import net.runelite.api.events.ScriptPostFired;
+import net.runelite.api.gameval.InterfaceID;
+import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -51,8 +38,6 @@ import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.ChatIconManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
-import net.runelite.client.util.ColorUtil;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 @Slf4j
@@ -74,18 +59,38 @@ public class CleanChatChannelsPlugin extends Plugin
 	private Client client;
 
 	@Inject
+	@Getter
 	private CleanChatChannelsConfig config;
 
 	@Inject
 	private ClientThread clientThread;
 
 	@Inject
-	private ColorManager colorManager;
-
-	@Inject
 	private ChatIconManager chatIconManager;
 
 	private ScheduledExecutorService executor;
+
+	@Getter
+	private String clanName = null;
+	@Getter
+	private String guestClanName = null;
+	@Getter
+	private String friendsChatName = null;
+	@Getter
+	private String groupIronName = null;
+	private boolean inFriendsChat = false;
+
+	private List<String> getNamesToRemove()
+	{
+		return Stream.of(
+				config.removeClanName() ? clanName : null,
+				config.removeGuestClanName() ? guestClanName : null,
+				config.removeFriendsChatName() ? friendsChatName : null,
+				config.removeGroupIronName() ? groupIronName : null)
+			.filter(Objects::nonNull)
+			.map(name -> name.replace('\u00A0', ' '))
+			.collect(Collectors.toList());
+	}
 
 	@Provides
 	CleanChatChannelsConfig provideConfig(ConfigManager configManager)
@@ -97,10 +102,101 @@ public class CleanChatChannelsPlugin extends Plugin
 
 	static
 	{
-		CHAT_MESSAGE_TYPES_TO_PROCESS = Stream.concat(
-			Arrays.stream(ChatBlock.values()).map(ChatBlock::getChatMessageType),
-			Arrays.stream(ChatNameReplacement.values()).flatMap(it -> it.getFromChatMessageTypes().stream())
-		).distinct().collect(Collectors.toList());
+		CHAT_MESSAGE_TYPES_TO_PROCESS = Arrays.stream(ChatBlock.values()).map(ChatBlock::getChatMessageType).distinct().collect(Collectors.toList());
+	}
+
+	@Subscribe
+	public void onCommandExecuted(CommandExecuted event)
+	{
+		if (event.getCommand().equals("cleanchat"))
+		{
+			switch (event.getArguments()[0].toUpperCase())
+			{
+				case "A":
+					break;
+				case "CA":
+					client.addChatMessage(
+						ChatMessageType.CLAN_MESSAGE,
+						"",
+						"CA_ID:532|the lil fish has completed a hard combat task: Fortified",
+						"Click Clique",
+						true
+					);
+					break;
+				case "F":
+					client.addChatMessage(
+						ChatMessageType.FRIENDSCHAT,
+						"<img=41>the lil fish",
+						"Test friends chat .",
+						"Fish",
+						true
+					);
+					break;
+				case "FM":
+					client.addChatMessage(
+						ChatMessageType.FRIENDSCHATNOTIFICATION,
+						"",
+						"Test friends notification",
+						null,
+						true
+					);
+					break;
+				case "C":
+					client.addChatMessage(
+						ChatMessageType.CLAN_CHAT,
+						"<img=41>the lil fish",
+						"Test clan chat",
+						"Click Clique",
+						true
+					);
+					break;
+				case "CM":
+					client.addChatMessage(
+						ChatMessageType.CLAN_MESSAGE,
+						"",
+						"Test clan message",
+						"Click Clique",
+						true
+					);
+					break;
+				case "GC":
+					client.addChatMessage(
+						ChatMessageType.CLAN_GUEST_CHAT,
+						"<img=41>the lil fish",
+						"Test guest clan chat",
+						"My Guest Clan",
+						true
+					);
+					break;
+				case "GCM":
+					client.addChatMessage(
+						ChatMessageType.CLAN_GUEST_MESSAGE,
+						"",
+						"Test guest clan message",
+						"My Guest Clan",
+						true
+					);
+					break;
+				case "G":
+					client.addChatMessage(
+						ChatMessageType.CLAN_GIM_CHAT,
+						"<img=41>the lil fish",
+						"Test GIM chat",
+						"Konars\u00A0Simps",
+						true
+					);
+					break;
+				case "GM":
+					client.addChatMessage(
+						ChatMessageType.CLAN_GIM_MESSAGE,
+						"",
+						"Test GIM message",
+						"Konars\u00A0Simps",
+						true
+					);
+					break;
+			}
+		}
 	}
 
 	@Override
@@ -114,7 +210,8 @@ public class CleanChatChannelsPlugin extends Plugin
 		if (client.getGameState() == GameState.LOGGED_IN)
 		{
 			log.debug("Plugin enabled. Refreshing chat.");
-			processAllChatHistory();
+			processChatHistory();
+			client.refreshChat();
 		}
 	}
 
@@ -131,16 +228,16 @@ public class CleanChatChannelsPlugin extends Plugin
 		if (Objects.equals(event.getGroup(), CleanChatChannelsConfig.GROUP))
 		{
 			log.debug("Config changed. Refreshing chat.");
-			processAllChatHistory();
+			processChatHistory();
+			client.refreshChat();
 		}
 	}
 
-	// Subscribe later since we transform the message type, we want to interfere with other chat plugins as little as possible
-	@Subscribe(priority = -1)
+	@Subscribe
 	public void onChatMessage(ChatMessage event)
 	{
 		// Avoid stack overflow, ignore other types
-		if ((event.getSender() != null && event.getSender().startsWith(CLEAN_CHAT_SENDER)) || !CHAT_MESSAGE_TYPES_TO_PROCESS.contains(event.getType()))
+		if (!CHAT_MESSAGE_TYPES_TO_PROCESS.contains(event.getType()))
 		{
 			return;
 		}
@@ -149,96 +246,13 @@ public class CleanChatChannelsPlugin extends Plugin
 		if (event.getMessage().equals(ChatBlock.WELCOME.getMessage()))
 		{
 			log.debug("World hopped or logged in. Refreshing chat.");
-			// Only process blocks because we want to wait for the individual chats to connect before replacing
-			//  This makes startup much less jarring
-			clientThread.invokeLater(() -> processChatHistory(CHAT_MESSAGE_TYPES_TO_PROCESS, this::processBlocks));
+			clientThread.invokeLater(this::processChatHistory);
 		}
 
-		// TODO: Possibly insert a placeholder <col> in replacements for icons so the messages can be sent immediately
-		//  and the icons can potentially be "lazy loaded"
-
-		// Wait for each of the channels to load before running replacements - otherwise we won't get icon info
-		for (ChatStartupTrigger trigger : ChatStartupTrigger.values())
-		{
-			List<ChatMessageType> messageTypes = trigger.getOutputTypesFor(config, event);
-			if (!messageTypes.isEmpty())
-			{
-				log.debug("{} chat connected, refreshing.", trigger.name().toLowerCase());
-				processChatHistory(messageTypes);
-				break;
-			}
-		}
-
-		processMessage(event);
+		processBlocks(event);
 	}
 
-	@Subscribe
-	public void onClientTick(ClientTick event)
-	{
-		if (client.getGameState() != GameState.LOGGED_IN || client.isMenuOpen())
-		{
-			return;
-		}
-
-		MenuEntry[] menuEntries = client.getMenu().getMenuEntries();
-
-		MenuEntry[] newEntries = menuEntries;
-
-		// Hide all entries for clan broadcasts, except cancel
-		if (Arrays.stream(menuEntries).anyMatch(e -> e.getTarget().contains(CLAN_MESSAGE_ENTRY_HIDER)))
-		{
-			newEntries = getCancelEntry(client);
-		}
-		// Add back Open and View Task to CA broadcasts
-		else if (Arrays.stream(menuEntries).anyMatch(e -> e.getTarget().contains(CA_ID_PREFIX)))
-		{
-			MenuEntry caEntry = Arrays.stream(menuEntries).filter(e -> e.getTarget().contains(CA_ID_PREFIX)).findFirst().orElse(null);
-			if (caEntry != null)
-			{
-				Matcher matcher = TARGET_CA_PATTERN.matcher(caEntry.getTarget());
-
-				if (matcher.matches() && matcher.group(1) != null)
-				{
-					try
-					{
-						int caId = Integer.parseInt(matcher.group(1));
-
-						newEntries = ArrayUtils.addAll(
-							getCancelEntry(client),
-							// Disabled since it "sends additional actions to the server" whereas View is handled client side
-							// createCaMenuEntry(client, 7, "Open", caId),
-							createCaMenuEntry(client, 6, "View", caId));
-					}
-					catch (NumberFormatException ignored)
-					{
-					}
-				}
-			}
-		}
-		// Since clan chat type gets mapped to the clan challenge type we want to block the challenge entry so it seems like a normal message
-		else if (Arrays.stream(menuEntries).anyMatch(e -> e.getTarget().contains(CLAN_CHALLENGE_ENTRY_HIDER)))
-		{
-			newEntries = Arrays.stream(menuEntries)
-				.filter(e -> !(Objects.equals(e.getOption(), "Accept challenge") && e.getTarget().contains(CLAN_CHALLENGE_ENTRY_HIDER)))
-				.toArray(MenuEntry[]::new);
-		}
-
-		client.getMenu().setMenuEntries(newEntries);
-	}
-
-	// Block, replace or do nothing
-	private void processMessage(ChatMessage event)
-	{
-		boolean blockApplied = processBlocks(event);
-		if (blockApplied)
-		{
-			return;
-		}
-
-		processReplacements(event);
-	}
-
-	private boolean processBlocks(ChatMessage event)
+	private void processBlocks(ChatMessage event)
 	{
 		boolean blockMessage = shouldBlockMessage(event);
 		if (blockMessage)
@@ -247,171 +261,11 @@ public class CleanChatChannelsPlugin extends Plugin
 			removeChatMessage(event.getType(), event.getMessageNode());
 			client.refreshChat();
 		}
-		return blockMessage;
-	}
-
-	public void processReplacements(ChatMessage event)
-	{
-		ChatNameReplacement replacement = getNameReplacement(event);
-		if (replacement != null)
-		{
-			MessageNode oldMessageNode = event.getMessageNode();
-			ChatMessageType newType = replacement.getToChatMessageType();
-			log.debug("Got replaceable message, replacing {} to {} for {}", event.getType(), newType, event.getMessage());
-			Color messageColor = colorManager.getMessageColor(event.getType());
-			Color usernameColor = colorManager.getUsernameColor(event.getType());
-			boolean nameIsUsername = true;
-
-			// TODO: Use message builders for name + message
-
-			String name = event.getName();
-
-			// If we just put the name straight into the message it will end up being highlighted and/or underlined
-			//  so we wrap everything but the first letter in a color type to throw off the highlighting
-			if (!name.isEmpty())
-			{
-				int imgIndex = name.indexOf('>');
-				if (imgIndex == -1)
-				{
-					if (name.length() > 1)
-					{
-						name = name.charAt(0) + "<col=normal>" + name.substring(1) + "</col>";
-					}
-					// Not sure how to handle 1 character names ¯\_(ツ)_/¯
-				}
-				else
-				{
-					// Account for ironman icons
-					// Add 2 because substring is not inclusive, and we want to go 1 character into the real name
-					name = name.substring(0, imgIndex + 2) + "<col=normal>" + name.substring(imgIndex + 2) + "</col>";
-				}
-			}
-
-			switch (event.getType())
-			{
-				case FRIENDSCHAT:
-					// Add friends chat rank
-					FriendsChatManager friendsChatManager = client.getFriendsChatManager();
-					if (friendsChatManager != null)
-					{
-						String sanitizedName = sanitizeUsername(name);
-
-						FriendsChatMember member = Arrays.stream(friendsChatManager.getMembers())
-							.filter(it -> sanitizeUsername(it.getName()).equals(sanitizedName))
-							.findFirst()
-							.orElse(null);
-
-						if (member != null && member.getRank() != FriendsChatRank.UNRANKED)
-						{
-							name = imageTag(chatIconManager.getIconNumber(member.getRank())) + name;
-						}
-					}
-					break;
-				case CLAN_CHAT:
-					// Add clan rank
-					ClanChannel clanChannel = client.getClanChannel(ClanID.CLAN);
-					ClanSettings clanSettings = client.getClanSettings(ClanID.CLAN);
-					if (clanChannel != null && clanSettings != null)
-					{
-						String sanitizedName = sanitizeUsername(name);
-
-						ClanChannelMember member = clanChannel.getMembers().stream()
-							.filter(it -> sanitizeUsername(it.getName()).equals(sanitizedName))
-							.findFirst()
-							.orElse(null);
-
-						if (member != null)
-						{
-							ClanTitle title = clanSettings.titleForRank(member.getRank());
-							if (title != null)
-							{
-								name = imageTag(chatIconManager.getIconNumber(title)) + name;
-							}
-						}
-					}
-					break;
-				case CLAN_GIM_MESSAGE:
-					// Have to add the group name back in this scenario
-					if (!config.removeGroupIronName() && config.removeGroupIronFromClan())
-					{
-						ClanChannel groupIronChannel = client.getClanChannel(ClanID.GROUP_IRONMAN);
-						if (groupIronChannel != null)
-						{
-							String groupIronName = groupIronChannel.getName();
-							if (groupIronName != null)
-							{
-								name = "[" + ColorUtil.wrapWithColorTag(groupIronName, colorManager.getGimNameColor()) + "] " + name;
-								nameIsUsername = false;
-							}
-						}
-					}
-					break;
-				case CLAN_MESSAGE:
-					if (event.getMessage().startsWith(CA_ID_PREFIX))
-					{
-						Matcher matcher = FULL_CA_PATTERN.matcher(event.getMessage());
-						if (matcher.matches() && matcher.groupCount() == 1)
-						{
-							name += caTag(matcher.group(1));
-
-						}
-
-						oldMessageNode.setValue(oldMessageNode.getValue().replaceFirst(PREFIX_CA_PATTERN, ""));
-
-						if (oldMessageNode.getRuneLiteFormatMessage() != null)
-						{
-							oldMessageNode.setRuneLiteFormatMessage(oldMessageNode.getRuneLiteFormatMessage().replaceFirst(PREFIX_CA_PATTERN, ""));
-						}
-					}
-					else
-					{
-						name += CLAN_MESSAGE_ENTRY_HIDER;
-					}
-
-					break;
-			}
-
-			removeChatMessage(event.getType(), oldMessageNode);
-
-			String menuName = name + CLAN_CHALLENGE_ENTRY_HIDER;
-
-			if (!sanitizeUsername(name).isBlank() && nameIsUsername)
-			{
-				name = ColorUtil.wrapWithColorTag(name, usernameColor);
-				name += ": ";
-			}
-
-			String message = oldMessageNode.getValue();
-			String rlFormatMessage = oldMessageNode.getRuneLiteFormatMessage();
-
-			MessageNode newNode = client.addChatMessage(
-				newType,
-				menuName,
-				name + ColorUtil.colorTag(messageColor) + (rlFormatMessage != null ? rlFormatMessage : message),
-				CLEAN_CHAT_SENDER,
-				false
-			);
-
-			newNode.setTimestamp(oldMessageNode.getTimestamp());
-
-			if (event.getMessage().startsWith("!"))
-			{
-				processChatCommand(oldMessageNode, newNode, name, messageColor, message, rlFormatMessage);
-			}
-		}
 	}
 
 	private boolean shouldBlockMessage(ChatMessage event)
 	{
 		return Stream.of(ChatBlock.values()).anyMatch(it -> it.appliesTo(config, event));
-	}
-
-	private ChatNameReplacement getNameReplacement(ChatMessage event)
-	{
-		return Stream.of(ChatNameReplacement.values())
-			.filter(it -> it.appliesTo(config, event))
-			.findFirst()
-			.orElse(null);
 	}
 
 	private void removeChatMessage(ChatMessageType chatMessageType, MessageNode messageNode)
@@ -423,19 +277,9 @@ public class CleanChatChannelsPlugin extends Plugin
 		}
 	}
 
-	private void processAllChatHistory()
+	private void processChatHistory()
 	{
-		processChatHistory(CHAT_MESSAGE_TYPES_TO_PROCESS);
-	}
-
-	private void processChatHistory(List<ChatMessageType> types)
-	{
-		processChatHistory(types, this::processMessage);
-	}
-
-	private void processChatHistory(List<ChatMessageType> types, Consumer<ChatMessage> processor)
-	{
-		types.stream()
+		CHAT_MESSAGE_TYPES_TO_PROCESS.stream()
 			.flatMap(type -> {
 				ChatLineBuffer buffer = getChatLineBuffer(client, type);
 				if (buffer == null)
@@ -454,46 +298,170 @@ public class CleanChatChannelsPlugin extends Plugin
 					return;
 				}
 				ChatMessage event = new ChatMessage(messageNode, type, messageNode.getName(), messageNode.getValue(), messageNode.getSender(), messageNode.getTimestamp());
-				clientThread.invoke(() -> processor.accept(event));
+				clientThread.invoke(() -> processBlocks(event));
 			});
 	}
 
-	// Pass the old message contents in from where we use them so the comparison is accurate to what is displayed
-	//  Probably not totally necessary but, just in case
-	private void processChatCommand(final MessageNode oldNode, final MessageNode newNode, final String name, final Color messageColor,
-									final String oldNodeOriginalMessage, final String oldNodeOriginalRLFormatMessage)
+	@Subscribe
+	public void onScriptPostFired(ScriptPostFired event)
 	{
-		final int timeout = config.chatCommandTimeout();
+		if (!Objects.equals(84, event.getScriptId()) || getNamesToRemove().isEmpty()) return;
 
-		log.debug("Replaceable chat command found, waiting up to {}.25s for it to update.", timeout);
-
-		if (executor == null || executor.isShutdown())
+		FriendsChatManager friendsChatManager = client.getFriendsChatManager();
+		if (friendsChatManager != null)
 		{
-			return;
+			friendsChatName = friendsChatManager.getName();
 		}
 
-		Runnable task = new FixedCountRunnable(
-			(cancel) -> {
-				if (!Objects.equals(oldNode.getRuneLiteFormatMessage(), oldNodeOriginalRLFormatMessage) && oldNode.getRuneLiteFormatMessage() != null)
-				{
-					newNode.setRuneLiteFormatMessage(name + ColorUtil.colorTag(messageColor) + oldNode.getRuneLiteFormatMessage());
-					client.refreshChat();
-					cancel.run();
-					return;
-				}
+		Widget chatbox = client.getWidget(InterfaceID.Chatbox.SCROLLAREA);
 
-				if (!Objects.equals(oldNode.getValue(), oldNodeOriginalMessage) && oldNode.getValue() != null)
-				{
-					newNode.setRuneLiteFormatMessage(name + ColorUtil.colorTag(messageColor) + oldNode.getValue());
-					client.refreshChat();
-					cancel.run();
-					return;
-				}
-			},
-			timeout * 2,
-			() -> log.debug("No chat command update found after waiting {}.25s", timeout)
-		);
+		if (chatbox != null)
+		{
+			Widget[] lines = chatbox.getDynamicChildren().clone();
 
-		executor.scheduleAtFixedRate(task, 250, 500, TimeUnit.MILLISECONDS);
+			/*
+			Most chats appear in this format as dynamic children:
+				// bottom chat line
+				[0] = username
+				[1] = chat message
+				[2] = sender (clan name, also includes timestamp if that plugin is on)
+				[3] = rank icon
+				// Next chat line
+				[4] = next username
+				etc...
+
+			Friends chats appear in this format:
+				[0] = sender + username
+				[1] = chat message
+				[2] = nothing?
+				[3] = rank icon?
+
+			These appear in the children array in this order even if the individual items aren't rendered
+				ex: Username is hidden for broadcasts, rank icon is hidden for public chat
+
+			Since we only need to check either [2] or [0] of each line for the sender we can iterate over every other child */
+			for (int i = 0; i < lines.length; i += 2)
+			{
+				Widget widget = lines[i];
+				if (!widget.getText().isBlank()) {
+					// FriendsChatManager is null at login so we have to add this check later
+					if (inFriendsChat && friendsChatName == null)
+					{
+						setFriendsChatName();
+					}
+
+					log.debug("Names to remove {}", getNamesToRemove());
+					for (NameReplacement replacement : NameReplacement.getEnabledReplacements(config))
+					{
+						String name = replacement.getName(this);
+						String formattedName = "[" + name + "]";
+						if (sanitizeUsername(widget.getText()).contains(formattedName)) {
+							// Account for color tags
+							// TODO: Possibly invert NBSP handling
+							String newText = widget.getText().replace('\u00A0', ' ').replaceFirst("\\[.*" + name + ".*]", "");
+							// TODO: Potentially remove any trailing spaces - should only be left if chat timestamps is on - also friends chat username + sender combo
+							// TODO: Remove log
+							log.debug("Replaced Text {} with {}", widget.getText(), newText);
+							widget.setText(newText);
+
+							int removedLength = getTextLength(formattedName);
+
+							if (removedLength == -1)
+							{
+								log.debug("Couldn't get text length for text: {}", widget.getText());
+								continue;
+							}
+
+							widget.setOriginalWidth(widget.getOriginalWidth() - removedLength);
+							widget.revalidate();
+
+							int iconWidgetIndex = i + 1;
+							int textWidgetIndex = i - 1;
+							int nameWidgetIndex = i - 2;
+
+							// Friends chat widget ordering is different
+							if (replacement == NameReplacement.FRIENDS_CHAT) {
+								textWidgetIndex = i + 1;
+								// Not actually name in this case
+								nameWidgetIndex = i + 2;
+								iconWidgetIndex = i + 3;
+							}
+
+							if (iconWidgetIndex >= 0 && iconWidgetIndex < lines.length) {
+								Widget iconWidget = lines[iconWidgetIndex];
+								shiftWidgetLeft(iconWidget, removedLength);
+							}
+
+							if (textWidgetIndex >= 0 && textWidgetIndex < lines.length) {
+								Widget textWidget = lines[textWidgetIndex];
+								shiftWidgetLeft(textWidget, removedLength);
+							}
+
+							if (nameWidgetIndex >= 0 && nameWidgetIndex < lines.length) {
+								Widget nameWidget = lines[nameWidgetIndex];
+								shiftWidgetLeft(nameWidget, removedLength);
+							}
+
+							// break name replacement loop, not line loop
+							break;
+						}
+					}
+				}
+			}
+		}
 	}
+
+	private void shiftWidgetLeft(Widget widget, int shift)
+	{
+		widget.setOriginalX(widget.getOriginalX() - shift);
+		widget.revalidate();
+	}
+
+	// TODO: Add back message blocking
+	// TODO: Add back group iron in group tab only, will need to handle CAs still, maybe chat commands
+	// 	Maybe can hide widgets in clan tab??
+
+	@Subscribe
+	public void onClanChannelChanged(ClanChannelChanged event)
+	{
+		String channelName = event.getClanChannel() != null ? event.getClanChannel().getName() : null;
+
+		log.debug("Connected to clan: {} - ID: {}", channelName, event.getClanId());
+
+		switch (event.getClanId()) {
+			case -1:
+				guestClanName = channelName;
+				break;
+			case ClanID.CLAN:
+				clanName = channelName;
+				break;
+			case ClanID.GROUP_IRONMAN:
+				groupIronName = channelName;
+				break;
+		}
+	}
+
+	@Subscribe
+	public void onFriendsChatChanged(FriendsChatChanged event)
+	{
+		log.debug("fc change: {}", event.isJoined());
+		inFriendsChat = event.isJoined();
+
+		if (event.isJoined()) {
+			setFriendsChatName();
+		} else {
+			friendsChatName = null;
+		}
+	}
+
+	private void setFriendsChatName()
+	{
+		FriendsChatManager friendsChatManager = client.getFriendsChatManager();
+		// This is null at login
+		if (friendsChatManager != null)
+		{
+			friendsChatName = friendsChatManager.getName();
+		}
+	}
+
 }
