@@ -205,7 +205,8 @@ public class CleanChatChannelsPlugin extends Plugin
 
 						newEntries = ArrayUtils.addAll(
 							getCancelEntry(client),
-							createCaMenuEntry(client, 7, "Open", caId),
+							// Disabled since it "sends additional actions to the server" whereas View is handled client side
+							// createCaMenuEntry(client, 7, "Open", caId),
 							createCaMenuEntry(client, 6, "View", caId));
 					}
 					catch (NumberFormatException ignored)
