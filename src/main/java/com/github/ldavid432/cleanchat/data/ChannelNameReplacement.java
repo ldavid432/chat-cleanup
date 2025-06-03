@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
-public enum NameReplacement
+public enum ChannelNameReplacement
 {
 	CLAN(CleanChatChannelsConfig::removeClanName, CleanChatChannelsPlugin::getClanName),
 	GUEST_CLAN(CleanChatChannelsConfig::removeGuestClanName, CleanChatChannelsPlugin::getGuestClanName),
@@ -20,6 +20,7 @@ public enum NameReplacement
 	{
 		return isEnabled.apply(config);
 	}
+
 	public String getName(CleanChatChannelsPlugin plugin)
 	{
 		return getName.apply(plugin);
@@ -28,10 +29,10 @@ public enum NameReplacement
 	private final Function<CleanChatChannelsConfig, Boolean> isEnabled;
 	private final Function<CleanChatChannelsPlugin, String> getName;
 
-	public static List<NameReplacement> getEnabledReplacements(CleanChatChannelsConfig config)
+	public static List<ChannelNameReplacement> getEnabledReplacements(CleanChatChannelsConfig config)
 	{
 		return Arrays.stream(values())
-			.filter(nameReplacement -> nameReplacement.isEnabled(config))
+			.filter(replacement -> replacement.isEnabled(config))
 			.collect(Collectors.toList());
 	}
 }

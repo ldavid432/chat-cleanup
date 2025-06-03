@@ -3,8 +3,9 @@ package com.github.ldavid432.cleanchat;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.getChatLineBuffer;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.getTextLength;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.sanitizeUsername;
+import com.github.ldavid432.cleanchat.data.ChannelNameReplacement;
 import com.github.ldavid432.cleanchat.data.ChatBlock;
-import com.github.ldavid432.cleanchat.data.NameReplacement;
+import com.github.ldavid432.cleanchat.data.ChatChannel;
 import com.google.inject.Provides;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -35,7 +36,6 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
-import net.runelite.client.game.ChatIconManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import org.apache.commons.lang3.tuple.Pair;
@@ -288,23 +288,30 @@ public class CleanChatChannelsPlugin extends Plugin
 			});
 	}
 
+	private ChatChannel getSelectedChannel()
+	{
+		return ChatChannel.of(client.getVarcIntValue(41));
+	}
+
 	@Subscribe
 	public void onScriptPostFired(ScriptPostFired event)
 	{
-		if (!Objects.equals(84, event.getScriptId()) || getNamesToRemove().isEmpty()) return;
-
-		FriendsChatManager friendsChatManager = client.getFriendsChatManager();
-		if (friendsChatManager != null)
+		// TODO: Find better script to run after?
+		if (event.getScriptId() != 84 || getNamesToRemove().isEmpty())
 		{
-			friendsChatName = friendsChatManager.getName();
+			return;
+		}
+
+		// FriendsChatManager is null at the first FriendsChatChanged after login so we have to add this check later
+		if (inFriendsChat && friendsChatName == null)
+		{
+			setFriendsChatName();
 		}
 
 		Widget chatbox = client.getWidget(InterfaceID.Chatbox.SCROLLAREA);
 
-		if (chatbox != null)
+		if (chatbox != null && getSelectedChannel() != ChatChannel.CLOSED)
 		{
-			Widget[] lines = chatbox.getDynamicChildren().clone();
-
 			/*
 			Most chats appear in this format as dynamic children:
 				// bottom chat line
@@ -319,73 +326,96 @@ public class CleanChatChannelsPlugin extends Plugin
 			Friends chats appear in this format:
 				[0] = sender + username
 				[1] = chat message
-				[2] = nothing?
+				[2] = nothing
 				[3] = rank icon?
 
+			GIM broadcasts appear in this format:
+				[0] = sender
+				[1] = chat message
+				[2] = nothing
+				[3] = nothing
+
 			These appear in the children array in this order even if the individual items aren't rendered
-				ex: Username is hidden for broadcasts, rank icon is hidden for public chat
+				ex: Username is hidden for broadcasts, rank icon is hidden for public chat */
+			Widget[] chatWidgets = chatbox.getDynamicChildren().clone();
+			int removedHeight = 0;
 
-			Since we only need to check either [2] or [0] of each line for the sender we can iterate over every other child */
-			for (int i = 0; i < lines.length; i += 2)
+			// Since we only need to check either [2] or [0] of each line for the sender we can just iterate over every other child
+			for (int i = 0; i < chatWidgets.length; i += 2)
 			{
-				Widget widget = lines[i];
-				if (!widget.getText().isBlank()) {
-					// FriendsChatManager is null at login so we have to add this check later
-					if (inFriendsChat && friendsChatName == null)
+				Widget widget = chatWidgets[i];
+				if (!widget.getText().isBlank())
+				{
+					for (ChannelNameReplacement channelNameToReplace : ChannelNameReplacement.getEnabledReplacements(config))
 					{
-						setFriendsChatName();
-					}
-
-					log.debug("Names to remove {}", getNamesToRemove());
-					for (NameReplacement replacement : NameReplacement.getEnabledReplacements(config))
-					{
-						String name = replacement.getName(this);
+						String name = channelNameToReplace.getName(this);
 						String formattedName = "[" + name + "]";
-						if (sanitizeUsername(widget.getText()).contains(formattedName)) {
-							// Account for color tags
-							// TODO: Possibly invert NBSP handling
-							String newText = widget.getText().replace('\u00A0', ' ').replaceFirst("\\[.*" + name + ".*]", "");
-							// TODO: Potentially remove any trailing spaces - should only be left if chat timestamps is on - also friends chat username + sender combo
+						if (sanitizeUsername(widget.getText()).contains(formattedName))
+						{
+							boolean hideLine = config.removeGroupIronFromClan() && getSelectedChannel() == ChatChannel.CLAN && channelNameToReplace == ChannelNameReplacement.GROUP_IRON;
+
+							int removedWidth = getTextLength(formattedName);
+
+							String newText = widget.getText()
+								.replace('\u00A0', ' ')
+								// Account for color tags when removing name
+								.replaceFirst("\\[.*" + name + ".*]", "");
+
+							// Remove trailing spaces - probably only happens with timestamps turned on
+							if (newText.endsWith(" ") || newText.endsWith("\u00A0"))
+							{
+								newText = newText.substring(0, newText.length() - 1);
+								removedWidth += 1;
+							}
+
+							// Remove double spaces - mainly found in friends chat since it has sender + username
+							if (newText.contains("  ") || newText.contains("\u00A0\u00A0"))
+							{
+								newText = newText.replaceFirst(" {2}|\u00A0{2}", " ");
+								removedWidth += 1;
+							}
+
 							// TODO: Remove log
 							log.debug("Replaced Text {} with {}", widget.getText(), newText);
 							widget.setText(newText);
 
-							int removedLength = getTextLength(formattedName);
+							if (hideLine)
+							{
+								widget.setHidden(true);
+							}
 
-							if (removedLength == -1)
+							if (removedWidth == -1)
 							{
 								log.debug("Couldn't get text length for text: {}", widget.getText());
 								continue;
 							}
 
-							widget.setOriginalWidth(widget.getOriginalWidth() - removedLength);
+							widget.setOriginalY(widget.getOriginalY() + removedHeight); // Down
+							widget.setOriginalWidth(widget.getOriginalWidth() - removedWidth);
 							widget.revalidate();
 
 							int iconWidgetIndex = i + 1;
 							int textWidgetIndex = i - 1;
 							int nameWidgetIndex = i - 2;
 
-							// Friends chat widget ordering is different
-							if (replacement == NameReplacement.FRIENDS_CHAT) {
+							// Friends chat & gim broadcast widget ordering is different
+							if (i % 4 == 0)
+							{
 								textWidgetIndex = i + 1;
-								// Not actually name in this case
+								// Empty widget
 								nameWidgetIndex = i + 2;
+								// Empty widget in case of GIM broadcasts
 								iconWidgetIndex = i + 3;
-							}
+							} // else i % 4 == 2
 
-							if (iconWidgetIndex >= 0 && iconWidgetIndex < lines.length) {
-								Widget iconWidget = lines[iconWidgetIndex];
-								shiftWidgetLeft(iconWidget, removedLength);
-							}
+							processWidget(iconWidgetIndex, chatWidgets, removedWidth, removedHeight, hideLine);
+							processWidget(textWidgetIndex, chatWidgets, removedWidth, removedHeight, hideLine);
+							processWidget(nameWidgetIndex, chatWidgets, removedWidth, removedHeight, hideLine);
 
-							if (textWidgetIndex >= 0 && textWidgetIndex < lines.length) {
-								Widget textWidget = lines[textWidgetIndex];
-								shiftWidgetLeft(textWidget, removedLength);
-							}
-
-							if (nameWidgetIndex >= 0 && nameWidgetIndex < lines.length) {
-								Widget nameWidget = lines[nameWidgetIndex];
-								shiftWidgetLeft(nameWidget, removedLength);
+							if (hideLine)
+							{
+								// Height of 1 line
+								removedHeight += 14;
 							}
 
 							// break name replacement loop, not line loop
@@ -397,10 +427,19 @@ public class CleanChatChannelsPlugin extends Plugin
 		}
 	}
 
-	private void shiftWidgetLeft(Widget widget, int shift)
+	private void processWidget(int index, Widget[] chatWidgets, int removedWidth, int removedHeight, boolean hideLine)
 	{
-		widget.setOriginalX(widget.getOriginalX() - shift);
-		widget.revalidate();
+		if (index >= 0 && index < chatWidgets.length)
+		{
+			Widget widget = chatWidgets[index];
+			widget.setOriginalX(widget.getOriginalX() - removedWidth); // Left
+			widget.setOriginalY(widget.getOriginalY() + removedHeight); // Down
+			if (hideLine)
+			{
+				widget.setHidden(true);
+			}
+			widget.revalidate();
+		}
 	}
 
 	@Subscribe
@@ -410,7 +449,8 @@ public class CleanChatChannelsPlugin extends Plugin
 
 		log.debug("Connected to clan: {} - ID: {}", channelName, event.getClanId());
 
-		switch (event.getClanId()) {
+		switch (event.getClanId())
+		{
 			case -1:
 				guestClanName = channelName;
 				break;
@@ -426,12 +466,14 @@ public class CleanChatChannelsPlugin extends Plugin
 	@Subscribe
 	public void onFriendsChatChanged(FriendsChatChanged event)
 	{
-		log.debug("fc change: {}", event.isJoined());
 		inFriendsChat = event.isJoined();
 
-		if (event.isJoined()) {
+		if (inFriendsChat)
+		{
 			setFriendsChatName();
-		} else {
+		}
+		else
+		{
 			friendsChatName = null;
 		}
 	}
@@ -439,7 +481,7 @@ public class CleanChatChannelsPlugin extends Plugin
 	private void setFriendsChatName()
 	{
 		FriendsChatManager friendsChatManager = client.getFriendsChatManager();
-		// This is null at login
+		// This is null at the first FriendsChatChanged after login
 		if (friendsChatManager != null)
 		{
 			friendsChatName = friendsChatManager.getName();
