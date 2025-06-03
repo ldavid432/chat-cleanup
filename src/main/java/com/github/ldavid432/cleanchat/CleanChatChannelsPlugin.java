@@ -128,7 +128,7 @@ public class CleanChatChannelsPlugin extends Plugin
 	@Subscribe
 	public void onScriptPostFired(ScriptPostFired event)
 	{
-		// TODO: Find better script to run after?
+		// rebuildchatbox script
 		if (event.getScriptId() != 84)
 		{
 			return;
