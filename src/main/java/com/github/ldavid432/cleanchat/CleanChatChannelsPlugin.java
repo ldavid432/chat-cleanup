@@ -27,7 +27,6 @@ import net.runelite.api.MessageNode;
 import net.runelite.api.clan.ClanID;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.ClanChannelChanged;
-import net.runelite.api.events.CommandExecuted;
 import net.runelite.api.events.FriendsChatChanged;
 import net.runelite.api.events.ScriptPostFired;
 import net.runelite.api.gameval.InterfaceID;
@@ -89,101 +88,6 @@ public class CleanChatChannelsPlugin extends Plugin
 	}
 
 	private static final List<ChatMessageType> CHAT_MESSAGE_TYPES_TO_PROCESS = Arrays.stream(ChatBlock.values()).map(ChatBlock::getChatMessageType).distinct().collect(Collectors.toList());
-
-	// TODO: Remove
-	@Subscribe
-	public void onCommandExecuted(CommandExecuted event)
-	{
-		if (event.getCommand().equals("cleanchat"))
-		{
-			switch (event.getArguments()[0].toUpperCase())
-			{
-				case "A":
-					break;
-				case "CA":
-					client.addChatMessage(
-						ChatMessageType.CLAN_MESSAGE,
-						"",
-						"CA_ID:532|the lil fish has completed a hard combat task: Fortified",
-						"Click Clique",
-						true
-					);
-					break;
-				case "F":
-					client.addChatMessage(
-						ChatMessageType.FRIENDSCHAT,
-						"<img=41>the lil fish",
-						"Test friends chat .",
-						"Fish",
-						true
-					);
-					break;
-				case "FM":
-					client.addChatMessage(
-						ChatMessageType.FRIENDSCHATNOTIFICATION,
-						"",
-						"Test friends notification",
-						null,
-						true
-					);
-					break;
-				case "C":
-					client.addChatMessage(
-						ChatMessageType.CLAN_CHAT,
-						"<img=41>the lil fish",
-						"Test clan chat",
-						"Click Clique",
-						true
-					);
-					break;
-				case "CM":
-					client.addChatMessage(
-						ChatMessageType.CLAN_MESSAGE,
-						"",
-						"Test clan message",
-						"Click Clique",
-						true
-					);
-					break;
-				case "GC":
-					client.addChatMessage(
-						ChatMessageType.CLAN_GUEST_CHAT,
-						"<img=41>the lil fish",
-						"Test guest clan chat",
-						"My Guest Clan",
-						true
-					);
-					break;
-				case "GCM":
-					client.addChatMessage(
-						ChatMessageType.CLAN_GUEST_MESSAGE,
-						"",
-						"Test guest clan message",
-						"My Guest Clan",
-						true
-					);
-					break;
-				case "G":
-					client.addChatMessage(
-						ChatMessageType.CLAN_GIM_CHAT,
-						"<img=41>the lil fish",
-						"Test GIM chat",
-						"Konars\u00A0Simps",
-						true
-					);
-					break;
-				case "GM":
-					client.addChatMessage(
-						ChatMessageType.CLAN_GIM_MESSAGE,
-						"",
-						"Test GIM message",
-						"Konars\u00A0Simps",
-						true
-					);
-					break;
-			}
-		}
-	}
 
 	@Override
 	protected void startUp() throws Exception

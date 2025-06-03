@@ -16,11 +16,6 @@ public enum ChannelNameReplacement
 	FRIENDS_CHAT(CleanChatChannelsConfig::removeFriendsChatName, CleanChatChannelsPlugin::getFriendsChatName),
 	GROUP_IRON(CleanChatChannelsConfig::removeGroupIronName, CleanChatChannelsPlugin::getGroupIronName);
 
-	public boolean isEnabled(CleanChatChannelsConfig config)
-	{
-		return isEnabled.apply(config);
-	}
-
 	public String getName(CleanChatChannelsPlugin plugin)
 	{
 		return getName.apply(plugin);
@@ -32,7 +27,7 @@ public enum ChannelNameReplacement
 	public static List<ChannelNameReplacement> getEnabledReplacements(CleanChatChannelsConfig config)
 	{
 		return Arrays.stream(values())
-			.filter(replacement -> replacement.isEnabled(config))
+			.filter(replacement -> replacement.isEnabled.apply(config))
 			.collect(Collectors.toList());
 	}
 }

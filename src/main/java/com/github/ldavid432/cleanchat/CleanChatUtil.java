@@ -51,26 +51,16 @@ public class CleanChatUtil
 
 	public static int getTextLength(String text)
 	{
-		try
-		{
-			return text.chars()
-				.mapToObj(ch -> (char) ch)
-				.map(key -> {
-					try
-					{
-						// Fallback to an average size of 5
-						return CHAR_SIZE_MAP.containsKey(key) ? CHAR_SIZE_MAP.get(key) + 2 : (5 + 2);
-					} catch (NullPointerException e) {
-						log.debug("Couldn't get value for {}", key);
-						throw e;
-					}
-				})
-				.reduce(0, Integer::sum);
-		}
-		catch (NullPointerException e)
-		{
-			return -1;
-		}
+		return text.chars()
+			.mapToObj(ch -> (char) ch)
+			.map(key -> {
+				if (!CHAR_SIZE_MAP.containsKey(key))
+				{
+					log.debug("Couldn't get length of {}", key);
+				}
+				return CHAR_SIZE_MAP.getOrDefault(key, 5) + 2;
+			})
+			.reduce(0, Integer::sum);
 	}
 
 }
