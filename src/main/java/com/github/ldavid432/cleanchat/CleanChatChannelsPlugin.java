@@ -48,13 +48,6 @@ import org.apache.commons.lang3.tuple.Pair;
 )
 public class CleanChatChannelsPlugin extends Plugin
 {
-	// Random ID used to identify our specific challenge entry
-	private static final String CLAN_CHALLENGE_ENTRY_HIDER = "<col=1337000007331>";
-	// Random ID used to identify our specific entries
-	private static final String CLAN_MESSAGE_ENTRY_HIDER = "<col=2337000007332>";
-
-	private static final String CLEAN_CHAT_SENDER = "clean-chat-plugin";
-
 	@Inject
 	private Client client;
 
@@ -64,9 +57,6 @@ public class CleanChatChannelsPlugin extends Plugin
 
 	@Inject
 	private ClientThread clientThread;
-
-	@Inject
-	private ChatIconManager chatIconManager;
 
 	private ScheduledExecutorService executor;
 
@@ -98,13 +88,9 @@ public class CleanChatChannelsPlugin extends Plugin
 		return configManager.getConfig(CleanChatChannelsConfig.class);
 	}
 
-	private static final List<ChatMessageType> CHAT_MESSAGE_TYPES_TO_PROCESS;
+	private static final List<ChatMessageType> CHAT_MESSAGE_TYPES_TO_PROCESS = Arrays.stream(ChatBlock.values()).map(ChatBlock::getChatMessageType).distinct().collect(Collectors.toList());
 
-	static
-	{
-		CHAT_MESSAGE_TYPES_TO_PROCESS = Arrays.stream(ChatBlock.values()).map(ChatBlock::getChatMessageType).distinct().collect(Collectors.toList());
-	}
-
+	// TODO: Remove
 	@Subscribe
 	public void onCommandExecuted(CommandExecuted event)
 	{
@@ -416,10 +402,6 @@ public class CleanChatChannelsPlugin extends Plugin
 		widget.setOriginalX(widget.getOriginalX() - shift);
 		widget.revalidate();
 	}
-
-	// TODO: Add back message blocking
-	// TODO: Add back group iron in group tab only, will need to handle CAs still, maybe chat commands
-	// 	Maybe can hide widgets in clan tab??
 
 	@Subscribe
 	public void onClanChannelChanged(ClanChannelChanged event)

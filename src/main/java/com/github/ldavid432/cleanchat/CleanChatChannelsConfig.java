@@ -5,7 +5,6 @@ import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
-import net.runelite.client.config.Range;
 
 @ConfigGroup(GROUP)
 public interface CleanChatChannelsConfig extends Config
@@ -176,27 +175,5 @@ public interface CleanChatChannelsConfig extends Config
 	default boolean removeFriendsNowTalking()
 	{
 		return false;
-	}
-
-	@ConfigSection(
-		name = "Debug",
-		description = "Optional debug settings. You probably won't need to change these",
-		position = 4,
-		closedByDefault = true
-	)
-	String debugSection = "debugSection";
-
-	@ConfigItem(
-		keyName = "chatCommandTimeout",
-		name = "Chat command timeout",
-		description = "Time in seconds to stop waiting for a chat command to update.<br>" +
-			"If you have a slow connection and chat commands don't work you can try increasing this.",
-		section = debugSection,
-		position = 0
-	)
-	@Range(min = 2, max = 30)
-	default int chatCommandTimeout()
-	{
-		return 10;
 	}
 }

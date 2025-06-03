@@ -9,7 +9,7 @@ import net.runelite.api.ChatMessageType;
 import net.runelite.api.events.ChatMessage;
 
 @AllArgsConstructor
-public enum ChatBlock implements ChatTypeModifier
+public enum ChatBlock
 {
 	CLAN_INSTRUCTION(
 		CleanChatChannelsConfig::removeClanInstruction,
@@ -53,10 +53,9 @@ public enum ChatBlock implements ChatTypeModifier
 		return isEnabled.apply(config);
 	}
 
-	@Override
 	public boolean appliesTo(CleanChatChannelsConfig config, ChatMessage event)
 	{
-		return ChatTypeModifier.super.appliesTo(config, event) && event.getMessage().contains(this.message);
+		return isEnabled(config) && getFromChatMessageTypes().contains(event.getType()) && event.getMessage().contains(this.message);
 	}
 
 	private final Function<CleanChatChannelsConfig, Boolean> isEnabled;
@@ -65,7 +64,6 @@ public enum ChatBlock implements ChatTypeModifier
 	@Getter
 	private final String message;
 
-	@Override
 	public List<ChatMessageType> getFromChatMessageTypes()
 	{
 		return List.of(chatMessageType);
