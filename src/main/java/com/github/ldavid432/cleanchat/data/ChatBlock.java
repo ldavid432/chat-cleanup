@@ -10,6 +10,8 @@ import lombok.Getter;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.events.ChatMessage;
 
+// TODO: Potentially switch these to block by hiding widgets instead of editing the chat line map
+//  Just need to figure out how to determine which message type they are or if we can safely ignore message type
 @AllArgsConstructor
 public enum ChatBlock
 {

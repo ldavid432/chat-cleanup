@@ -6,7 +6,7 @@ import static com.github.ldavid432.cleanchat.CleanChatUtil.sanitizeUsername;
 import com.github.ldavid432.cleanchat.data.ChannelNameReplacement;
 import com.github.ldavid432.cleanchat.data.ChatBlock;
 import static com.github.ldavid432.cleanchat.data.ChatBlock.getBlockedMessageTypes;
-import com.github.ldavid432.cleanchat.data.ChatChannel;
+import com.github.ldavid432.cleanchat.data.SelectedChatChannel;
 import com.google.inject.Provides;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -91,6 +91,9 @@ public class CleanChatChannelsPlugin extends Plugin
 		executor = null;
 
 		eventBus.unregister(channelNameManager);
+
+		// Remove all our shenanigans
+		client.refreshChat();
 	}
 
 	@Subscribe
@@ -107,7 +110,7 @@ public class CleanChatChannelsPlugin extends Plugin
 	@Subscribe
 	public void onChatMessage(ChatMessage event)
 	{
-		if (!getBlockedMessageTypes(config).contains(event.getType()) || event.getType() == ChatMessageType.WELCOME)
+		if (!getBlockedMessageTypes(config).contains(event.getType()) && event.getType() != ChatMessageType.WELCOME)
 		{
 			return;
 		}
@@ -120,11 +123,6 @@ public class CleanChatChannelsPlugin extends Plugin
 		}
 
 		processBlocks(event);
-	}
-
-	private ChatChannel getSelectedChannel()
-	{
-		return ChatChannel.of(client.getVarcIntValue(41));
 	}
 
 	@Subscribe
@@ -147,8 +145,9 @@ public class CleanChatChannelsPlugin extends Plugin
 		channelNameManager.setFriendsChatNameIfNeeded();
 
 		Widget chatbox = client.getWidget(InterfaceID.Chatbox.SCROLLAREA);
+		SelectedChatChannel selectedChatChannel = SelectedChatChannel.of(client.getVarcIntValue(41));
 
-		if (chatbox != null && getSelectedChannel() != ChatChannel.CLOSED)
+		if (chatbox != null && selectedChatChannel != SelectedChatChannel.CLOSED)
 		{
 			/*
 			Most chats appear in this format as dynamic children:
@@ -190,9 +189,10 @@ public class CleanChatChannelsPlugin extends Plugin
 						String formattedName = "[" + name + "]";
 						if (sanitizeUsername(widget.getText()).contains(formattedName))
 						{
-							boolean hideLine = config.removeGroupIronFromClan() && getSelectedChannel() == ChatChannel.CLAN && channelNameToReplace == ChannelNameReplacement.GROUP_IRON;
+							boolean hideLine = config.removeGroupIronFromClan() && selectedChatChannel == SelectedChatChannel.CLAN && channelNameToReplace == ChannelNameReplacement.GROUP_IRON;
 
-							int removedWidth = getTextLength(formattedName);
+							// There seems to be some additional space even after removing spaces so remove 2 additional pixels
+							int removedWidth = getTextLength(formattedName) + 2;
 
 							String newText = widget.getText()
 								.replace('\u00A0', ' ')
@@ -213,19 +213,11 @@ public class CleanChatChannelsPlugin extends Plugin
 								removedWidth += 1;
 							}
 
-							// TODO: Remove log
-							log.debug("Replaced Text {} with {}", widget.getText(), newText);
 							widget.setText(newText);
 
 							if (hideLine)
 							{
 								widget.setHidden(true);
-							}
-
-							if (removedWidth == -1)
-							{
-								log.debug("Couldn't get text length for text: {}", widget.getText());
-								continue;
 							}
 
 							widget.setOriginalY(widget.getOriginalY() + removedHeight); // Down
