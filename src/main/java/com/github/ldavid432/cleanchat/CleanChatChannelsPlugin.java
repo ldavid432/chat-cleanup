@@ -50,13 +50,13 @@ public class CleanChatChannelsPlugin extends Plugin
 	private CleanChatChannelsConfig config;
 
 	@Inject
+	private ClientThread clientThread;
+
+	@Inject
 	private ChannelNameManager channelNameManager;
 
 	@Inject
 	private EventBus eventBus;
-
-	@Inject
-	private ClientThread clientThread;
 
 	private ScheduledExecutorService executor;
 
@@ -192,7 +192,7 @@ public class CleanChatChannelsPlugin extends Plugin
 							boolean hideLine = config.removeGroupIronFromClan() && selectedChatChannel == SelectedChatChannel.CLAN && channelNameToReplace == ChannelNameReplacement.GROUP_IRON;
 
 							// There seems to be some additional space even after removing spaces so remove 2 additional pixels
-							int removedWidth = getTextLength(formattedName) + 2;
+							int removedWidth = getTextLength(formattedName);
 
 							String newText = widget.getText()
 								.replace('\u00A0', ' ')
@@ -203,14 +203,14 @@ public class CleanChatChannelsPlugin extends Plugin
 							if (newText.endsWith(" ") || newText.endsWith("\u00A0"))
 							{
 								newText = newText.substring(0, newText.length() - 1);
-								removedWidth += 1;
+								removedWidth += getTextLength(" ");
 							}
 
 							// Remove double spaces - mainly found in friends chat since it has sender + username
 							if (newText.contains("  ") || newText.contains("\u00A0\u00A0"))
 							{
 								newText = newText.replaceFirst(" {2}|\u00A0{2}", " ");
-								removedWidth += 1;
+								removedWidth += getTextLength(" ");
 							}
 
 							widget.setText(newText);
