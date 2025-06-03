@@ -16,23 +16,19 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Stream;
 import javax.inject.Inject;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatLineBuffer;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
-import net.runelite.api.FriendsChatManager;
 import net.runelite.api.GameState;
 import net.runelite.api.MessageNode;
-import net.runelite.api.clan.ClanID;
 import net.runelite.api.events.ChatMessage;
-import net.runelite.api.events.ClanChannelChanged;
-import net.runelite.api.events.FriendsChatChanged;
 import net.runelite.api.events.ScriptPostFired;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
@@ -54,19 +50,15 @@ public class CleanChatChannelsPlugin extends Plugin
 	private CleanChatChannelsConfig config;
 
 	@Inject
+	private ChannelNameManager channelNameManager;
+
+	@Inject
+	private EventBus eventBus;
+
+	@Inject
 	private ClientThread clientThread;
 
 	private ScheduledExecutorService executor;
-
-	@Getter
-	private String clanName = null;
-	@Getter
-	private String guestClanName = null;
-	@Getter
-	private String friendsChatName = null;
-	@Getter
-	private String groupIronName = null;
-	private boolean inFriendsChat = false;
 
 	@Provides
 	CleanChatChannelsConfig provideConfig(ConfigManager configManager)
@@ -88,6 +80,8 @@ public class CleanChatChannelsPlugin extends Plugin
 			processChatHistory();
 			client.refreshChat();
 		}
+
+		eventBus.register(channelNameManager);
 	}
 
 	@Override
@@ -95,6 +89,8 @@ public class CleanChatChannelsPlugin extends Plugin
 	{
 		executor.shutdown();
 		executor = null;
+
+		eventBus.unregister(channelNameManager);
 	}
 
 	@Subscribe
@@ -126,17 +122,6 @@ public class CleanChatChannelsPlugin extends Plugin
 		processBlocks(event);
 	}
 
-	private void processBlocks(ChatMessage event)
-	{
-		boolean blockMessage = shouldBlockMessage(event);
-		if (blockMessage)
-		{
-			log.debug("Blocking message: {}", event.getMessage());
-			removeChatMessage(event.getType(), event.getMessageNode());
-			client.refreshChat();
-		}
-	}
-
 	private ChatChannel getSelectedChannel()
 	{
 		return ChatChannel.of(client.getVarcIntValue(41));
@@ -159,10 +144,7 @@ public class CleanChatChannelsPlugin extends Plugin
 		}
 
 		// FriendsChatManager is null at the first FriendsChatChanged after login so we have to add this check later
-		if (inFriendsChat && friendsChatName == null)
-		{
-			setFriendsChatName();
-		}
+		channelNameManager.setFriendsChatNameIfNeeded();
 
 		Widget chatbox = client.getWidget(InterfaceID.Chatbox.SCROLLAREA);
 
@@ -204,7 +186,7 @@ public class CleanChatChannelsPlugin extends Plugin
 				{
 					for (ChannelNameReplacement channelNameToReplace : replacements)
 					{
-						String name = channelNameToReplace.getName(this);
+						String name = channelNameToReplace.getName(channelNameManager);
 						String formattedName = "[" + name + "]";
 						if (sanitizeUsername(widget.getText()).contains(formattedName))
 						{
@@ -283,6 +265,32 @@ public class CleanChatChannelsPlugin extends Plugin
 		}
 	}
 
+	private void processWidget(int index, Widget[] chatWidgets, int removedWidth, int removedHeight, boolean hideLine)
+	{
+		if (index >= 0 && index < chatWidgets.length)
+		{
+			Widget widget = chatWidgets[index];
+			widget.setOriginalX(widget.getOriginalX() - removedWidth); // Left
+			widget.setOriginalY(widget.getOriginalY() + removedHeight); // Down
+			if (hideLine)
+			{
+				widget.setHidden(true);
+			}
+			widget.revalidate();
+		}
+	}
+
+	private void processBlocks(ChatMessage event)
+	{
+		boolean blockMessage = shouldBlockMessage(event);
+		if (blockMessage)
+		{
+			log.debug("Blocking message: {}", event.getMessage());
+			removeChatMessage(event.getType(), event.getMessageNode());
+			client.refreshChat();
+		}
+	}
+
 	private boolean shouldBlockMessage(ChatMessage event)
 	{
 		return Stream.of(ChatBlock.values()).anyMatch(it -> it.appliesTo(config, event));
@@ -320,67 +328,6 @@ public class CleanChatChannelsPlugin extends Plugin
 				ChatMessage event = new ChatMessage(messageNode, type, messageNode.getName(), messageNode.getValue(), messageNode.getSender(), messageNode.getTimestamp());
 				clientThread.invoke(() -> processBlocks(event));
 			});
-	}
-
-	private void processWidget(int index, Widget[] chatWidgets, int removedWidth, int removedHeight, boolean hideLine)
-	{
-		if (index >= 0 && index < chatWidgets.length)
-		{
-			Widget widget = chatWidgets[index];
-			widget.setOriginalX(widget.getOriginalX() - removedWidth); // Left
-			widget.setOriginalY(widget.getOriginalY() + removedHeight); // Down
-			if (hideLine)
-			{
-				widget.setHidden(true);
-			}
-			widget.revalidate();
-		}
-	}
-
-	@Subscribe
-	public void onClanChannelChanged(ClanChannelChanged event)
-	{
-		String channelName = event.getClanChannel() != null ? event.getClanChannel().getName() : null;
-
-		log.debug("Connected to clan: {} - ID: {}", channelName, event.getClanId());
-
-		switch (event.getClanId())
-		{
-			case -1:
-				guestClanName = channelName;
-				break;
-			case ClanID.CLAN:
-				clanName = channelName;
-				break;
-			case ClanID.GROUP_IRONMAN:
-				groupIronName = channelName;
-				break;
-		}
-	}
-
-	@Subscribe
-	public void onFriendsChatChanged(FriendsChatChanged event)
-	{
-		inFriendsChat = event.isJoined();
-
-		if (inFriendsChat)
-		{
-			setFriendsChatName();
-		}
-		else
-		{
-			friendsChatName = null;
-		}
-	}
-
-	private void setFriendsChatName()
-	{
-		FriendsChatManager friendsChatManager = client.getFriendsChatManager();
-		// This is null at the first FriendsChatChanged after login
-		if (friendsChatManager != null)
-		{
-			friendsChatName = friendsChatManager.getName();
-		}
 	}
 
 }

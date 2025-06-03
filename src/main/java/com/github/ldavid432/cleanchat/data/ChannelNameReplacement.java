@@ -1,7 +1,7 @@
 package com.github.ldavid432.cleanchat.data;
 
+import com.github.ldavid432.cleanchat.ChannelNameManager;
 import com.github.ldavid432.cleanchat.CleanChatChannelsConfig;
-import com.github.ldavid432.cleanchat.CleanChatChannelsPlugin;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
@@ -11,18 +11,18 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public enum ChannelNameReplacement
 {
-	CLAN(CleanChatChannelsConfig::removeClanName, CleanChatChannelsPlugin::getClanName),
-	GUEST_CLAN(CleanChatChannelsConfig::removeGuestClanName, CleanChatChannelsPlugin::getGuestClanName),
-	FRIENDS_CHAT(CleanChatChannelsConfig::removeFriendsChatName, CleanChatChannelsPlugin::getFriendsChatName),
-	GROUP_IRON(CleanChatChannelsConfig::removeGroupIronName, CleanChatChannelsPlugin::getGroupIronName);
+	CLAN(CleanChatChannelsConfig::removeClanName, ChannelNameManager::getClanName),
+	GUEST_CLAN(CleanChatChannelsConfig::removeGuestClanName, ChannelNameManager::getGuestClanName),
+	FRIENDS_CHAT(CleanChatChannelsConfig::removeFriendsChatName, ChannelNameManager::getFriendsChatName),
+	GROUP_IRON(CleanChatChannelsConfig::removeGroupIronName, ChannelNameManager::getGroupIronName);
 
-	public String getName(CleanChatChannelsPlugin plugin)
+	public String getName(ChannelNameManager channelNameManager)
 	{
-		return getName.apply(plugin);
+		return getName.apply(channelNameManager);
 	}
 
 	private final Function<CleanChatChannelsConfig, Boolean> isEnabled;
-	private final Function<CleanChatChannelsPlugin, String> getName;
+	private final Function<ChannelNameManager, String> getName;
 
 	public static List<ChannelNameReplacement> getEnabledReplacements(CleanChatChannelsConfig config)
 	{
