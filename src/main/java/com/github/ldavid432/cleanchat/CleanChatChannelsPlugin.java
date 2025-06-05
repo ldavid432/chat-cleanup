@@ -1,39 +1,27 @@
 package com.github.ldavid432.cleanchat;
 
-import static com.github.ldavid432.cleanchat.CleanChatUtil.getChatLineBuffer;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.getTextLength;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.sanitizeUsername;
 import com.github.ldavid432.cleanchat.data.ChannelNameReplacement;
 import com.github.ldavid432.cleanchat.data.ChatBlock;
-import static com.github.ldavid432.cleanchat.data.ChatBlock.getBlockedMessageTypes;
-import com.github.ldavid432.cleanchat.data.SelectedChatChannel;
+import com.github.ldavid432.cleanchat.data.ChatTab;
 import com.google.inject.Provides;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Stream;
 import javax.inject.Inject;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.ChatLineBuffer;
-import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
-import net.runelite.api.MessageNode;
-import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.ScriptPostFired;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.Widget;
-import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
-import org.apache.commons.lang3.tuple.Pair;
 
 @Slf4j
 @PluginDescriptor(
@@ -47,18 +35,15 @@ public class CleanChatChannelsPlugin extends Plugin
 	private Client client;
 
 	@Inject
+	@Getter
 	private CleanChatChannelsConfig config;
 
 	@Inject
-	private ClientThread clientThread;
-
-	@Inject
+	@Getter
 	private ChannelNameManager channelNameManager;
 
 	@Inject
 	private EventBus eventBus;
-
-	private ScheduledExecutorService executor;
 
 	@Provides
 	CleanChatChannelsConfig provideConfig(ConfigManager configManager)
@@ -69,15 +54,9 @@ public class CleanChatChannelsPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
-		if (executor == null || executor.isShutdown())
-		{
-			executor = Executors.newSingleThreadScheduledExecutor();
-		}
-
 		if (client.getGameState() == GameState.LOGGED_IN)
 		{
 			log.debug("Plugin enabled. Refreshing chat.");
-			processChatHistory();
 			client.refreshChat();
 		}
 
@@ -87,9 +66,6 @@ public class CleanChatChannelsPlugin extends Plugin
 	@Override
 	protected void shutDown() throws Exception
 	{
-		executor.shutdown();
-		executor = null;
-
 		eventBus.unregister(channelNameManager);
 
 		// Remove all our shenanigans
@@ -102,27 +78,8 @@ public class CleanChatChannelsPlugin extends Plugin
 		if (Objects.equals(event.getGroup(), CleanChatChannelsConfig.GROUP))
 		{
 			log.debug("Config changed. Refreshing chat.");
-			processChatHistory();
 			client.refreshChat();
 		}
-	}
-
-	@Subscribe
-	public void onChatMessage(ChatMessage event)
-	{
-		if (!getBlockedMessageTypes(config).contains(event.getType()) && event.getType() != ChatMessageType.WELCOME)
-		{
-			return;
-		}
-
-		// This is when chat history sends old chats, so we wait a bit for it to populate and then run our stuff
-		if (event.getMessage().equals(ChatBlock.WELCOME.getMessage()))
-		{
-			log.debug("World hopped or logged in. Refreshing chat.");
-			clientThread.invokeLater(this::processChatHistory);
-		}
-
-		processBlocks(event);
 	}
 
 	@Subscribe
@@ -134,9 +91,7 @@ public class CleanChatChannelsPlugin extends Plugin
 			return;
 		}
 
-		List<ChannelNameReplacement> replacements = ChannelNameReplacement.getEnabledReplacements(config);
-
-		if (replacements.isEmpty())
+		if (!ChannelNameReplacement.anyEnabled(config) && !ChatBlock.anyEnabled(config))
 		{
 			return;
 		}
@@ -145,9 +100,9 @@ public class CleanChatChannelsPlugin extends Plugin
 		channelNameManager.setFriendsChatNameIfNeeded();
 
 		Widget chatbox = client.getWidget(InterfaceID.Chatbox.SCROLLAREA);
-		SelectedChatChannel selectedChatChannel = SelectedChatChannel.of(client.getVarcIntValue(41));
+		ChatTab selectedChatTab = ChatTab.of(client.getVarcIntValue(41));
 
-		if (chatbox != null && selectedChatChannel != SelectedChatChannel.CLOSED)
+		if (chatbox != null && selectedChatTab != ChatTab.CLOSED)
 		{
 			/*
 			Most chats appear in this format as dynamic children:
@@ -180,89 +135,84 @@ public class CleanChatChannelsPlugin extends Plugin
 			// Since we only need to check either [2] or [0] of each line for the sender we can just iterate over every other child
 			for (int i = 0; i < chatWidgets.length; i += 2)
 			{
-				Widget widget = chatWidgets[i];
-				if (!widget.getText().isBlank())
+				int iconWidgetIndex = i + 1;
+				int messageWidgetIndex = i - 1;
+				int nameWidgetIndex = i - 2;
+
+				// Friends chat & GIM broadcast widget ordering is different
+				if (i % 4 == 0)
 				{
-					for (ChannelNameReplacement channelNameToReplace : replacements)
+					messageWidgetIndex = i + 1;
+					// Empty widget
+					nameWidgetIndex = i + 2;
+					// Empty widget in case of GIM broadcasts
+					iconWidgetIndex = i + 3;
+				} // else i % 4 == 2
+
+				int removedWidth = 0;
+
+				// Need to use the message widget earlier than the others in order to check for blocks
+				String message = null;
+				if (isIndexValid(messageWidgetIndex, chatWidgets))
+				{
+					message = chatWidgets[messageWidgetIndex].getText();
+				}
+
+				boolean blockChat = shouldBlockMessage(message);
+
+				Widget channelWidget = chatWidgets[i];
+				if (!channelWidget.getText().isBlank())
+				{
+					// If the text is not blank we *should* be guaranteed a match
+					for (ChannelNameReplacement channelNameToReplace : ChannelNameReplacement.values())
 					{
-						String name = channelNameToReplace.getName(channelNameManager);
-						String formattedName = "[" + name + "]";
-						if (sanitizeUsername(widget.getText()).contains(formattedName))
+						String plainChannelName = channelNameToReplace.getName(channelNameManager);
+						String channelName = "[" + plainChannelName + "]";
+						if (sanitizeUsername(channelWidget.getText()).contains(channelName))
 						{
-							boolean hideLine = config.removeGroupIronFromClan() && selectedChatChannel == SelectedChatChannel.CLAN && channelNameToReplace == ChannelNameReplacement.GROUP_IRON;
+							blockChat = blockChat || checkGroupIronInClan(selectedChatTab, channelNameToReplace);
 
-							int removedWidth = getTextLength(formattedName);
-
-							String newText = widget.getText()
-								.replace('\u00A0', ' ')
-								// Account for color tags when removing name
-								.replaceFirst("\\[.*" + name + ".*]", "");
-
-							// Remove trailing spaces - probably only happens with timestamps turned on
-							if (newText.endsWith(" ") || newText.endsWith("\u00A0"))
-							{
-								newText = newText.substring(0, newText.length() - 1);
-								removedWidth += getTextLength(" ");
+							if (channelNameToReplace.isEnabled(config)) {
+								// Update widget text and removedWidth
+								removedWidth = getTextLength(channelName) + updateChannelText(plainChannelName, channelWidget);
+								break;
 							}
-
-							// Remove double spaces - mainly found in friends chat since it has sender + username
-							if (newText.contains("  ") || newText.contains("\u00A0\u00A0"))
-							{
-								newText = newText.replaceFirst(" {2}|\u00A0{2}", " ");
-								removedWidth += getTextLength(" ");
-							}
-
-							widget.setText(newText);
-
-							if (hideLine)
-							{
-								widget.setHidden(true);
-							}
-
-							widget.setOriginalY(widget.getOriginalY() + removedHeight); // Down
-							widget.setOriginalWidth(widget.getOriginalWidth() - removedWidth);
-							widget.revalidate();
-
-							int iconWidgetIndex = i + 1;
-							int textWidgetIndex = i - 1;
-							int nameWidgetIndex = i - 2;
-
-							// Friends chat & gim broadcast widget ordering is different
-							if (i % 4 == 0)
-							{
-								textWidgetIndex = i + 1;
-								// Empty widget
-								nameWidgetIndex = i + 2;
-								// Empty widget in case of GIM broadcasts
-								iconWidgetIndex = i + 3;
-							} // else i % 4 == 2
-
-							processWidget(iconWidgetIndex, chatWidgets, removedWidth, removedHeight, hideLine);
-							processWidget(textWidgetIndex, chatWidgets, removedWidth, removedHeight, hideLine);
-							processWidget(nameWidgetIndex, chatWidgets, removedWidth, removedHeight, hideLine);
-
-							if (hideLine)
-							{
-								// Height of 1 line
-								removedHeight += 14;
-							}
-
-							// break name replacement loop, not line loop
-							break;
 						}
 					}
+				}
+
+				channelWidget.setOriginalY(channelWidget.getOriginalY() + removedHeight); // Shift down
+				channelWidget.setOriginalWidth(channelWidget.getOriginalWidth() - removedWidth);
+				channelWidget.revalidate();
+
+				processWidget(iconWidgetIndex, chatWidgets, removedWidth, removedHeight, blockChat);
+				processWidget(messageWidgetIndex, chatWidgets, removedWidth, removedHeight, blockChat);
+				processWidget(nameWidgetIndex, chatWidgets, removedWidth, removedHeight, blockChat);
+
+				if (blockChat)
+				{
+					log.debug("Blocking message {}", message);
+					// TODO: Check that this doesn't need to be before revalidate
+					channelWidget.setHidden(true);
+					// Height of 1 line
+					removedHeight += 14;
+					log.debug("Removed height {}", removedHeight);
 				}
 			}
 		}
 	}
 
+	private boolean isIndexValid(int index, Object[] array)
+	{
+		return index >= 0 && index < array.length;
+	}
+
 	private void processWidget(int index, Widget[] chatWidgets, int removedWidth, int removedHeight, boolean hideLine)
 	{
-		if (index >= 0 && index < chatWidgets.length)
-		{
+		if (isIndexValid(index, chatWidgets)) {
 			Widget widget = chatWidgets[index];
-			widget.setOriginalX(widget.getOriginalX() - removedWidth); // Left
-			widget.setOriginalY(widget.getOriginalY() + removedHeight); // Down
+			widget.setOriginalX(widget.getOriginalX() - removedWidth); // Shift left
+			widget.setOriginalY(widget.getOriginalY() + removedHeight); // Shift down
 			if (hideLine)
 			{
 				widget.setHidden(true);
@@ -271,54 +221,48 @@ public class CleanChatChannelsPlugin extends Plugin
 		}
 	}
 
-	private void processBlocks(ChatMessage event)
+	private boolean shouldBlockMessage(String message)
 	{
-		boolean blockMessage = shouldBlockMessage(event);
-		if (blockMessage)
-		{
-			log.debug("Blocking message: {}", event.getMessage());
-			removeChatMessage(event.getType(), event.getMessageNode());
-			client.refreshChat();
+		if (message == null) {
+			return false;
 		}
+		return Stream.of(ChatBlock.values()).anyMatch(block -> block.appliesTo(this, message, channelNameManager));
 	}
 
-	private boolean shouldBlockMessage(ChatMessage event)
+	private boolean checkGroupIronInClan(ChatTab chatTab, ChannelNameReplacement channelNameToReplace)
 	{
-		return Stream.of(ChatBlock.values()).anyMatch(it -> it.appliesTo(config, event));
+		return config.removeGroupIronFromClan() && chatTab == ChatTab.CLAN && channelNameToReplace == ChannelNameReplacement.GROUP_IRON;
 	}
 
-	private void removeChatMessage(ChatMessageType chatMessageType, MessageNode messageNode)
+	/**
+	 * @return Any extra space removed
+	 */
+	private int updateChannelText(String channelName, Widget channelWidget)
 	{
-		ChatLineBuffer buffer = getChatLineBuffer(client, chatMessageType);
-		if (buffer != null)
+		int removedWidth = 0;
+
+		String newText = channelWidget.getText()
+			.replace('\u00A0', ' ')
+			// Account for color tags when removing name
+			.replaceFirst("\\[.*" + channelName + ".*]", "");
+
+		// Remove trailing spaces - probably only happens with timestamps turned on
+		if (newText.endsWith(" ") || newText.endsWith("\u00A0"))
 		{
-			buffer.removeMessageNode(messageNode);
+			newText = newText.substring(0, newText.length() - 1);
+			removedWidth += getTextLength(" ");
 		}
-	}
 
-	private void processChatHistory()
-	{
-		getBlockedMessageTypes(config).stream()
-			.flatMap(type -> {
-				ChatLineBuffer buffer = getChatLineBuffer(client, type);
-				if (buffer == null)
-				{
-					return Stream.empty();
-				}
-				return Arrays.stream(buffer.getLines().clone()).filter(Objects::nonNull).map(node -> Pair.of(type, node));
-			})
-			.sorted(Comparator.comparingInt(pair -> pair.getValue().getTimestamp()))
-			.forEach(pair -> {
-				MessageNode messageNode = pair.getValue();
-				ChatMessageType type = pair.getKey();
-				// Ignore message types that don't match (this will only happen with gim chat vs clan chat)
-				if (messageNode == null || type != messageNode.getType())
-				{
-					return;
-				}
-				ChatMessage event = new ChatMessage(messageNode, type, messageNode.getName(), messageNode.getValue(), messageNode.getSender(), messageNode.getTimestamp());
-				clientThread.invoke(() -> processBlocks(event));
-			});
+		// Remove double spaces - mainly found in friends chat since it has sender + username
+		if (newText.contains("  ") || newText.contains("\u00A0\u00A0"))
+		{
+			newText = newText.replaceFirst(" {2}|\u00A0{2}", " ");
+			removedWidth += getTextLength(" ");
+		}
+
+		channelWidget.setText(newText);
+
+		return removedWidth;
 	}
 
 }

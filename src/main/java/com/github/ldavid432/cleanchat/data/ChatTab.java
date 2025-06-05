@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @AllArgsConstructor
-public enum SelectedChatChannel
+public enum ChatTab
 {
 	ALL(0),
 	GAME(1),
@@ -19,11 +19,11 @@ public enum SelectedChatChannel
 	@Getter
 	private final int value;
 
-	public static SelectedChatChannel of(int value)
+	public static ChatTab of(int value)
 	{
 		return Arrays.stream(values())
 			.filter(channel -> channel.getValue() == value)
 			.findFirst()
-			.orElse(SelectedChatChannel.ALL);
+			.orElse(ChatTab.ALL);
 	}
 }

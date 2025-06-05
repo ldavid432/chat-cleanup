@@ -1,53 +1,43 @@
 package com.github.ldavid432.cleanchat.data;
 
+import com.github.ldavid432.cleanchat.ChannelNameManager;
 import com.github.ldavid432.cleanchat.CleanChatChannelsConfig;
+import com.github.ldavid432.cleanchat.CleanChatChannelsPlugin;
 import java.util.Arrays;
-import java.util.List;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
-import net.runelite.api.ChatMessageType;
-import net.runelite.api.events.ChatMessage;
+import net.runelite.client.util.Text;
 
-// TODO: Potentially switch these to block by hiding widgets instead of editing the chat line map
-//  Just need to figure out how to determine which message type they are or if we can safely ignore message type
 @AllArgsConstructor
 public enum ChatBlock
 {
 	CLAN_INSTRUCTION(
 		CleanChatChannelsConfig::removeClanInstruction,
-		ChatMessageType.CLAN_MESSAGE,
-		"To talk in your clan's channel"
+		"To talk in your clan's channel, start each line of chat with // or /c."
 	),
+	// TODO: Confirm the newline/spacing
 	GUEST_CLAN_INSTRUCTION(
 		CleanChatChannelsConfig::removeGuestClanInstruction,
-		ChatMessageType.CLAN_MESSAGE,
-		"To talk, start each line of chat with /// or /gc"
+		channel -> "You are now a guest of " + channel.getGuestClanName() + ".\nTo talk, start each line of chat with /// or /gc"
 	),
 	GROUP_IRON_INSTRUCTION(
 		CleanChatChannelsConfig::removeGroupIronInstruction,
-		ChatMessageType.CLAN_GIM_MESSAGE,
-		"To talk in your Ironman Group's channel"
+		"To talk in your Ironman Group's channel, start each line of chat with //// or /g."
 	),
 	FRIENDS_CHAT_INSTRUCTION(
 		CleanChatChannelsConfig::removeFriendsChatStartup,
-		ChatMessageType.FRIENDSCHATNOTIFICATION,
 		"To talk, start each line of chat with the / symbol."
 	),
 	FRIENDS_CHAT_ATTEMPTING(
 		CleanChatChannelsConfig::removeFriendsAttempting,
-		ChatMessageType.FRIENDSCHATNOTIFICATION,
 		"Attempting to join chat-channel..."
 	),
 	FRIENDS_CHAT_NOW_TALKING(
 		CleanChatChannelsConfig::removeFriendsNowTalking,
-		ChatMessageType.FRIENDSCHATNOTIFICATION,
-		"Now talking in chat-channel"
+		channelNameManager -> "Now talking in chat-channel " + channelNameManager.getFriendsChatName()
 	),
 	WELCOME(
 		CleanChatChannelsConfig::removeWelcome,
-		ChatMessageType.WELCOME,
 		"Welcome to Old School RuneScape."
 	),
 	;
@@ -57,27 +47,21 @@ public enum ChatBlock
 		return isEnabled.apply(config);
 	}
 
-	public boolean appliesTo(CleanChatChannelsConfig config, ChatMessage event)
+	public boolean appliesTo(CleanChatChannelsPlugin plugin, String message, ChannelNameManager channelNameManager)
 	{
-		return isEnabled(config) && getFromChatMessageTypes().contains(event.getType()) && event.getMessage().contains(this.message);
+		return isEnabled(plugin.getConfig()) && Text.removeTags(message).equals(getMessage.apply(channelNameManager));
 	}
 
 	private final Function<CleanChatChannelsConfig, Boolean> isEnabled;
-	@Getter
-	private final ChatMessageType chatMessageType;
-	@Getter
-	private final String message;
+	private final Function<ChannelNameManager, String> getMessage;
 
-	public List<ChatMessageType> getFromChatMessageTypes()
-	{
-		return List.of(chatMessageType);
+	ChatBlock(Function<CleanChatChannelsConfig, Boolean> isEnabled, String message) {
+		this.isEnabled = isEnabled;
+		this.getMessage = s -> message;
 	}
 
-	public static List<ChatMessageType> getBlockedMessageTypes(CleanChatChannelsConfig config)
+	public static boolean anyEnabled(CleanChatChannelsConfig config)
 	{
-		return Arrays.stream(ChatBlock.values())
-			.filter(chatBlock -> chatBlock.isEnabled(config))
-			.map(ChatBlock::getChatMessageType).distinct()
-			.collect(Collectors.toList());
+		return Arrays.stream(values()).anyMatch(block -> block.isEnabled(config));
 	}
 }
