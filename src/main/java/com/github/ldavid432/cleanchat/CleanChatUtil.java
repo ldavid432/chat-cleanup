@@ -1,18 +1,24 @@
 package com.github.ldavid432.cleanchat;
 
 import java.util.Map;
+import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.ChatLineBuffer;
 import net.runelite.api.ChatMessageType;
+import net.runelite.api.Client;
 import net.runelite.client.util.Text;
 
 @Slf4j
 public class CleanChatUtil
 {
-	// Not included in InterfaceID due to client bug
-	public static final int Chatbox_SCROLLBAR = 10617390;
-	public static String CLAN_INSTRUCTION_MESSAGE = "To talk in your clan's channel, start each line of chat with // or /c.";
+	// Currently not included in InterfaceID due to client bug
+	public static final int Chatbox_SCROLLBAR = 0x00a2_022e;
+	public static final String CLAN_INSTRUCTION_MESSAGE = "To talk in your clan's channel, start each line of chat with // or /c.";
+	public static final String WELCOME_MESSAGE = "Welcome to Old School RuneScape.";
+	public static final int GUEST_CLAN = -1;
+	public static final int SCRIPT_REBUILD_CHATBOX = 84;
 
-	public static String sanitizeUsername(String string)
+	public static String sanitizeName(String string)
 	{
 		return Text.removeTags(string).replace(' ', ' ');
 	}
@@ -29,6 +35,12 @@ public class CleanChatUtil
 			default:
 				return chatMessageType;
 		}
+	}
+
+	@Nullable
+	public static ChatLineBuffer getChatLineBuffer(Client client, ChatMessageType chatMessageType)
+	{
+		return client.getChatLineMap().get(sanitizeMessageType(chatMessageType).getType());
 	}
 
 	// Sizes sourced from: https://github.com/JamesShelton140/aqp-finder

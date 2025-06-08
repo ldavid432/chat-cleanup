@@ -14,17 +14,15 @@ import net.runelite.api.events.ClanChannelChanged;
 import net.runelite.api.events.FriendsChatChanged;
 import net.runelite.client.eventbus.Subscribe;
 
+/**
+ * Tracks current and previous chat channel names for use in the ChatChannelReplacer
+ */
 @Slf4j
 public class ChannelNameManager
 {
 
-	private final Client client;
-
 	@Inject
-	ChannelNameManager(Client client)
-	{
-		this.client = client;
-	}
+	private Client client;
 
 	// Store these as Sets so that even if you leave a channel the chats will still be "cleaned"
 	@Getter
@@ -40,7 +38,7 @@ public class ChannelNameManager
 	{
 		if (client.getGameState() == GameState.LOGGED_IN)
 		{
-			setFriendsChatName();
+			updateFriendsChatName();
 
 			ClanChannel clanChannel = client.getClanChannel(ClanID.CLAN);
 			if (clanChannel != null)
@@ -67,13 +65,14 @@ public class ChannelNameManager
 	{
 		String channelName = event.getClanChannel() != null ? event.getClanChannel().getName() : null;
 
-		if (channelName == null) {
+		if (channelName == null)
+		{
 			return;
 		}
 
 		switch (event.getClanId())
 		{
-			case -1:
+			case CleanChatUtil.GUEST_CLAN:
 				guestClanName.add(channelName);
 				break;
 			case ClanID.CLAN:
@@ -90,11 +89,11 @@ public class ChannelNameManager
 	{
 		if (event.isJoined())
 		{
-			setFriendsChatName();
+			updateFriendsChatName();
 		}
 	}
 
-	public void setFriendsChatName()
+	public void updateFriendsChatName()
 	{
 		FriendsChatManager friendsChatManager = client.getFriendsChatManager();
 		// This is null at the first FriendsChatChanged after login

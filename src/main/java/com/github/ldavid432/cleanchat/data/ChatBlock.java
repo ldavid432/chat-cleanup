@@ -1,8 +1,8 @@
 package com.github.ldavid432.cleanchat.data;
 
-import com.github.ldavid432.cleanchat.ChannelNameManager;
 import com.github.ldavid432.cleanchat.CleanChatChannelsConfig;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.CLAN_INSTRUCTION_MESSAGE;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.WELCOME_MESSAGE;
 import java.util.Arrays;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -21,9 +21,8 @@ public enum ChatBlock
 	GUEST_CLAN_INSTRUCTION(
 		CleanChatChannelsConfig::removeGuestClanInstruction,
 		ChatMessageType.CLAN_GUEST_MESSAGE,
-		channel -> channel.getGuestClanName().stream().map(
-			name -> "You are now a guest of " + name + ".To talk, start each line of chat with /// or /gc"
-		)
+		// "You are now a guest of x" is also included in this message, they are separated by a <br>
+		"To talk, start each line of chat with /// or /gc"
 	),
 	GUEST_CLAN_RECONNECTING(
 		CleanChatChannelsConfig::removeGuestClanReconnecting,
@@ -48,12 +47,12 @@ public enum ChatBlock
 	FRIENDS_CHAT_NOW_TALKING(
 		CleanChatChannelsConfig::removeFriendsNowTalking,
 		ChatMessageType.FRIENDSCHATNOTIFICATION,
-		channelNameManager -> channelNameManager.getFriendsChatName().stream().map(name -> "Now talking in chat-channel " + name)
+		"Now talking in chat-channel"
 	),
 	WELCOME(
 		CleanChatChannelsConfig::removeWelcome,
 		ChatMessageType.WELCOME,
-		"Welcome to Old School RuneScape."
+		WELCOME_MESSAGE
 	),
 	;
 
@@ -62,23 +61,24 @@ public enum ChatBlock
 		return isEnabled.apply(config);
 	}
 
-	public boolean appliesTo(CleanChatChannelsConfig config, String message, ChatMessageType chatMessageType, ChannelNameManager channelNameManager)
+	public boolean appliesTo(CleanChatChannelsConfig config, String message, ChatMessageType chatMessageType)
 	{
-		return isEnabled(config) && chatMessageType == this.chatMessageType && getMessage.apply(channelNameManager).anyMatch(blockedMessage -> Text.removeTags(message).contains(blockedMessage));
+		return isEnabled(config) && chatMessageType == this.chatMessageType && Text.removeTags(message).contains(this.message);
 	}
 
 	private final Function<CleanChatChannelsConfig, Boolean> isEnabled;
 	private final ChatMessageType chatMessageType;
-	private final Function<ChannelNameManager, Stream<String>> getMessage;
-
-	ChatBlock(Function<CleanChatChannelsConfig, Boolean> isEnabled,  ChatMessageType chatMessageType, String message) {
-		this.isEnabled = isEnabled;
-		this.chatMessageType = chatMessageType;
-		this.getMessage = s -> Stream.of(message);
-	}
+	private final String message;
 
 	public static boolean anyEnabled(CleanChatChannelsConfig config)
 	{
 		return Arrays.stream(values()).anyMatch(block -> block.isEnabled(config));
+	}
+
+	public static Stream<ChatMessageType> getEnabledTypes(CleanChatChannelsConfig config)
+	{
+		return Arrays.stream(values())
+			.filter(block -> block.isEnabled(config))
+			.map(block -> block.chatMessageType);
 	}
 }
