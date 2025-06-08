@@ -2,7 +2,6 @@ package com.github.ldavid432.cleanchat.data;
 
 import com.github.ldavid432.cleanchat.ChannelNameManager;
 import com.github.ldavid432.cleanchat.CleanChatChannelsConfig;
-import com.github.ldavid432.cleanchat.CleanChatChannelsPlugin;
 import java.util.Arrays;
 import java.util.function.Function;
 import lombok.AllArgsConstructor;
@@ -47,9 +46,14 @@ public enum ChatBlock
 		return isEnabled.apply(config);
 	}
 
-	public boolean appliesTo(CleanChatChannelsPlugin plugin, String message, ChannelNameManager channelNameManager)
+	public String getMessage(ChannelNameManager channelNameManager)
 	{
-		return isEnabled(plugin.getConfig()) && Text.removeTags(message).equals(getMessage.apply(channelNameManager));
+		return getMessage.apply(channelNameManager);
+	}
+
+	public boolean appliesTo(CleanChatChannelsConfig config, String message, ChannelNameManager channelNameManager)
+	{
+		return isEnabled(config) && Text.removeTags(message).contains(getMessage.apply(channelNameManager));
 	}
 
 	private final Function<CleanChatChannelsConfig, Boolean> isEnabled;

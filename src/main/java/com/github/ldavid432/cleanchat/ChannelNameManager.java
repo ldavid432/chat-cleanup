@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.FriendsChatManager;
+import net.runelite.api.GameState;
+import net.runelite.api.clan.ClanChannel;
 import net.runelite.api.clan.ClanID;
 import net.runelite.api.events.ClanChannelChanged;
 import net.runelite.api.events.FriendsChatChanged;
@@ -32,6 +34,42 @@ public class ChannelNameManager
 	private String groupIronName = null;
 	private boolean isInFriendsChat = false;
 
+	public void startup()
+	{
+		if (client.getGameState() == GameState.LOGGED_IN)
+		{
+			isInFriendsChat = client.getFriendsChatManager() != null;
+			setFriendsChatName();
+
+			ClanChannel clanChannel = client.getClanChannel(ClanID.CLAN);
+			if (clanChannel != null)
+			{
+				clanName = clanChannel.getName();
+			}
+
+			ClanChannel groupIronChannel = client.getClanChannel(ClanID.CLAN);
+			if (groupIronChannel != null)
+			{
+				groupIronName = groupIronChannel.getName();
+			}
+
+			ClanChannel guestClanChannel = client.getGuestClanChannel();
+			if (guestClanChannel != null)
+			{
+				guestClanName = guestClanChannel.getName();
+			}
+		}
+	}
+
+	public void shutDown()
+	{
+		clanName = null;
+		groupIronName = null;
+		guestClanName = null;
+		friendsChatName = null;
+		isInFriendsChat = false;
+	}
+
 	@Subscribe
 	public void onClanChannelChanged(ClanChannelChanged event)
 	{
@@ -41,6 +79,7 @@ public class ChannelNameManager
 
 		switch (event.getClanId())
 		{
+			// TODO: Test guest clan chat
 			case -1:
 				guestClanName = channelName;
 				break;

@@ -6,22 +6,30 @@ import com.github.ldavid432.cleanchat.data.ChannelNameReplacement;
 import com.github.ldavid432.cleanchat.data.ChatBlock;
 import com.github.ldavid432.cleanchat.data.ChatTab;
 import com.google.inject.Provides;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Inject;
-import lombok.Getter;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
+import net.runelite.api.ScriptID;
 import net.runelite.api.events.ScriptPostFired;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.Widget;
+import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.util.Text;
 
 @Slf4j
 @PluginDescriptor(
@@ -35,15 +43,16 @@ public class CleanChatChannelsPlugin extends Plugin
 	private Client client;
 
 	@Inject
-	@Getter
 	private CleanChatChannelsConfig config;
 
 	@Inject
-	@Getter
 	private ChannelNameManager channelNameManager;
 
 	@Inject
 	private EventBus eventBus;
+
+	@Inject
+	private ClientThread clientThread;
 
 	@Provides
 	CleanChatChannelsConfig provideConfig(ConfigManager configManager)
@@ -51,24 +60,48 @@ public class CleanChatChannelsPlugin extends Plugin
 		return configManager.getConfig(CleanChatChannelsConfig.class);
 	}
 
+	@Data
+	private static class ChatWidgetGroup
+	{
+		private final Widget channelWidget;
+		private final Widget rankWidget;
+		private final Widget nameWidget;
+		private final Widget messageWidget;
+
+		private int removedWidth = 0;
+
+		public void onAllWidgets(Consumer<Widget> action)
+		{
+			Stream.of(channelWidget, rankWidget, nameWidget, messageWidget).forEach(action);
+		}
+
+		public void onNonChannelWidgets(Consumer<Widget> action)
+		{
+			Stream.of(rankWidget, nameWidget, messageWidget).forEach(action);
+		}
+	}
+
 	@Override
 	protected void startUp() throws Exception
 	{
+		eventBus.register(channelNameManager);
+		channelNameManager.startup();
+
 		if (client.getGameState() == GameState.LOGGED_IN)
 		{
 			log.debug("Plugin enabled. Refreshing chat.");
 			client.refreshChat();
 		}
-
-		eventBus.register(channelNameManager);
 	}
 
 	@Override
 	protected void shutDown() throws Exception
 	{
 		eventBus.unregister(channelNameManager);
+		channelNameManager.shutDown();
 
 		// Remove all our shenanigans
+		log.debug("Plugin disabled. Refreshing chat.");
 		client.refreshChat();
 	}
 
@@ -82,6 +115,45 @@ public class CleanChatChannelsPlugin extends Plugin
 		}
 	}
 
+	/*
+	Most chats appear in this format as dynamic children on the chatbox scroll area:
+		// bottom chat line
+		[0] = username
+		[1] = chat message
+		[2] = timestamp + channel name (timestamp only if that plugin is on, but is pretty common so should definitely account for it)
+		[3] = rank icon
+		// Next chat line
+		[4] = next username
+		etc...
+
+	However, some are special:
+
+	Friends chats:
+		[0] = channel + username
+		[1] = chat message
+		[2] = nothing
+		[3] = rank icon
+
+	Friends broadcasts (attempting to join... etc):
+		[0] = timestamp + message
+		[1] = nothing (except the now talking message specifically, has the CLAN chat join message here...)
+		[2] = nothing
+		[3] = nothing
+
+	GIM broadcasts:
+		[0] = channel
+		[1] = chat message
+		[2] = nothing
+		[3] = nothing
+
+	Console message:
+		[0] = timestamp + message
+		[1] = nothing
+		[2] = nothing
+		[3] = nothing
+
+	These appear in the children array in this order even if the individual items aren't rendered
+		ex: Username is hidden for broadcasts, rank icon is hidden for public chat */
 	@Subscribe
 	public void onScriptPostFired(ScriptPostFired event)
 	{
@@ -104,129 +176,156 @@ public class CleanChatChannelsPlugin extends Plugin
 
 		if (chatbox != null && selectedChatTab != ChatTab.CLOSED)
 		{
-			/*
-			Most chats appear in this format as dynamic children:
-				// bottom chat line
-				[0] = username
-				[1] = chat message
-				[2] = sender (clan name, also includes timestamp if that plugin is on)
-				[3] = rank icon
-				// Next chat line
-				[4] = next username
-				etc...
-
-			Friends chats appear in this format:
-				[0] = sender + username
-				[1] = chat message
-				[2] = nothing
-				[3] = rank icon?
-
-			GIM broadcasts appear in this format:
-				[0] = sender
-				[1] = chat message
-				[2] = nothing
-				[3] = nothing
-
-			These appear in the children array in this order even if the individual items aren't rendered
-				ex: Username is hidden for broadcasts, rank icon is hidden for public chat */
 			Widget[] chatWidgets = chatbox.getDynamicChildren().clone();
-			int removedHeight = 0;
 
-			// Since we only need to check either [2] or [0] of each line for the sender we can just iterate over every other child
-			for (int i = 0; i < chatWidgets.length; i += 2)
+			int numChats = 0;
+			for (int i = 2; i < chatWidgets.length; i += 4)
 			{
-				int iconWidgetIndex = i + 1;
-				int messageWidgetIndex = i - 1;
-				int nameWidgetIndex = i - 2;
-
-				// Friends chat & GIM broadcast widget ordering is different
-				if (i % 4 == 0)
+				if (chatWidgets[i].getText().isEmpty() && chatWidgets[i - 2].getText().isEmpty())
 				{
-					messageWidgetIndex = i + 1;
-					// Empty widget
-					nameWidgetIndex = i + 2;
-					// Empty widget in case of GIM broadcasts
-					iconWidgetIndex = i + 3;
-				} // else i % 4 == 2
-
-				int removedWidth = 0;
-
-				// Need to use the message widget earlier than the others in order to check for blocks
-				String message = null;
-				if (isIndexValid(messageWidgetIndex, chatWidgets))
-				{
-					message = chatWidgets[messageWidgetIndex].getText();
+					break;
 				}
-
-				boolean blockChat = shouldBlockMessage(message);
-
-				Widget channelWidget = chatWidgets[i];
-				if (!channelWidget.getText().isBlank())
+				else
 				{
-					// If the text is not blank we *should* be guaranteed a match
-					for (ChannelNameReplacement channelNameToReplace : ChannelNameReplacement.values())
-					{
-						String plainChannelName = channelNameToReplace.getName(channelNameManager);
-						String channelName = "[" + plainChannelName + "]";
-						if (sanitizeUsername(channelWidget.getText()).contains(channelName))
-						{
-							blockChat = blockChat || checkGroupIronInClan(selectedChatTab, channelNameToReplace);
+					numChats += 1;
+				}
+			}
+			log.debug("Found {} chat messages", numChats);
 
-							if (channelNameToReplace.isEnabled(config)) {
-								// Update widget text and removedWidth
-								removedWidth = getTextLength(channelName) + updateChannelText(plainChannelName, channelWidget);
-								break;
+			if (numChats == 0)
+			{
+				return;
+			}
+
+			List<ChatWidgetGroup> removedChats = new ArrayList<>();
+
+			// TODO: Can probably invert the direction
+			// for (int i = (numChats * 4) - 2; i > 0; i -= 4)
+			List<ChatWidgetGroup> displayedChats = Stream.iterate((numChats * 4) - 2, i -> i > 0, i -> i - 4)
+				.map(i -> {
+					int iconWidgetIndex = i + 1; //    [3]
+					int messageWidgetIndex = i - 1; // [1]
+					int nameWidgetIndex = i - 2; //    [0]
+
+					Widget channelWidget = chatWidgets[i];
+					if (channelWidget.getText().isEmpty())
+					{
+						// Channel is not at [2]. This is either a message with channel at [0] or a message without a channel
+
+						if (!chatWidgets[i - 2].getText().isEmpty())
+						{
+							// Channel is at [0], this is a special message, adjust indices accordingly
+
+							Widget messageWidget = chatWidgets[i - 1];
+							// For some reason the now talking message specifically, has the CLAN chat join message here...
+							if (messageWidget.getText().isEmpty() || Text.removeTags(messageWidget.getText()).equals(ChatBlock.CLAN_INSTRUCTION.getMessage(channelNameManager)))
+							{
+								// Friends chat message
+
+								messageWidgetIndex = i - 2; // [0]
+								// Empty widget in this case, but still good to handle it
+								nameWidgetIndex = i - 1; //    [1]
+							}
+							else
+							{
+								// Other special message
+
+								channelWidget = chatWidgets[i - 2]; // [0]
+								// Empty widget in this case, but still good to handle it
+								nameWidgetIndex = i; //                [2]
+							}
+						}
+						else
+						{
+							// Shouldn't see this unless it's an empty line, which we aren't looking at
+						}
+					}
+
+					return new ChatWidgetGroup(channelWidget, chatWidgets[iconWidgetIndex], chatWidgets[nameWidgetIndex], chatWidgets[messageWidgetIndex]);
+				})
+				.filter(group -> {
+					String message = group.getMessageWidget().getText();
+
+					boolean blockChat = shouldBlockMessage(message);
+
+					if (!group.getChannelWidget().getText().isEmpty())
+					{
+						// If the text is not blank we *should* be guaranteed a match
+						for (ChannelNameReplacement channelNameToReplace : ChannelNameReplacement.values())
+						{
+							String plainChannelName = channelNameToReplace.getName(channelNameManager);
+							String channelName = "[" + plainChannelName + "]";
+							if (sanitizeUsername(group.getChannelWidget().getText()).contains(channelName))
+							{
+								blockChat = blockChat || checkGroupIronInClan(selectedChatTab, channelNameToReplace);
+
+								if (!blockChat && channelNameToReplace.isEnabled(config))
+								{
+									// Update widget text and removedWidth
+									group.setRemovedWidth(getTextLength(channelName) + updateChannelText(plainChannelName, group.getChannelWidget()));
+									break;
+								}
 							}
 						}
 					}
-				}
 
-				channelWidget.setOriginalY(channelWidget.getOriginalY() + removedHeight); // Shift down
-				channelWidget.setOriginalWidth(channelWidget.getOriginalWidth() - removedWidth);
-				channelWidget.revalidate();
+					if (blockChat)
+					{
+						removedChats.add(group);
+					}
 
-				processWidget(iconWidgetIndex, chatWidgets, removedWidth, removedHeight, blockChat);
-				processWidget(messageWidgetIndex, chatWidgets, removedWidth, removedHeight, blockChat);
-				processWidget(nameWidgetIndex, chatWidgets, removedWidth, removedHeight, blockChat);
+					return !blockChat;
+				})
+				.collect(Collectors.toList());
 
-				if (blockChat)
-				{
-					log.debug("Blocking message {}", message);
-					// TODO: Check that this doesn't need to be before revalidate
-					channelWidget.setHidden(true);
-					// Height of 1 line
-					removedHeight += 14;
-					log.debug("Removed height {}", removedHeight);
-				}
-			}
-		}
-	}
+			int totalHeight = displayedChats.stream()
+				.map(it -> it.getMessageWidget().getHeight())
+				.reduce(0, Integer::sum);
 
-	private boolean isIndexValid(int index, Object[] array)
-	{
-		return index >= 0 && index < array.length;
-	}
+			// If we only have a few messages we want to place them at the bottom instead of the top
+			int y = totalHeight >= chatbox.getHeight() ? 0 : chatbox.getHeight() - totalHeight;
 
-	private void processWidget(int index, Widget[] chatWidgets, int removedWidth, int removedHeight, boolean hideLine)
-	{
-		if (isIndexValid(index, chatWidgets)) {
-			Widget widget = chatWidgets[index];
-			widget.setOriginalX(widget.getOriginalX() - removedWidth); // Shift left
-			widget.setOriginalY(widget.getOriginalY() + removedHeight); // Shift down
-			if (hideLine)
+			for (ChatWidgetGroup group : displayedChats)
 			{
-				widget.setHidden(true);
+				int widgetY = y;
+				group.onNonChannelWidgets(widget -> updateWidget(widget, group.getRemovedWidth(), widgetY));
+
+				group.getChannelWidget().setOriginalY(widgetY);
+				group.getChannelWidget().setOriginalWidth(group.getChannelWidget().getOriginalWidth() - group.getRemovedWidth());
+				group.getChannelWidget().revalidate();
+
+				y += group.getMessageWidget().getHeight();
 			}
-			widget.revalidate();
+
+			for (ChatWidgetGroup group : removedChats)
+			{
+				group.onAllWidgets(widget -> {
+					widget.setHidden(true);
+					widget.setOriginalY(0);
+				});
+			}
+
+			chatbox.setScrollHeight(y);
+			chatbox.revalidateScroll();
+
+			clientThread.invokeLater(() -> client.runScript(ScriptID.UPDATE_SCROLLBAR, CleanChatUtil.Chatbox_SCROLLBAR, InterfaceID.Chatbox.SCROLLAREA, chatbox.getScrollY()));
 		}
+	}
+
+	private void updateWidget(Widget widget, int removedWidth, int y)
+	{
+		widget.setOriginalX(widget.getOriginalX() - removedWidth); // Shift left
+		widget.setOriginalY(y);
+		widget.revalidate();
 	}
 
 	private boolean shouldBlockMessage(String message)
 	{
-		if (message == null) {
+		if (message == null)
+		{
 			return false;
 		}
-		return Stream.of(ChatBlock.values()).anyMatch(block -> block.appliesTo(this, message, channelNameManager));
+		return Stream.of(ChatBlock.values()).anyMatch(block -> block.appliesTo(config, message, channelNameManager));
 	}
 
 	private boolean checkGroupIronInClan(ChatTab chatTab, ChannelNameReplacement channelNameToReplace)

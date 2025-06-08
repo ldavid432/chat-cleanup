@@ -19,3 +19,6 @@ All the below options are toggleable
   - Remove 'To talk in your Ironman Group's channel...' message
   - Remove group name from messages
   - Remove group broadcasts from the clan chat tab (only display them in group tab)
+
+## Known issues
+ - When the chatbox is reloaded the scroll bar will jump slightly (this *should* just be visual)

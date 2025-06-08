@@ -33,4 +33,3 @@ public enum ChannelNameReplacement
 		return Arrays.stream(values()).anyMatch(channel -> channel.isEnabled(config));
 	}
 }
-
