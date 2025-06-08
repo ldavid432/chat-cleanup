@@ -8,7 +8,7 @@ import java.util.function.Function;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
-public enum ChannelNameReplacement
+public enum ChannelNameRemoval
 {
 	CLAN(CleanChatChannelsConfig::removeClanName, ChannelNameManager::getClanName),
 	GUEST_CLAN(CleanChatChannelsConfig::removeGuestClanName, ChannelNameManager::getGuestClanName),

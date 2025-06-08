@@ -20,8 +20,8 @@ All the below options are toggleable
   - Remove group name from messages
   - Remove group broadcasts from the clan chat tab (only display them in group tab)
 
-## Known issues
+## Known Issues
 
-### When any of the 'Remove xxx' options are enabled:
-- When the chatbox is reloaded the scroll bar will jump slightly (this *shouldn't* actually change your scroll positions)
-- When there are not enough chats to fill the full height of the chatbox, receiving a new chat will make all the chats jump slightly
+When 'remove group iron broadcasts from clan chat' is enabled, and you are on the clan tab, and the chat is reloaded (via sending/receiving a message or otherwise),
+then the scroll bar will jump slightly (though this *shouldn't* actually change your scroll positions) and,
+if there are not enough chats to fill the full height of the chatbox, all the chats will jump slightly.

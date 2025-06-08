@@ -2,8 +2,9 @@ package com.github.ldavid432.cleanchat;
 
 import static com.github.ldavid432.cleanchat.CleanChatUtil.CLAN_INSTRUCTION_MESSAGE;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.getTextLength;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.sanitizeMessageType;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.sanitizeUsername;
-import com.github.ldavid432.cleanchat.data.ChannelNameReplacement;
+import com.github.ldavid432.cleanchat.data.ChannelNameRemoval;
 import com.github.ldavid432.cleanchat.data.ChatBlock;
 import com.github.ldavid432.cleanchat.data.ChatTab;
 import com.google.inject.Provides;
@@ -17,9 +18,12 @@ import java.util.stream.Stream;
 import javax.inject.Inject;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.ChatLineBuffer;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.ScriptID;
+import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.ScriptPostFired;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.Widget;
@@ -163,7 +167,7 @@ public class CleanChatChannelsPlugin extends Plugin
 			return;
 		}
 
-		if (!ChannelNameReplacement.anyEnabled(config) && !ChatBlock.anyEnabled(config))
+		if (!ChannelNameRemoval.anyEnabled(config) && !config.removeGroupIronFromClan())
 		{
 			return;
 		}
@@ -229,26 +233,28 @@ public class CleanChatChannelsPlugin extends Plugin
 					return new ChatWidgetGroup(channelWidget, chatWidgets[rankWidgetIndex], chatWidgets[nameWidgetIndex], chatWidgets[messageWidgetIndex]);
 				})
 				.filter(group -> {
-					String message = group.getMessage().getText();
+					// This method can be used to block other kinds of messages, but it causes the chat and scrollbar to
+					//  jump around when the chatbox is reloaded so for now we just use it to block group iron broadcasts in the clan chat
+					//  and use an alternate method in onChatMessage for the channel startup message blocking
 
-					boolean blockChat = shouldBlockMessage(message);
+					boolean blockChat = false;
 
 					if (!group.getChannel().getText().isEmpty())
 					{
 						// If the text is not blank we *should* be guaranteed a match
-						for (ChannelNameReplacement channelNameToReplace : ChannelNameReplacement.values())
+						for (ChannelNameRemoval channelRemoval : ChannelNameRemoval.values())
 						{
 							String widgetChannelName = sanitizeUsername(group.getChannel().getText());
-							String matchedChannelName = channelNameToReplace.getNames(channelNameManager).stream()
+							String matchedChannelName = channelRemoval.getNames(channelNameManager).stream()
 								.filter(channel -> widgetChannelName.contains("[" + channel + "]"))
 								.findFirst()
 								.orElse(null);
 
 							if (matchedChannelName != null)
 							{
-								blockChat = blockChat || checkGroupIronInClan(selectedChatTab, channelNameToReplace);
+								blockChat = checkGroupIronInClan(selectedChatTab, channelRemoval);
 
-								if (!blockChat && channelNameToReplace.isEnabled(config))
+								if (!blockChat && channelRemoval.isEnabled(config))
 								{
 									// Update widget text and removedWidth
 									group.setRemovedWidth(getTextLength("[" + matchedChannelName + "]") + updateChannelText(matchedChannelName, group.getChannel()));
@@ -304,10 +310,30 @@ public class CleanChatChannelsPlugin extends Plugin
 				});
 			}
 
-			chatbox.setScrollHeight(y);
-			chatbox.revalidateScroll();
+			if (!removedChats.isEmpty()) {
+				chatbox.setScrollHeight(y);
+				chatbox.revalidateScroll();
 
-			clientThread.invokeLater(() -> client.runScript(ScriptID.UPDATE_SCROLLBAR, CleanChatUtil.Chatbox_SCROLLBAR, InterfaceID.Chatbox.SCROLLAREA, chatbox.getScrollY()));
+				clientThread.invokeLater(() -> client.runScript(ScriptID.UPDATE_SCROLLBAR, CleanChatUtil.Chatbox_SCROLLBAR, InterfaceID.Chatbox.SCROLLAREA, chatbox.getScrollY()));
+			}
+		}
+	}
+
+	@Subscribe
+	public void onChatMessage(ChatMessage event)
+	{
+		if (!ChatBlock.anyEnabled(config)) {
+			return;
+		}
+
+		if (shouldBlockMessage(event.getMessage(), event.getType())) {
+			ChatLineBuffer buffer = client.getChatLineMap().get(sanitizeMessageType(event.getType()).getType());
+			if (buffer != null)
+			{
+				log.debug("Removing message: {}", event.getMessage());
+				buffer.removeMessageNode(event.getMessageNode());
+				client.refreshChat();
+			}
 		}
 	}
 
@@ -318,18 +344,18 @@ public class CleanChatChannelsPlugin extends Plugin
 		widget.revalidate();
 	}
 
-	private boolean shouldBlockMessage(String message)
+	private boolean shouldBlockMessage(String message, ChatMessageType chatMessageType)
 	{
 		if (message == null)
 		{
 			return false;
 		}
-		return Stream.of(ChatBlock.values()).anyMatch(block -> block.appliesTo(config, message, channelNameManager));
+		return Stream.of(ChatBlock.values()).anyMatch(block -> block.appliesTo(config, message, chatMessageType, channelNameManager));
 	}
 
-	private boolean checkGroupIronInClan(ChatTab chatTab, ChannelNameReplacement channelNameToReplace)
+	private boolean checkGroupIronInClan(ChatTab chatTab, ChannelNameRemoval channelRemoval)
 	{
-		return config.removeGroupIronFromClan() && chatTab == ChatTab.CLAN && channelNameToReplace == ChannelNameReplacement.GROUP_IRON;
+		return config.removeGroupIronFromClan() && chatTab == ChatTab.CLAN && channelRemoval == ChannelNameRemoval.GROUP_IRON;
 	}
 
 	/**
