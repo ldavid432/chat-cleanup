@@ -21,4 +21,7 @@ All the below options are toggleable
   - Remove group broadcasts from the clan chat tab (only display them in group tab)
 
 ## Known issues
- - When the chatbox is reloaded the scroll bar will jump slightly (this *should* just be visual)
+
+### When any of the 'Remove xxx' options are enabled:
+- When the chatbox is reloaded the scroll bar will jump slightly (this *shouldn't* actually change your scroll positions)
+- When there are not enough chats to fill the full height of the chatbox, receiving a new chat will make all the chats jump slightly
