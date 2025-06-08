@@ -7,6 +7,7 @@ import com.github.ldavid432.cleanchat.data.ChatBlock;
 import com.github.ldavid432.cleanchat.data.ChatTab;
 import com.google.inject.Provides;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -15,7 +16,6 @@ import java.util.stream.Stream;
 import javax.inject.Inject;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.ScriptID;
@@ -63,21 +63,21 @@ public class CleanChatChannelsPlugin extends Plugin
 	@Data
 	private static class ChatWidgetGroup
 	{
-		private final Widget channelWidget;
-		private final Widget rankWidget;
-		private final Widget nameWidget;
-		private final Widget messageWidget;
+		private final Widget channel;
+		private final Widget rank;
+		private final Widget name;
+		private final Widget message;
 
 		private int removedWidth = 0;
 
 		public void onAllWidgets(Consumer<Widget> action)
 		{
-			Stream.of(channelWidget, rankWidget, nameWidget, messageWidget).forEach(action);
+			Stream.of(channel, rank, name, message).forEach(action);
 		}
 
 		public void onNonChannelWidgets(Consumer<Widget> action)
 		{
-			Stream.of(rankWidget, nameWidget, messageWidget).forEach(action);
+			Stream.of(rank, name, message).forEach(action);
 		}
 	}
 
@@ -178,32 +178,17 @@ public class CleanChatChannelsPlugin extends Plugin
 		{
 			Widget[] chatWidgets = chatbox.getDynamicChildren().clone();
 
-			int numChats = 0;
-			for (int i = 2; i < chatWidgets.length; i += 4)
-			{
-				if (chatWidgets[i].getText().isEmpty() && chatWidgets[i - 2].getText().isEmpty())
-				{
-					break;
-				}
-				else
-				{
-					numChats += 1;
-				}
-			}
-			log.debug("Found {} chat messages", numChats);
-
-			if (numChats == 0)
-			{
-				return;
-			}
-
 			List<ChatWidgetGroup> removedChats = new ArrayList<>();
 
-			// TODO: Can probably invert the direction
-			// for (int i = (numChats * 4) - 2; i > 0; i -= 4)
-			List<ChatWidgetGroup> displayedChats = Stream.iterate((numChats * 4) - 2, i -> i > 0, i -> i - 4)
+			// for (int i = 2; i < chats.length; i += 4)
+			List<ChatWidgetGroup> displayedChats = Stream.iterate(
+					2,
+					// If [0] and [2] are empty we've reached the end of the populated chats
+					i -> i < chatWidgets.length && !(chatWidgets[i].getText().isEmpty() && chatWidgets[i - 2].getText().isEmpty()),
+					i -> i + 4
+				)
 				.map(i -> {
-					int iconWidgetIndex = i + 1; //    [3]
+					int rankWidgetIndex = i + 1; //    [3]
 					int messageWidgetIndex = i - 1; // [1]
 					int nameWidgetIndex = i - 2; //    [0]
 
@@ -241,28 +226,28 @@ public class CleanChatChannelsPlugin extends Plugin
 						}
 					}
 
-					return new ChatWidgetGroup(channelWidget, chatWidgets[iconWidgetIndex], chatWidgets[nameWidgetIndex], chatWidgets[messageWidgetIndex]);
+					return new ChatWidgetGroup(channelWidget, chatWidgets[rankWidgetIndex], chatWidgets[nameWidgetIndex], chatWidgets[messageWidgetIndex]);
 				})
 				.filter(group -> {
-					String message = group.getMessageWidget().getText();
+					String message = group.getMessage().getText();
 
 					boolean blockChat = shouldBlockMessage(message);
 
-					if (!group.getChannelWidget().getText().isEmpty())
+					if (!group.getChannel().getText().isEmpty())
 					{
 						// If the text is not blank we *should* be guaranteed a match
 						for (ChannelNameReplacement channelNameToReplace : ChannelNameReplacement.values())
 						{
 							String plainChannelName = channelNameToReplace.getName(channelNameManager);
 							String channelName = "[" + plainChannelName + "]";
-							if (sanitizeUsername(group.getChannelWidget().getText()).contains(channelName))
+							if (sanitizeUsername(group.getChannel().getText()).contains(channelName))
 							{
 								blockChat = blockChat || checkGroupIronInClan(selectedChatTab, channelNameToReplace);
 
 								if (!blockChat && channelNameToReplace.isEnabled(config))
 								{
 									// Update widget text and removedWidth
-									group.setRemovedWidth(getTextLength(channelName) + updateChannelText(plainChannelName, group.getChannelWidget()));
+									group.setRemovedWidth(getTextLength(channelName) + updateChannelText(plainChannelName, group.getChannel()));
 									break;
 								}
 							}
@@ -277,9 +262,13 @@ public class CleanChatChannelsPlugin extends Plugin
 					return !blockChat;
 				})
 				.collect(Collectors.toList());
+			
+			log.debug("Processed {} chat messages", displayedChats.size());
+
+			Collections.reverse(displayedChats);
 
 			int totalHeight = displayedChats.stream()
-				.map(it -> it.getMessageWidget().getHeight())
+				.map(it -> it.getMessage().getHeight())
 				.reduce(0, Integer::sum);
 
 			// If we only have a few messages we want to place them at the bottom instead of the top
@@ -290,11 +279,11 @@ public class CleanChatChannelsPlugin extends Plugin
 				int widgetY = y;
 				group.onNonChannelWidgets(widget -> updateWidget(widget, group.getRemovedWidth(), widgetY));
 
-				group.getChannelWidget().setOriginalY(widgetY);
-				group.getChannelWidget().setOriginalWidth(group.getChannelWidget().getOriginalWidth() - group.getRemovedWidth());
-				group.getChannelWidget().revalidate();
+				group.getChannel().setOriginalY(widgetY);
+				group.getChannel().setOriginalWidth(group.getChannel().getOriginalWidth() - group.getRemovedWidth());
+				group.getChannel().revalidate();
 
-				y += group.getMessageWidget().getHeight();
+				y += group.getMessage().getHeight();
 			}
 
 			for (ChatWidgetGroup group : removedChats)
