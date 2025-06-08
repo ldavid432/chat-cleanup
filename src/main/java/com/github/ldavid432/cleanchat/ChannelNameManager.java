@@ -1,5 +1,7 @@
 package com.github.ldavid432.cleanchat;
 
+import java.util.HashSet;
+import java.util.Set;
 import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -24,50 +26,40 @@ public class ChannelNameManager
 		this.client = client;
 	}
 
+	// Store these as Sets so that even if you leave a channel the chats will still be "cleaned"
 	@Getter
-	private String clanName = null;
+	private final Set<String> clanName = new HashSet<>();
 	@Getter
-	private String guestClanName = null;
+	private final Set<String> guestClanName = new HashSet<>();
 	@Getter
-	private String friendsChatName = null;
+	private final Set<String> friendsChatName = new HashSet<>();
 	@Getter
-	private String groupIronName = null;
-	private boolean isInFriendsChat = false;
+	private final Set<String> groupIronName = new HashSet<>();
 
 	public void startup()
 	{
 		if (client.getGameState() == GameState.LOGGED_IN)
 		{
-			isInFriendsChat = client.getFriendsChatManager() != null;
 			setFriendsChatName();
 
 			ClanChannel clanChannel = client.getClanChannel(ClanID.CLAN);
 			if (clanChannel != null)
 			{
-				clanName = clanChannel.getName();
+				clanName.add(clanChannel.getName());
 			}
 
 			ClanChannel groupIronChannel = client.getClanChannel(ClanID.CLAN);
 			if (groupIronChannel != null)
 			{
-				groupIronName = groupIronChannel.getName();
+				groupIronName.add(groupIronChannel.getName());
 			}
 
 			ClanChannel guestClanChannel = client.getGuestClanChannel();
 			if (guestClanChannel != null)
 			{
-				guestClanName = guestClanChannel.getName();
+				guestClanName.add(guestClanChannel.getName());
 			}
 		}
-	}
-
-	public void shutDown()
-	{
-		clanName = null;
-		groupIronName = null;
-		guestClanName = null;
-		friendsChatName = null;
-		isInFriendsChat = false;
 	}
 
 	@Subscribe
@@ -75,19 +67,20 @@ public class ChannelNameManager
 	{
 		String channelName = event.getClanChannel() != null ? event.getClanChannel().getName() : null;
 
-		log.debug("Connected to clan: {} - ID: {}", channelName, event.getClanId());
+		if (channelName == null) {
+			return;
+		}
 
 		switch (event.getClanId())
 		{
-			// TODO: Test guest clan chat
 			case -1:
-				guestClanName = channelName;
+				guestClanName.add(channelName);
 				break;
 			case ClanID.CLAN:
-				clanName = channelName;
+				clanName.add(channelName);
 				break;
 			case ClanID.GROUP_IRONMAN:
-				groupIronName = channelName;
+				groupIronName.add(channelName);
 				break;
 		}
 	}
@@ -95,33 +88,19 @@ public class ChannelNameManager
 	@Subscribe
 	public void onFriendsChatChanged(FriendsChatChanged event)
 	{
-		isInFriendsChat = event.isJoined();
-
-		if (isInFriendsChat)
-		{
-			setFriendsChatName();
-		}
-		else
-		{
-			friendsChatName = null;
-		}
-	}
-
-	public void setFriendsChatNameIfNeeded()
-	{
-		if (isInFriendsChat && friendsChatName == null)
+		if (event.isJoined())
 		{
 			setFriendsChatName();
 		}
 	}
 
-	private void setFriendsChatName()
+	public void setFriendsChatName()
 	{
 		FriendsChatManager friendsChatManager = client.getFriendsChatManager();
 		// This is null at the first FriendsChatChanged after login
 		if (friendsChatManager != null)
 		{
-			friendsChatName = friendsChatManager.getName();
+			friendsChatName.add(friendsChatManager.getName());
 		}
 	}
 }

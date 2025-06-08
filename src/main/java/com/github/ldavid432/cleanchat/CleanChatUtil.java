@@ -10,6 +10,7 @@ public class CleanChatUtil
 {
 	// Not included in InterfaceID due to client bug
 	public static final int Chatbox_SCROLLBAR = 10617390;
+	public static String CLAN_INSTRUCTION_MESSAGE = "To talk in your clan's channel, start each line of chat with // or /c.";
 
 	public static String sanitizeUsername(String string)
 	{

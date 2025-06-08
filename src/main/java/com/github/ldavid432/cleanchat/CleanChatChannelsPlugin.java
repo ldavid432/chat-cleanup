@@ -1,5 +1,6 @@
 package com.github.ldavid432.cleanchat;
 
+import static com.github.ldavid432.cleanchat.CleanChatUtil.CLAN_INSTRUCTION_MESSAGE;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.getTextLength;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.sanitizeUsername;
 import com.github.ldavid432.cleanchat.data.ChannelNameReplacement;
@@ -98,7 +99,6 @@ public class CleanChatChannelsPlugin extends Plugin
 	protected void shutDown() throws Exception
 	{
 		eventBus.unregister(channelNameManager);
-		channelNameManager.shutDown();
 
 		// Remove all our shenanigans
 		log.debug("Plugin disabled. Refreshing chat.");
@@ -169,7 +169,7 @@ public class CleanChatChannelsPlugin extends Plugin
 		}
 
 		// FriendsChatManager is null at the first FriendsChatChanged after login so we have to add this check later
-		channelNameManager.setFriendsChatNameIfNeeded();
+		channelNameManager.setFriendsChatName();
 
 		Widget chatbox = client.getWidget(InterfaceID.Chatbox.SCROLLAREA);
 		ChatTab selectedChatTab = ChatTab.of(client.getVarcIntValue(41));
@@ -202,8 +202,8 @@ public class CleanChatChannelsPlugin extends Plugin
 							// Channel is at [0], this is a special message, adjust indices accordingly
 
 							Widget messageWidget = chatWidgets[i - 1];
-							// For some reason the now talking message specifically, has the CLAN chat join message here...
-							if (messageWidget.getText().isEmpty() || Text.removeTags(messageWidget.getText()).equals(ChatBlock.CLAN_INSTRUCTION.getMessage(channelNameManager)))
+							// For some reason the fc now talking message specifically, has the CLAN chat join message here...
+							if (messageWidget.getText().isEmpty() || Text.removeTags(messageWidget.getText()).equals(CLAN_INSTRUCTION_MESSAGE))
 							{
 								// Friends chat message
 
@@ -238,16 +238,20 @@ public class CleanChatChannelsPlugin extends Plugin
 						// If the text is not blank we *should* be guaranteed a match
 						for (ChannelNameReplacement channelNameToReplace : ChannelNameReplacement.values())
 						{
-							String plainChannelName = channelNameToReplace.getName(channelNameManager);
-							String channelName = "[" + plainChannelName + "]";
-							if (sanitizeUsername(group.getChannel().getText()).contains(channelName))
+							String widgetChannelName = sanitizeUsername(group.getChannel().getText());
+							String matchedChannelName = channelNameToReplace.getNames(channelNameManager).stream()
+								.filter(channel -> widgetChannelName.contains("[" + channel + "]"))
+								.findFirst()
+								.orElse(null);
+
+							if (matchedChannelName != null)
 							{
 								blockChat = blockChat || checkGroupIronInClan(selectedChatTab, channelNameToReplace);
 
 								if (!blockChat && channelNameToReplace.isEnabled(config))
 								{
 									// Update widget text and removedWidth
-									group.setRemovedWidth(getTextLength(channelName) + updateChannelText(plainChannelName, group.getChannel()));
+									group.setRemovedWidth(getTextLength("[" + matchedChannelName + "]") + updateChannelText(matchedChannelName, group.getChannel()));
 									break;
 								}
 							}
@@ -262,7 +266,7 @@ public class CleanChatChannelsPlugin extends Plugin
 					return !blockChat;
 				})
 				.collect(Collectors.toList());
-			
+
 			log.debug("Processed {} chat messages", displayedChats.size());
 
 			Collections.reverse(displayedChats);
@@ -271,8 +275,9 @@ public class CleanChatChannelsPlugin extends Plugin
 				.map(it -> it.getMessage().getHeight())
 				.reduce(0, Integer::sum);
 
-			// If we only have a few messages we want to place them at the bottom instead of the top
-			int y = totalHeight >= chatbox.getHeight() ? 0 : chatbox.getHeight() - totalHeight;
+			// If we only have a few messages we want to place them at the bottom (chatbox.getHeight()) instead of the top (0).
+			//  If placing from the bottom, add padding first
+			int y = totalHeight >= chatbox.getHeight() ? 0 : chatbox.getHeight() - totalHeight - 2;
 
 			for (ChatWidgetGroup group : displayedChats)
 			{
@@ -284,6 +289,11 @@ public class CleanChatChannelsPlugin extends Plugin
 				group.getChannel().revalidate();
 
 				y += group.getMessage().getHeight();
+			}
+
+			// If placing at the top, add padding last
+			if (totalHeight >= chatbox.getHeight()) {
+				y += 2;
 			}
 
 			for (ChatWidgetGroup group : removedChats)

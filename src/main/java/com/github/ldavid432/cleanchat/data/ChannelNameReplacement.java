@@ -3,10 +3,10 @@ package com.github.ldavid432.cleanchat.data;
 import com.github.ldavid432.cleanchat.ChannelNameManager;
 import com.github.ldavid432.cleanchat.CleanChatChannelsConfig;
 import java.util.Arrays;
+import java.util.Set;
 import java.util.function.Function;
 import lombok.AllArgsConstructor;
 
-// TODO: Rename
 @AllArgsConstructor
 public enum ChannelNameReplacement
 {
@@ -15,9 +15,9 @@ public enum ChannelNameReplacement
 	FRIENDS_CHAT(CleanChatChannelsConfig::removeFriendsChatName, ChannelNameManager::getFriendsChatName),
 	GROUP_IRON(CleanChatChannelsConfig::removeGroupIronName, ChannelNameManager::getGroupIronName);
 
-	public String getName(ChannelNameManager channelNameManager)
+	public Set<String> getNames(ChannelNameManager channelNameManager)
 	{
-		return getName.apply(channelNameManager);
+		return getNames.apply(channelNameManager);
 	}
 
 	public boolean isEnabled(CleanChatChannelsConfig config)
@@ -26,7 +26,7 @@ public enum ChannelNameReplacement
 	}
 
 	private final Function<CleanChatChannelsConfig, Boolean> isEnabled;
-	private final Function<ChannelNameManager, String> getName;
+	private final Function<ChannelNameManager, Set<String>> getNames;
 
 	public static boolean anyEnabled(CleanChatChannelsConfig config)
 	{

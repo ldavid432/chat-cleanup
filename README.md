@@ -22,4 +22,3 @@ All the below options are toggleable
 
 ## Known issues
  - When the chatbox is reloaded the scroll bar will jump slightly (this *should* just be visual)
- - If you leave a chat channel then those names will no longer be removed
