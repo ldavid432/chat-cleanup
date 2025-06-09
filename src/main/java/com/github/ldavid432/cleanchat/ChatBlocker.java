@@ -18,6 +18,9 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.Subscribe;
 import org.apache.commons.lang3.tuple.Pair;
 
+/**
+ * Blocks channel startup messages
+ */
 @Slf4j
 public class ChatBlocker
 {

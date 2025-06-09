@@ -2,6 +2,7 @@ package com.github.ldavid432.cleanchat;
 
 import static com.github.ldavid432.cleanchat.CleanChatUtil.CLAN_INSTRUCTION_MESSAGE;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.SCRIPT_REBUILD_CHATBOX;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.VARC_INT_CHAT_TAB;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.getTextLength;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.sanitizeName;
 import com.github.ldavid432.cleanchat.data.ChannelNameRemoval;
@@ -24,6 +25,9 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.util.Text;
 
+/**
+ * Removes channel name from chat widgets
+ */
 @Slf4j
 public class ChannelNameReplacer
 {
@@ -116,7 +120,7 @@ public class ChannelNameReplacer
 		channelNameManager.updateFriendsChatName();
 
 		Widget chatbox = client.getWidget(InterfaceID.Chatbox.SCROLLAREA);
-		ChatTab selectedChatTab = ChatTab.of(client.getVarcIntValue(41));
+		ChatTab selectedChatTab = ChatTab.of(client.getVarcIntValue(VARC_INT_CHAT_TAB));
 
 		if (chatbox != null && selectedChatTab != ChatTab.CLOSED)
 		{
@@ -215,10 +219,14 @@ public class ChannelNameReplacer
 
 			log.debug("Processed {} chat messages", displayedChats.size());
 
+			if (!removedChats.isEmpty()) {
+				log.debug("Hid {} chat messages", removedChats.size());
+			}
+
 			Collections.reverse(displayedChats);
 
 			int totalHeight = displayedChats.stream()
-				.map(it -> it.getMessage().getHeight())
+				.map(group -> group.getMessage().getHeight())
 				.reduce(0, Integer::sum);
 
 			// If we only have a few messages we want to place them at the bottom (chatbox.getHeight()) instead of the top (0).
@@ -286,16 +294,16 @@ public class ChannelNameReplacer
 			.replaceFirst("\\[.*" + channelName + ".*]", "");
 
 		// Remove trailing spaces - probably only happens with timestamps turned on
-		if (newText.endsWith(" ") || newText.endsWith("\u00A0"))
+		if (newText.endsWith(" "))
 		{
 			newText = newText.substring(0, newText.length() - 1);
 			removedWidth += getTextLength(" ");
 		}
 
 		// Remove double spaces - mainly found in friends chat since it has sender + username
-		if (newText.contains("  ") || newText.contains("\u00A0\u00A0"))
+		if (newText.contains("  "))
 		{
-			newText = newText.replaceFirst(" {2}|\u00A0{2}", " ");
+			newText = newText.replaceFirst(" {2}", " ");
 			removedWidth += getTextLength(" ");
 		}
 
