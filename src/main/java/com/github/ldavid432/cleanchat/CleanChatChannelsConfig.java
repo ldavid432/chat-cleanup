@@ -1,6 +1,7 @@
 package com.github.ldavid432.cleanchat;
 
 import static com.github.ldavid432.cleanchat.CleanChatChannelsConfig.GROUP;
+import com.github.ldavid432.cleanchat.data.Version;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
@@ -10,6 +11,24 @@ import net.runelite.client.config.ConfigSection;
 public interface CleanChatChannelsConfig extends Config
 {
 	String GROUP = "cleanchat";
+
+	@ConfigItem(
+		keyName = "lastSeenVersion",
+		name = "",
+		description = "",
+		hidden = true
+	)
+	default Version getLastSeenVersion()
+	{
+		return Version.PREVIOUS;
+	}
+
+	@ConfigItem(
+		keyName = "lastSeenVersion",
+		name = "",
+		description = ""
+	)
+	void setLstSeenVersion(Version lastSeenVersion);
 
 	@ConfigItem(
 		keyName = "removeWelcome",
