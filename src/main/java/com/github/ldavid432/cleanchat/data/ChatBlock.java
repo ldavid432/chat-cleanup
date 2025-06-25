@@ -1,6 +1,7 @@
 package com.github.ldavid432.cleanchat.data;
 
 import com.github.ldavid432.cleanchat.CleanChatChannelsConfig;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.CLAN_INSTRUCTION_MESSAGE;
 import java.util.List;
 import java.util.function.Function;
 import lombok.AllArgsConstructor;
@@ -14,11 +15,12 @@ public enum ChatBlock implements ChatTypeModifier
 	CLAN_INSTRUCTION(
 		CleanChatChannelsConfig::removeClanInstruction,
 		ChatMessageType.CLAN_MESSAGE,
-		"To talk in your clan's channel"
+		CLAN_INSTRUCTION_MESSAGE
 	),
 	GUEST_CLAN_INSTRUCTION(
 		CleanChatChannelsConfig::removeGuestClanInstruction,
-		ChatMessageType.CLAN_MESSAGE,
+		ChatMessageType.CLAN_GUEST_MESSAGE,
+		// "You are now a guest of x" is also included in this message, they are separated by a <br>
 		"To talk, start each line of chat with /// or /gc"
 	),
 	GROUP_IRON_INSTRUCTION(

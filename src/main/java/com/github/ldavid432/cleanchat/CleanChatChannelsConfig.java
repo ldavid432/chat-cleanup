@@ -11,6 +11,25 @@ import net.runelite.client.config.Range;
 public interface CleanChatChannelsConfig extends Config
 {
 	String GROUP = "cleanchat";
+	int CURRENT_VERSION = 1;
+
+	@ConfigItem(
+		keyName = "lastSeenVersion",
+		name = "lastSeenVersion",
+		description = "",
+		hidden = false
+	)
+	default int getLastSeenVersion()
+	{
+		return -1;
+	}
+
+	@ConfigItem(
+		keyName = "lastSeenVersion",
+		name = "",
+		description = ""
+	)
+	void setLstSeenVersion(int lastSeenVersion);
 
 	@ConfigItem(
 		keyName = "removeWelcome",
