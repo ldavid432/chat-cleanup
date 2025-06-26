@@ -2,15 +2,16 @@ package com.github.ldavid432.cleanchat.data;
 
 import com.github.ldavid432.cleanchat.CleanChatChannelsConfig;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.CLAN_INSTRUCTION_MESSAGE;
-import java.util.List;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.WELCOME_MESSAGE;
+import java.util.Arrays;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
 import net.runelite.api.ChatMessageType;
-import net.runelite.api.events.ChatMessage;
+import net.runelite.client.util.Text;
 
 @AllArgsConstructor
-public enum ChatBlock implements ChatTypeModifier
+public enum ChatBlock
 {
 	CLAN_INSTRUCTION(
 		CleanChatChannelsConfig::removeClanInstruction,
@@ -22,6 +23,11 @@ public enum ChatBlock implements ChatTypeModifier
 		ChatMessageType.CLAN_GUEST_MESSAGE,
 		// "You are now a guest of x" is also included in this message, they are separated by a <br>
 		"To talk, start each line of chat with /// or /gc"
+	),
+	GUEST_CLAN_RECONNECTING(
+		CleanChatChannelsConfig::removeGuestClanReconnecting,
+		ChatMessageType.CLAN_GUEST_MESSAGE,
+		"Attempting to reconnect to guest channel automatically..."
 	),
 	GROUP_IRON_INSTRUCTION(
 		CleanChatChannelsConfig::removeGroupIronInstruction,
@@ -46,7 +52,7 @@ public enum ChatBlock implements ChatTypeModifier
 	WELCOME(
 		CleanChatChannelsConfig::removeWelcome,
 		ChatMessageType.WELCOME,
-		"Welcome to Old School RuneScape."
+		WELCOME_MESSAGE
 	),
 	;
 
@@ -55,21 +61,19 @@ public enum ChatBlock implements ChatTypeModifier
 		return isEnabled.apply(config);
 	}
 
-	@Override
-	public boolean appliesTo(CleanChatChannelsConfig config, ChatMessage event)
+	public boolean appliesTo(CleanChatChannelsConfig config, String message, ChatMessageType chatMessageType)
 	{
-		return ChatTypeModifier.super.appliesTo(config, event) && event.getMessage().contains(this.message);
+		return isEnabled(config) && chatMessageType == this.chatMessageType && Text.removeTags(message).contains(this.message);
 	}
 
 	private final Function<CleanChatChannelsConfig, Boolean> isEnabled;
-	@Getter
 	private final ChatMessageType chatMessageType;
-	@Getter
 	private final String message;
 
-	@Override
-	public List<ChatMessageType> getFromChatMessageTypes()
+	public static Stream<ChatMessageType> getEnabledTypes(CleanChatChannelsConfig config)
 	{
-		return List.of(chatMessageType);
+		return Arrays.stream(values())
+			.filter(block -> block.isEnabled(config))
+			.map(block -> block.chatMessageType);
 	}
 }

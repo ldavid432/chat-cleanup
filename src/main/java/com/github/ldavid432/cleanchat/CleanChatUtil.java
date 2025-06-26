@@ -12,6 +12,7 @@ import net.runelite.client.util.Text;
 public class CleanChatUtil
 {
 	public static final String CLAN_INSTRUCTION_MESSAGE = "To talk in your clan's channel, start each line of chat with // or /c.";
+	public static final String WELCOME_MESSAGE = "Welcome to Old School RuneScape.";
 	public static final int GUEST_CLAN = -1;
 	public static final int SCRIPT_REBUILD_CHATBOX = 84;
 	public static final int VARC_INT_CHAT_TAB = 41;

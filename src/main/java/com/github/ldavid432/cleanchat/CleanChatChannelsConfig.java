@@ -5,7 +5,6 @@ import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
-import net.runelite.client.config.Range;
 
 @ConfigGroup(GROUP)
 public interface CleanChatChannelsConfig extends Config
@@ -73,12 +72,19 @@ public interface CleanChatChannelsConfig extends Config
 		return false;
 	}
 
+	@ConfigSection(
+		name = "Guest Clan Chat",
+		description = "Configure guest clan chat",
+		position = 2
+	)
+	String guestClanSection = "guestClanSection";
+
 	@ConfigItem(
 		keyName = "removeGuestClanInstruction",
-		name = "Remove guest startup message",
+		name = "Remove startup message",
 		description = "Remove message telling you how to chat in your guest clan channel",
-		section = clanSection,
-		position = 2
+		section = guestClanSection,
+		position = 0
 	)
 	default boolean removeGuestClanInstruction()
 	{
@@ -86,11 +92,23 @@ public interface CleanChatChannelsConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "removeGuestClanReconnecting",
+		name = "Remove reconnecting message",
+		description = "Remove 'Attempting to reconnect...' message in your guest clan channel",
+		section = guestClanSection,
+		position = 1
+	)
+	default boolean removeGuestClanReconnecting()
+	{
+		return false;
+	}
+
+	@ConfigItem(
 		keyName = "removeGuestClanName",
 		name = "Remove guest clan name",
 		description = "Remove guest clan name from guest clan chat messages",
-		section = clanSection,
-		position = 3
+		section = guestClanSection,
+		position = 2
 	)
 	default boolean removeGuestClanName()
 	{
@@ -100,7 +118,7 @@ public interface CleanChatChannelsConfig extends Config
 	@ConfigSection(
 		name = "Group Iron Chat",
 		description = "Configure group iron chat",
-		position = 2
+		position = 3
 	)
 	String ironSection = "ironSection";
 
@@ -119,8 +137,7 @@ public interface CleanChatChannelsConfig extends Config
 	@ConfigItem(
 		keyName = "removeGroupIronName",
 		name = "Remove GIM name",
-		description = "Remove GIM name from GIM chat messages.<br>" +
-			"Enabling this also enables 'Move GIM broadcasts', which removes GIM broadcasts from the clan tab.",
+		description = "Remove GIM name from GIM chat messages",
 		section = ironSection,
 		position = 1
 	)
@@ -132,8 +149,7 @@ public interface CleanChatChannelsConfig extends Config
 	@ConfigItem(
 		keyName = "moveGroupIronBroadcasts",
 		name = "Move GIM broadcasts",
-		description = "Remove GIM broadcasts from the clan chat tab, only display them in the group tab.<br>" +
-			"This is always enabled if 'Remove GIM name' is enabled.",
+		description = "Remove GIM broadcasts from the clan chat tab, only display them in the group tab",
 		section = ironSection,
 		position = 2
 	)
@@ -145,7 +161,7 @@ public interface CleanChatChannelsConfig extends Config
 	@ConfigSection(
 		name = "Friends Chat",
 		description = "Configure friends chat",
-		position = 3
+		position = 4
 	)
 	String friendsSection = "friendsSection";
 
@@ -197,25 +213,4 @@ public interface CleanChatChannelsConfig extends Config
 		return false;
 	}
 
-	@ConfigSection(
-		name = "Debug",
-		description = "Optional debug settings. You probably won't need to change these",
-		position = 4,
-		closedByDefault = true
-	)
-	String debugSection = "debugSection";
-
-	@ConfigItem(
-		keyName = "chatCommandTimeout",
-		name = "Chat command timeout",
-		description = "Time in seconds to stop waiting for a chat command to update.<br>" +
-			"If you have a slow connection and chat commands don't work you can try increasing this.",
-		section = debugSection,
-		position = 0
-	)
-	@Range(min = 2, max = 30)
-	default int chatCommandTimeout()
-	{
-		return 10;
-	}
 }

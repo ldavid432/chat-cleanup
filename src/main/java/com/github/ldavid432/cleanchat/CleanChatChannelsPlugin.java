@@ -1,15 +1,14 @@
 package com.github.ldavid432.cleanchat;
 
 import static com.github.ldavid432.cleanchat.CleanChatChannelsConfig.CURRENT_VERSION;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.WELCOME_MESSAGE;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.getChatLineBuffer;
 import com.github.ldavid432.cleanchat.data.ChatBlock;
 import com.google.inject.Provides;
 import java.awt.Color;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
@@ -67,17 +66,6 @@ public class CleanChatChannelsPlugin extends Plugin
 		return configManager.getConfig(CleanChatChannelsConfig.class);
 	}
 
-	// TODO: Make this dynamic and only check types that are also enabled
-	private static final List<ChatMessageType> CHAT_MESSAGE_TYPES_TO_PROCESS;
-
-	static
-	{
-		CHAT_MESSAGE_TYPES_TO_PROCESS = Arrays.stream(ChatBlock.values())
-			.map(ChatBlock::getChatMessageType)
-			.distinct()
-			.collect(Collectors.toList());
-	}
-
 	@Override
 	protected void startUp() throws Exception
 	{
@@ -127,20 +115,15 @@ public class CleanChatChannelsPlugin extends Plugin
 		{
 			log.debug("Config changed. Refreshing chat.");
 			processAllChatHistory();
+			client.refreshChat();
 		}
 	}
 
-	// Subscribe later since we transform the message type, we want to interfere with other chat plugins as little as possible
-	@Subscribe(priority = -1)
+	@Subscribe
 	public void onChatMessage(ChatMessage event)
 	{
-		if (!CHAT_MESSAGE_TYPES_TO_PROCESS.contains(event.getType()))
-		{
-			return;
-		}
-
 		// This is when chat history sends old chats, so we wait a bit for it to populate and then run our stuff
-		if (event.getMessage().equals(ChatBlock.WELCOME.getMessage()))
+		if (event.getMessage().equals(WELCOME_MESSAGE))
 		{
 			log.debug("World hopped or logged in. Refreshing chat.");
 			// Only process blocks because we want to wait for the individual chats to connect before replacing
@@ -148,29 +131,34 @@ public class CleanChatChannelsPlugin extends Plugin
 			clientThread.invokeLater(this::processAllChatHistory);
 		}
 
-		processBlocks(event);
+		if (ChatBlock.getEnabledTypes(config).noneMatch(type -> type == event.getType()))
+		{
+			return;
+		}
+
+		processBlocks(event.getMessageNode());
 	}
 
 	// TODO: Move blocking into a separate class
-	private void processBlocks(ChatMessage event)
+	private void processBlocks(MessageNode messageNode)
 	{
-		boolean blockMessage = shouldBlockMessage(event);
-		if (blockMessage)
+		// The messages we are blocking are game messages so we shouldn't need to check messageNode.getRuneLiteFormatMessage()
+		if (shouldBlockMessage(messageNode.getValue(), messageNode.getType()))
 		{
-			log.debug("Blocking message: {}", event.getMessage());
-			removeChatMessage(event.getType(), event.getMessageNode());
+			log.debug("Blocking message: {}", messageNode.getValue());
+			removeChatMessage(messageNode);
 			client.refreshChat();
 		}
 	}
 
-	private boolean shouldBlockMessage(ChatMessage event)
+	private boolean shouldBlockMessage(String message, ChatMessageType chatMessageType)
 	{
-		return Stream.of(ChatBlock.values()).anyMatch(it -> it.appliesTo(config, event));
+		return Stream.of(ChatBlock.values()).anyMatch(it -> it.appliesTo(config, message, chatMessageType));
 	}
 
-	private void removeChatMessage(ChatMessageType chatMessageType, MessageNode messageNode)
+	private void removeChatMessage(MessageNode messageNode)
 	{
-		ChatLineBuffer buffer = getChatLineBuffer(client, chatMessageType);
+		ChatLineBuffer buffer = getChatLineBuffer(client, messageNode.getType());
 		if (buffer != null)
 		{
 			buffer.removeMessageNode(messageNode);
@@ -179,7 +167,7 @@ public class CleanChatChannelsPlugin extends Plugin
 
 	private void processAllChatHistory()
 	{
-		CHAT_MESSAGE_TYPES_TO_PROCESS.stream()
+		ChatBlock.getEnabledTypes(config)
 			.flatMap(type -> {
 				ChatLineBuffer buffer = getChatLineBuffer(client, type);
 				if (buffer == null)
@@ -197,8 +185,7 @@ public class CleanChatChannelsPlugin extends Plugin
 				{
 					return;
 				}
-				ChatMessage event = new ChatMessage(messageNode, type, messageNode.getName(), messageNode.getValue(), messageNode.getSender(), messageNode.getTimestamp());
-				clientThread.invoke(() -> processBlocks(event));
+				clientThread.invoke(() -> processBlocks(messageNode));
 			});
 	}
 }
