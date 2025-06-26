@@ -113,6 +113,7 @@ public class CleanChatChannelsPlugin extends Plugin
 	{
 		eventBus.unregister(channelNameReplacer);
 		eventBus.unregister(channelNameManager);
+		channelNameManager.shutdown();
 
 		// Remove all our shenanigans
 		log.debug("Plugin disabled. Refreshing chat.");

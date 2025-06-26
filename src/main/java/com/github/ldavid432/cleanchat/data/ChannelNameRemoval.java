@@ -3,19 +3,19 @@ package com.github.ldavid432.cleanchat.data;
 import com.github.ldavid432.cleanchat.ChannelNameManager;
 import com.github.ldavid432.cleanchat.CleanChatChannelsConfig;
 import java.util.Arrays;
-import java.util.Set;
+import java.util.List;
 import java.util.function.Function;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 public enum ChannelNameRemoval
 {
-	CLAN(CleanChatChannelsConfig::removeClanName, ChannelNameManager::getClanName),
-	GUEST_CLAN(CleanChatChannelsConfig::removeGuestClanName, ChannelNameManager::getGuestClanName),
-	FRIENDS_CHAT(CleanChatChannelsConfig::removeFriendsChatName, ChannelNameManager::getFriendsChatName),
-	GROUP_IRON(CleanChatChannelsConfig::removeGroupIronName, ChannelNameManager::getGroupIronName);
+	CLAN(CleanChatChannelsConfig::removeClanName, ChannelNameManager::getClanNames),
+	GUEST_CLAN(CleanChatChannelsConfig::removeGuestClanName, ChannelNameManager::getGuestClanNames),
+	FRIENDS_CHAT(CleanChatChannelsConfig::removeFriendsChatName, ChannelNameManager::getFriendsChatNames),
+	GROUP_IRON(CleanChatChannelsConfig::removeGroupIronName, ChannelNameManager::getGroupIronNames);
 
-	public Set<String> getNames(ChannelNameManager channelNameManager)
+	public List<String> getNames(ChannelNameManager channelNameManager)
 	{
 		return getNames.apply(channelNameManager);
 	}
@@ -26,7 +26,7 @@ public enum ChannelNameRemoval
 	}
 
 	private final Function<CleanChatChannelsConfig, Boolean> isEnabled;
-	private final Function<ChannelNameManager, Set<String>> getNames;
+	private final Function<ChannelNameManager, List<String>> getNames;
 
 	public static boolean anyEnabled(CleanChatChannelsConfig config)
 	{

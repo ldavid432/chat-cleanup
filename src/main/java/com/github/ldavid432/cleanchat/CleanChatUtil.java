@@ -15,6 +15,7 @@ public class CleanChatUtil
 	public static final int GUEST_CLAN = -1;
 	public static final int SCRIPT_REBUILD_CHATBOX = 84;
 	public static final int VARC_INT_CHAT_TAB = 41;
+	public static final int MAX_CHANNEL_LIST_SIZE = 128;
 
 	public static String sanitizeName(String string)
 	{

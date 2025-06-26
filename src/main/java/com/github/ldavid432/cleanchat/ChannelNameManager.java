@@ -1,7 +1,8 @@
 package com.github.ldavid432.cleanchat;
 
-import java.util.HashSet;
-import java.util.Set;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.MAX_CHANNEL_LIST_SIZE;
+import java.util.ArrayList;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import lombok.Getter;
@@ -28,13 +29,13 @@ public class ChannelNameManager
 
 	// Store these as a collection so that even if you leave a channel the chats will still be "cleaned"
 	@Getter
-	private final Set<String> clanName = new HashSet<>();
+	private final List<String> clanNames = new ArrayList<>();
 	@Getter
-	private final Set<String> guestClanName = new HashSet<>();
+	private final List<String> guestClanNames = new ArrayList<>();
 	@Getter
-	private final Set<String> friendsChatName = new HashSet<>();
+	private final List<String> friendsChatNames = new ArrayList<>();
 	@Getter
-	private final Set<String> groupIronName = new HashSet<>();
+	private final List<String> groupIronNames = new ArrayList<>();
 
 	public void startup()
 	{
@@ -45,21 +46,28 @@ public class ChannelNameManager
 			ClanChannel clanChannel = client.getClanChannel(ClanID.CLAN);
 			if (clanChannel != null)
 			{
-				clanName.add(clanChannel.getName());
+				addName(clanNames, clanChannel.getName());
 			}
 
 			ClanChannel groupIronChannel = client.getClanChannel(ClanID.GROUP_IRONMAN);
 			if (groupIronChannel != null)
 			{
-				groupIronName.add(groupIronChannel.getName());
+				addName(groupIronNames, groupIronChannel.getName());
 			}
 
 			ClanChannel guestClanChannel = client.getGuestClanChannel();
 			if (guestClanChannel != null)
 			{
-				guestClanName.add(guestClanChannel.getName());
+				addName(guestClanNames, guestClanChannel.getName());
 			}
 		}
+	}
+
+	public void shutdown() {
+		clanNames.clear();
+		groupIronNames.clear();
+		guestClanNames.clear();
+		friendsChatNames.clear();
 	}
 
 	@Subscribe
@@ -75,13 +83,13 @@ public class ChannelNameManager
 		switch (event.getClanId())
 		{
 			case CleanChatUtil.GUEST_CLAN:
-				guestClanName.add(channelName);
+				addName(guestClanNames, channelName);
 				break;
 			case ClanID.CLAN:
-				clanName.add(channelName);
+				addName(clanNames, channelName);
 				break;
 			case ClanID.GROUP_IRONMAN:
-				groupIronName.add(channelName);
+				addName(groupIronNames, channelName);
 				break;
 		}
 	}
@@ -101,7 +109,22 @@ public class ChannelNameManager
 		// This is null at the first FriendsChatChanged after login
 		if (friendsChatManager != null)
 		{
-			friendsChatName.add(friendsChatManager.getName());
+			addName(friendsChatNames, friendsChatManager.getName());
 		}
+	}
+
+	private void addName(List<String> nameList, String name)
+	{
+		if (nameList.contains(name))
+		{
+			return;
+		}
+
+		if (nameList.size() == MAX_CHANNEL_LIST_SIZE)
+		{
+			nameList.remove(0);
+		}
+
+		nameList.add(name);
 	}
 }
