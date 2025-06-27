@@ -127,11 +127,11 @@ public class CleanChatChannelsPlugin extends Plugin
 		{
 			log.debug("Config changed. Refreshing chat.");
 			processAllChatHistory();
+			client.refreshChat();
 		}
 	}
 
-	// Subscribe later since we transform the message type, we want to interfere with other chat plugins as little as possible
-	@Subscribe(priority = -1)
+	@Subscribe
 	public void onChatMessage(ChatMessage event)
 	{
 		if (!CHAT_MESSAGE_TYPES_TO_PROCESS.contains(event.getType()))
