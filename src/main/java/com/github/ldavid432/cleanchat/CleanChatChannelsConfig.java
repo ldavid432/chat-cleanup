@@ -14,9 +14,8 @@ public interface CleanChatChannelsConfig extends Config
 
 	@ConfigItem(
 		keyName = "lastSeenVersion",
-		name = "lastSeenVersion",
-		description = "",
-		hidden = false
+		name = "",
+		description = ""
 	)
 	default int getLastSeenVersion()
 	{
