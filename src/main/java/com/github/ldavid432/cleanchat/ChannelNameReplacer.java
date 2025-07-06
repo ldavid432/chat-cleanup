@@ -295,7 +295,8 @@ public class ChannelNameReplacer
 		String newText = channelWidget.getText()
 			.replace('\u00A0', ' ')
 			// Account for color tags when removing name
-			.replaceFirst("\\[.*" + channelName + ".*]", "");
+			// TODO: Target the channel name more precisely, this should do for now to avoid targeting timestamps in brackets
+			.replaceFirst("\\[[^]\\[]*" + channelName + ".*]", "");
 
 		// Remove trailing spaces - probably only happens with timestamps turned on
 		if (newText.endsWith(" "))
