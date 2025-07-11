@@ -225,6 +225,7 @@ public class ChannelNameReplacer
 						{
 							String widgetChannelName = sanitizeName(group.getChannel().getText());
 							String matchedChannelName = channelRemoval.getNames(channelNameManager).stream()
+								.map(CleanChatUtil::sanitizeName)
 								.filter(channel -> widgetChannelName.contains("[" + channel + "]"))
 								.findFirst()
 								.orElse(null);
@@ -415,7 +416,6 @@ public class ChannelNameReplacer
 		int removedWidth = 0;
 
 		String newText = channelWidget.getText()
-			.replace('\u00A0', ' ')
 			// Account for color tags when removing name
 			// TODO: Target the channel name more precisely, this should do for now to avoid targeting timestamps in brackets
 			.replaceFirst("\\[[^]\\[]*" + channelName + ".*]", "");

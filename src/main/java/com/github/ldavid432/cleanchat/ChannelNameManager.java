@@ -115,7 +115,7 @@ public class ChannelNameManager
 
 	private void addName(List<String> nameList, String name)
 	{
-		if (nameList.contains(name))
+		if (nameList.contains(name) || name == null)
 		{
 			return;
 		}
