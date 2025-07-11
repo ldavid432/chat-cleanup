@@ -242,6 +242,8 @@ public class ChannelNameReplacer
 				int widgetY = y;
 				group.onNonChannelWidgets(widget -> updateWidget(widget, group.getRemovedWidth(), widgetY));
 
+				group.getMessage().setOriginalWidth(group.getMessage().getWidth() + group.getRemovedWidth());
+				group.getMessage().revalidate();
 				group.getChannel().setOriginalY(widgetY);
 				group.getChannel().setOriginalWidth(group.getChannel().getOriginalWidth() - group.getRemovedWidth());
 				group.getChannel().revalidate();
