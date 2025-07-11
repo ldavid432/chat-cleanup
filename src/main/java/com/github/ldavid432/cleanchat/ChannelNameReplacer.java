@@ -2,11 +2,15 @@ package com.github.ldavid432.cleanchat;
 
 import static com.github.ldavid432.cleanchat.CleanChatUtil.CLAN_INSTRUCTION_MESSAGE;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.SCRIPT_REBUILD_CHATBOX;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.SCRIPT_SCROLLBAR_VERTICAL_DRAG;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.SCRIPT_SCROLLBAR_VERTICAL_JUMP;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.VARC_INT_CHAT_TAB;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.getTextLength;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.sanitizeName;
 import com.github.ldavid432.cleanchat.data.ChannelNameRemoval;
 import com.github.ldavid432.cleanchat.data.ChatTab;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -17,10 +21,14 @@ import javax.inject.Inject;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
-import net.runelite.api.ScriptID;
 import net.runelite.api.events.ScriptPostFired;
+import net.runelite.api.events.ScriptPreFired;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.Widget;
+import static net.runelite.api.widgets.WidgetPositionMode.ABSOLUTE_CENTER;
+import static net.runelite.api.widgets.WidgetPositionMode.ABSOLUTE_TOP;
+import static net.runelite.api.widgets.WidgetSizeMode.ABSOLUTE;
+import static net.runelite.api.widgets.WidgetSizeMode.MINUS;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.util.Text;
@@ -61,6 +69,20 @@ public class ChannelNameReplacer
 		public void onNonChannelWidgets(Consumer<Widget> action)
 		{
 			Stream.of(rank, name, message).forEach(action);
+		}
+	}
+
+	private int lastScrollHeight = -1;
+	private int lastScrollY = -1;
+
+	private boolean chatboxScrolled = false;
+
+	// TODO: on logout/hop reset scrolls
+
+	@Subscribe
+	public void onScriptPreFired(ScriptPreFired event) {
+		if (event.getScriptId() == SCRIPT_SCROLLBAR_VERTICAL_DRAG || event.getScriptId() == SCRIPT_SCROLLBAR_VERTICAL_JUMP) {
+			chatboxScrolled = event.getScriptEvent().getArguments().length >= 2 && (int) event.getScriptEvent().getArguments()[1] == InterfaceID.Chatbox.CHATSCROLLBAR;
 		}
 	}
 
@@ -108,6 +130,15 @@ public class ChannelNameReplacer
 	{
 		if (event.getScriptId() != SCRIPT_REBUILD_CHATBOX)
 		{
+			if ((event.getScriptId() == SCRIPT_SCROLLBAR_VERTICAL_DRAG || event.getScriptId() == SCRIPT_SCROLLBAR_VERTICAL_JUMP) && chatboxScrolled) {
+				chatboxScrolled = false;
+
+				Widget chatbox = client.getWidget(InterfaceID.Chatbox.SCROLLAREA);
+				if (chatbox != null) {
+					lastScrollHeight = chatbox.getScrollHeight();
+					lastScrollY = chatbox.getScrollY();
+				}
+			}
 			return;
 		}
 
@@ -257,6 +288,8 @@ public class ChannelNameReplacer
 				y += 2;
 			}
 
+			y = max(y, chatbox.getHeight());
+
 			for (ChatWidgetGroup group : removedChats)
 			{
 				group.onAllWidgets(widget -> {
@@ -265,13 +298,100 @@ public class ChannelNameReplacer
 				});
 			}
 
-			if (!removedChats.isEmpty())
-			{
-				chatbox.setScrollHeight(y);
-				chatbox.revalidateScroll();
+			chatbox.setScrollHeight(y);
+			chatbox.revalidateScroll();
 
-				clientThread.invokeLater(() -> client.runScript(ScriptID.UPDATE_SCROLLBAR, InterfaceID.Chatbox.CHATSCROLLBAR, InterfaceID.Chatbox.SCROLLAREA, chatbox.getScrollY()));
-			}
+			// Replacing this script with Java allows us to avoid a clientThread.invokeLater as well as adjust the logic since we are modifying the true scroll height
+			scrollbar_resize(chatbox, selectedChatTab);
+
+			lastScrollHeight = chatbox.getScrollHeight();
+			lastScrollY = chatbox.getScrollY();
+		}
+		lastTab = selectedChatTab.getValue();
+	}
+
+	private int lastTab = ChatTab.ALL.getValue();
+
+	// Script 72
+	private void scrollbar_resize(
+		Widget scrollArea,
+		ChatTab selectedChatTab
+	) {
+		Widget scrollBarContainer = client.getWidget(InterfaceID.Chatbox.CHATSCROLLBAR);
+
+		int scrollAreaHeight = scrollArea.getScrollHeight();
+		if (scrollAreaHeight <= 0) {
+			scrollAreaHeight = scrollArea.getHeight();
+		}
+
+		int scrollBarHeight;
+		if (scrollAreaHeight > 0) {
+			scrollBarHeight = (scrollBarContainer.getHeight() - 32) * scrollArea.getHeight() / scrollAreaHeight;
+		} else {
+			scrollBarHeight = scrollBarContainer.getHeight() - 32;
+		}
+		if (scrollBarHeight < 10) {
+			scrollBarHeight = 10;
+		}
+
+		Widget scrollBar = scrollBarContainer.getChild(1);
+		if (scrollBar != null) {
+			scrollBar.setSize(0, scrollBarHeight, MINUS, ABSOLUTE);
+			scrollBar.revalidate();
+
+			scrollbar_vertical_doscroll(scrollBarContainer, scrollArea, scrollBar, selectedChatTab);
+
+			scrollBarContainer.revalidateScroll();
+			scrollArea.revalidateScroll();
+		}
+	}
+
+	// Script 37
+	private void scrollbar_vertical_doscroll(
+		Widget scrollBarContainer,
+		Widget scrollArea,
+		Widget scrollBar,
+		ChatTab selectedChatTab
+	) {
+		int int2;
+		if (lastTab != selectedChatTab.getValue() && lastTab != ChatTab.CLOSED.getValue()) {
+			// Custom logic to store our scroll values since rebuildchatbox will override them
+			int2 = max(scrollArea.getScrollHeight() - (lastScrollHeight - lastScrollY), 0);
+		} else {
+			int2 = scrollArea.getScrollY();
+			int int3 = max(scrollArea.getScrollHeight() - scrollArea.getHeight(), 1);
+			int2 = max(min(int2, int3), 0);
+		}
+		scrollArea.setScrollY(int2);
+		scrollArea.revalidateScroll();
+		client.setVarcIntValue(7, scrollArea.getScrollY());
+
+		scrollbar_vertical_setdragger(scrollBarContainer, scrollArea, scrollBar);
+	}
+
+	// Script 740
+	private void scrollbar_vertical_setdragger(
+		Widget scrollBarContainer,
+		Widget scrollArea,
+		Widget scrollBar
+	) {
+		int int2 = max(scrollArea.getScrollHeight() - scrollArea.getHeight(), 1);
+		int int3 = scrollBarContainer.getHeight() - 32 - scrollBar.getHeight();
+
+		int scrollBarPos = max((16 + int3) * scrollArea.getScrollY() / int2, 16);
+		scrollBar.setPos(0, scrollBarPos, ABSOLUTE_CENTER, ABSOLUTE_TOP);
+		scrollBar.revalidate();
+
+		Widget scrollbarElementTop = scrollBarContainer.getChild(2);
+		if (scrollbarElementTop != null) {
+			scrollbarElementTop.setPos(0, scrollBar.getOriginalY(), ABSOLUTE_CENTER, ABSOLUTE_TOP);
+			scrollbarElementTop.revalidate();
+		}
+
+		Widget scrollbarElementBottom = scrollBarContainer.getChild(3);
+		if (scrollbarElementBottom != null) {
+			scrollbarElementBottom.setPos(0, scrollBar.getOriginalY() + scrollBar.getHeight() - 5, ABSOLUTE_CENTER, ABSOLUTE_TOP);
+			scrollbarElementBottom.revalidate();
 		}
 	}
 

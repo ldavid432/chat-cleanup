@@ -14,6 +14,8 @@ public class CleanChatUtil
 	public static final String CLAN_INSTRUCTION_MESSAGE = "To talk in your clan's channel, start each line of chat with // or /c.";
 	public static final int GUEST_CLAN = -1;
 	public static final int SCRIPT_REBUILD_CHATBOX = 84;
+	public static final int SCRIPT_SCROLLBAR_VERTICAL_DRAG = 35;
+	public static final int SCRIPT_SCROLLBAR_VERTICAL_JUMP = 34;
 	public static final int VARC_INT_CHAT_TAB = 41;
 	public static final int MAX_CHANNEL_LIST_SIZE = 128;
 
@@ -57,7 +59,7 @@ public class CleanChatUtil
 
 	public static int getTextLength(String text)
 	{
-		return text.chars()
+		return Text.removeTags(text).chars()
 			.mapToObj(ch -> (char) ch)
 			.map(key -> {
 				if (!CHAR_SIZE_MAP.containsKey(key))
