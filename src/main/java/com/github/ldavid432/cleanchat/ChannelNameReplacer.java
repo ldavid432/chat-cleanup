@@ -85,10 +85,7 @@ public class ChannelNameReplacer
 	private int lastScrollHeight = -1;
 	private int lastScrollY = -1;
 	private int lastChatTab = ChatTab.CLOSED.getValue();
-
 	private boolean chatboxScrolled = false;
-
-	// TODO: Check that resizable chat plugin is compatible
 
 	@Subscribe
 	public void onScriptPreFired(ScriptPreFired event)
@@ -460,17 +457,17 @@ public class ChannelNameReplacer
 	{
 		for (ChatWidgetGroup group : groups)
 		{
-			// Adjust widgets X if channel was removed
+			// Shift widgets X left if channel was removed
 			group.onNonChannelWidgets(widget -> {
-				widget.setOriginalX(widget.getOriginalX() - group.getRemovedWidth()); // Shift left
+				widget.setOriginalX(widget.getOriginalX() - group.getRemovedWidth());
 				widget.revalidate();
 			});
 
-			// Adjust the width of messages if channel was removed
+			// Expand the width of messages if channel was removed
 			group.getMessage().setOriginalWidth(group.getMessage().getWidth() + group.getRemovedWidth());
 			group.getMessage().revalidate();
 
-			// Adjust channel width if it was removed
+			// Reduce channel width if it was removed
 			group.getChannel().setOriginalWidth(group.getChannel().getOriginalWidth() - group.getRemovedWidth());
 			group.getChannel().revalidate();
 

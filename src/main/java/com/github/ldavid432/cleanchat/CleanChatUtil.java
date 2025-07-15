@@ -83,6 +83,7 @@ public class CleanChatUtil
 		return imgCount * 13; // 11 + 2
 	}
 
+	// Mimics 'paraheight' cs2 instruction
 	public static int getTextLineCount(String text, int width)
 	{
 		Iterator<String> iterator = List.of(text.split("[ \u00A0]")).iterator();
