@@ -2,10 +2,11 @@ package com.github.ldavid432.cleanchat;
 
 import static com.github.ldavid432.cleanchat.CleanChatUtil.CLAN_INSTRUCTION_MESSAGE;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.SCRIPT_REBUILD_CHATBOX;
-import static com.github.ldavid432.cleanchat.CleanChatUtil.SCRIPT_SCROLLBAR_VERTICAL_DRAG;
-import static com.github.ldavid432.cleanchat.CleanChatUtil.SCRIPT_SCROLLBAR_VERTICAL_JUMP;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.SCRIPT_SCROLLBAR_MAX;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.SCRIPT_SCROLLBAR_MIN;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.VARC_INT_CHAT_TAB;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.getTextLength;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.getTextLineCount;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.sanitizeName;
 import com.github.ldavid432.cleanchat.data.ChannelNameRemoval;
 import com.github.ldavid432.cleanchat.data.ChatTab;
@@ -59,7 +60,16 @@ public class ChannelNameReplacer
 		private final Widget name;
 		private final Widget message;
 
+		// TODO: Maybe group channelType, channelWidth, prefixWidth and nameWidth into an additional data class
+		private ChannelNameRemoval channelType = null;
+
 		private int removedWidth = 0;
+		// Width of the channel name (if present), ignores timestamp
+		private int channelWidth = 0;
+		// Width of the timestamp
+		private int prefixWidth = 0;
+		// width of the username + rank
+		private int nameWidth = 0;
 
 		public void onAllWidgets(Consumer<Widget> action)
 		{
@@ -74,15 +84,19 @@ public class ChannelNameReplacer
 
 	private int lastScrollHeight = -1;
 	private int lastScrollY = -1;
+	private int lastChatTab = ChatTab.CLOSED.getValue();
 
 	private boolean chatboxScrolled = false;
 
-	// TODO: on logout/hop reset scrolls
+	// TODO: Check that resizable chat plugin is compatible
 
 	@Subscribe
-	public void onScriptPreFired(ScriptPreFired event) {
-		if (event.getScriptId() == SCRIPT_SCROLLBAR_VERTICAL_DRAG || event.getScriptId() == SCRIPT_SCROLLBAR_VERTICAL_JUMP) {
-			chatboxScrolled = event.getScriptEvent().getArguments().length >= 2 && (int) event.getScriptEvent().getArguments()[1] == InterfaceID.Chatbox.CHATSCROLLBAR;
+	public void onScriptPreFired(ScriptPreFired event)
+	{
+		if (event.getScriptId() >= SCRIPT_SCROLLBAR_MIN && event.getScriptId() <= SCRIPT_SCROLLBAR_MAX)
+		{
+			Object[] args = event.getScriptEvent().getArguments();
+			chatboxScrolled = args.length >= 2 && (int) args[1] == InterfaceID.Chatbox.CHATSCROLLBAR;
 		}
 	}
 
@@ -130,15 +144,18 @@ public class ChannelNameReplacer
 	{
 		if (event.getScriptId() != SCRIPT_REBUILD_CHATBOX)
 		{
-			if ((event.getScriptId() == SCRIPT_SCROLLBAR_VERTICAL_DRAG || event.getScriptId() == SCRIPT_SCROLLBAR_VERTICAL_JUMP) && chatboxScrolled) {
+			if (event.getScriptId() >= SCRIPT_SCROLLBAR_MIN && event.getScriptId() <= SCRIPT_SCROLLBAR_MAX && chatboxScrolled)
+			{
 				chatboxScrolled = false;
 
 				Widget chatbox = client.getWidget(InterfaceID.Chatbox.SCROLLAREA);
-				if (chatbox != null) {
+				if (chatbox != null)
+				{
 					lastScrollHeight = chatbox.getScrollHeight();
 					lastScrollY = chatbox.getScrollY();
 				}
 			}
+
 			return;
 		}
 
@@ -150,7 +167,8 @@ public class ChannelNameReplacer
 		checkReplacements();
 	}
 
-	public void checkReplacements() {
+	public void checkReplacements()
+	{
 		// FriendsChatManager is null at the first FriendsChatChanged after login so we have to add this check later
 		channelNameManager.updateFriendsChatName();
 
@@ -212,10 +230,7 @@ public class ChannelNameReplacer
 					return new ChatWidgetGroup(channelWidget, chatWidgets[rankWidgetIndex], chatWidgets[nameWidgetIndex], chatWidgets[messageWidgetIndex]);
 				})
 				.filter(group -> {
-					// This method can be used to block other kinds of messages, but it causes the chat and scrollbar to
-					//  jump around when the chatbox is reloaded so for now we just use it to block group iron broadcasts in the clan chat
-					//  and use an alternate method in onChatMessage for the channel startup message blocking
-
+					// TODO: Move chat blocking in here
 					boolean blockChat = false;
 
 					if (!group.getChannel().getText().isEmpty())
@@ -232,13 +247,21 @@ public class ChannelNameReplacer
 
 							if (matchedChannelName != null)
 							{
+								group.setChannelType(channelRemoval);
+
 								blockChat = checkGroupIronInClan(selectedChatTab, channelRemoval);
 
 								if (!blockChat && channelRemoval.isEnabled(config))
 								{
 									// Update widget text and removedWidth
 									group.setRemovedWidth(getTextLength("[" + matchedChannelName + "]") + updateChannelText(matchedChannelName, group.getChannel()));
+
+									setIndentWidths(group, widgetChannelName, matchedChannelName);
 									break;
+								}
+								else if (!blockChat && !channelRemoval.isEnabled(config))
+								{
+									setIndentWidths(group, widgetChannelName, matchedChannelName);
 								}
 							}
 						}
@@ -255,12 +278,17 @@ public class ChannelNameReplacer
 
 			log.debug("Processed {} chat messages", displayedChats.size());
 
-			if (!removedChats.isEmpty()) {
+			if (!removedChats.isEmpty())
+			{
 				log.debug("Hid {} chat messages", removedChats.size());
 			}
 
 			Collections.reverse(displayedChats);
 
+			// Update widgets width, height & text
+			updateWidgets(displayedChats);
+
+			// Calculate this after editing messages
 			int totalHeight = displayedChats.stream()
 				.map(group -> group.getMessage().getHeight())
 				.reduce(0, Integer::sum);
@@ -269,16 +297,14 @@ public class ChannelNameReplacer
 			//  If placing from the bottom, add padding first
 			int y = totalHeight >= chatbox.getHeight() ? 0 : chatbox.getHeight() - totalHeight - 2;
 
+			// Place widgets vertically
 			for (ChatWidgetGroup group : displayedChats)
 			{
 				int widgetY = y;
-				group.onNonChannelWidgets(widget -> updateWidget(widget, group.getRemovedWidth(), widgetY));
-
-				group.getMessage().setOriginalWidth(group.getMessage().getWidth() + group.getRemovedWidth());
-				group.getMessage().revalidate();
-				group.getChannel().setOriginalY(widgetY);
-				group.getChannel().setOriginalWidth(group.getChannel().getOriginalWidth() - group.getRemovedWidth());
-				group.getChannel().revalidate();
+				group.onAllWidgets(widget -> {
+					widget.setOriginalY(widgetY);
+					widget.revalidate();
+				});
 
 				y += group.getMessage().getHeight();
 			}
@@ -305,38 +331,73 @@ public class ChannelNameReplacer
 			// Replacing this script with Java allows us to avoid a clientThread.invokeLater as well as adjust the logic since we are modifying the true scroll height
 			scrollbar_resize(chatbox, selectedChatTab);
 
+			// Store this since rebuildchatbox changes it before we can
 			lastScrollHeight = chatbox.getScrollHeight();
 			lastScrollY = chatbox.getScrollY();
 		}
-		lastTab = selectedChatTab.getValue();
+		lastChatTab = selectedChatTab.getValue();
 	}
 
-	private int lastTab = ChatTab.ALL.getValue();
+	private void setIndentWidths(ChatWidgetGroup group, String widgetChannelText, String matchedChannelName)
+	{
+		int startOfChannel = widgetChannelText.indexOf("[" + matchedChannelName + "]");
+		int endOfChannel = startOfChannel + matchedChannelName.length() + 2;
+
+		String prefix = widgetChannelText.substring(0, startOfChannel);
+		int prefixWidth = getTextLength(prefix);
+		group.setPrefixWidth(prefixWidth);
+
+		String channel = widgetChannelText.substring(startOfChannel, endOfChannel);
+		int channelWidth = getTextLength(channel);
+		group.setChannelWidth(channelWidth);
+
+		// FC puts name + channel into the channel widget
+		if (group.getChannelType() == ChannelNameRemoval.FRIENDS_CHAT)
+		{
+			// TODO: Can we switch back to getTextLength here?
+			// For some reason the fc channel width is the entire length of the chatbox so we can't use getWidth
+			int prefixChanelNameWidth = group.getMessage().getOriginalX() - group.getChannel().getOriginalX();
+			group.setNameWidth(prefixChanelNameWidth - prefixWidth - channelWidth);
+		}
+		else
+		{
+			group.setNameWidth(group.getName().getWidth());
+		}
+
+		if (!group.getRank().isHidden())
+		{
+			group.setNameWidth(group.getNameWidth() + group.getRank().getWidth());
+		}
+	}
 
 	// Script 72
-	private void scrollbar_resize(
-		Widget scrollArea,
-		ChatTab selectedChatTab
-	) {
+	private void scrollbar_resize(Widget scrollArea, ChatTab selectedChatTab)
+	{
 		Widget scrollBarContainer = client.getWidget(InterfaceID.Chatbox.CHATSCROLLBAR);
 
 		int scrollAreaHeight = scrollArea.getScrollHeight();
-		if (scrollAreaHeight <= 0) {
+		if (scrollAreaHeight <= 0)
+		{
 			scrollAreaHeight = scrollArea.getHeight();
 		}
 
 		int scrollBarHeight;
-		if (scrollAreaHeight > 0) {
+		if (scrollAreaHeight > 0)
+		{
 			scrollBarHeight = (scrollBarContainer.getHeight() - 32) * scrollArea.getHeight() / scrollAreaHeight;
-		} else {
+		}
+		else
+		{
 			scrollBarHeight = scrollBarContainer.getHeight() - 32;
 		}
-		if (scrollBarHeight < 10) {
+		if (scrollBarHeight < 10)
+		{
 			scrollBarHeight = 10;
 		}
 
 		Widget scrollBar = scrollBarContainer.getChild(1);
-		if (scrollBar != null) {
+		if (scrollBar != null)
+		{
 			scrollBar.setSize(0, scrollBarHeight, MINUS, ABSOLUTE);
 			scrollBar.revalidate();
 
@@ -348,17 +409,17 @@ public class ChannelNameReplacer
 	}
 
 	// Script 37
-	private void scrollbar_vertical_doscroll(
-		Widget scrollBarContainer,
-		Widget scrollArea,
-		Widget scrollBar,
-		ChatTab selectedChatTab
-	) {
+	private void scrollbar_vertical_doscroll(Widget scrollBarContainer, Widget scrollArea,
+											 Widget scrollBar, ChatTab selectedChatTab)
+	{
 		int int2;
-		if (lastTab != selectedChatTab.getValue() && lastTab != ChatTab.CLOSED.getValue()) {
+		if (lastChatTab != selectedChatTab.getValue() && lastChatTab != ChatTab.CLOSED.getValue())
+		{
 			// Custom logic to store our scroll values since rebuildchatbox will override them
 			int2 = max(scrollArea.getScrollHeight() - (lastScrollHeight - lastScrollY), 0);
-		} else {
+		}
+		else
+		{
 			int2 = scrollArea.getScrollY();
 			int int3 = max(scrollArea.getScrollHeight() - scrollArea.getHeight(), 1);
 			int2 = max(min(int2, int3), 0);
@@ -371,11 +432,8 @@ public class ChannelNameReplacer
 	}
 
 	// Script 740
-	private void scrollbar_vertical_setdragger(
-		Widget scrollBarContainer,
-		Widget scrollArea,
-		Widget scrollBar
-	) {
+	private void scrollbar_vertical_setdragger(Widget scrollBarContainer, Widget scrollArea, Widget scrollBar)
+	{
 		int int2 = max(scrollArea.getScrollHeight() - scrollArea.getHeight(), 1);
 		int int3 = scrollBarContainer.getHeight() - 32 - scrollBar.getHeight();
 
@@ -384,23 +442,112 @@ public class ChannelNameReplacer
 		scrollBar.revalidate();
 
 		Widget scrollbarElementTop = scrollBarContainer.getChild(2);
-		if (scrollbarElementTop != null) {
+		if (scrollbarElementTop != null)
+		{
 			scrollbarElementTop.setPos(0, scrollBar.getOriginalY(), ABSOLUTE_CENTER, ABSOLUTE_TOP);
 			scrollbarElementTop.revalidate();
 		}
 
 		Widget scrollbarElementBottom = scrollBarContainer.getChild(3);
-		if (scrollbarElementBottom != null) {
+		if (scrollbarElementBottom != null)
+		{
 			scrollbarElementBottom.setPos(0, scrollBar.getOriginalY() + scrollBar.getHeight() - 5, ABSOLUTE_CENTER, ABSOLUTE_TOP);
 			scrollbarElementBottom.revalidate();
 		}
 	}
 
-	private void updateWidget(Widget widget, int removedWidth, int y)
+	private void updateWidgets(List<ChatWidgetGroup> groups)
 	{
-		widget.setOriginalX(widget.getOriginalX() - removedWidth); // Shift left
-		widget.setOriginalY(y);
-		widget.revalidate();
+		for (ChatWidgetGroup group : groups)
+		{
+			// Adjust widgets X if channel was removed
+			group.onNonChannelWidgets(widget -> {
+				widget.setOriginalX(widget.getOriginalX() - group.getRemovedWidth()); // Shift left
+				widget.revalidate();
+			});
+
+			// Adjust the width of messages if channel was removed
+			group.getMessage().setOriginalWidth(group.getMessage().getWidth() + group.getRemovedWidth());
+			group.getMessage().revalidate();
+
+			// Adjust channel width if it was removed
+			group.getChannel().setOriginalWidth(group.getChannel().getOriginalWidth() - group.getRemovedWidth());
+			group.getChannel().revalidate();
+
+			// Newline indentation handling
+
+			int indentWidth = 0;
+			// TODO: See if there's something that we are missing when measuring so we can avoid adding all these hardcoded offsets
+			// Don't need to mess with indentation on messages we don't edit
+			// TODO: Potentially handle other message types indent?
+			if (group.getChannelType() != null)
+			{
+				switch (config.indentationMode())
+				{
+					// Intentionally fallthrough
+					case START:
+						indentWidth += group.getPrefixWidth();
+
+						if (group.getChannelType().isEnabled(config))
+						{
+							if (group.getChannelType() == ChannelNameRemoval.FRIENDS_CHAT)
+							{
+								indentWidth += 1;
+							}
+							else
+							{
+								indentWidth -= 2;
+							}
+
+						}
+					case CHANNEL:
+						if (!group.getChannelType().isEnabled(config))
+						{
+							indentWidth += group.getChannelWidth();
+							if (group.getChannelType() != ChannelNameRemoval.FRIENDS_CHAT)
+							{
+								indentWidth += 1;
+							}
+							else
+							{
+								indentWidth += 4;
+							}
+
+						}
+					case NAME:
+						indentWidth += group.getNameWidth();
+						if (indentWidth > 0 && group.getChannelType() != ChannelNameRemoval.FRIENDS_CHAT)
+						{
+							indentWidth += 4;
+						}
+						else if (group.getChannelType() == ChannelNameRemoval.FRIENDS_CHAT)
+						{
+							indentWidth -= 4;
+						}
+					case MESSAGE:
+						// Already set by default
+				}
+			}
+
+			if (indentWidth > 0)
+			{
+				int numSpaces = max(0, indentWidth / 3);
+
+				// Using spaces to keep the first line at the initial position (+/-2 pixels)
+				group.getMessage().setText(" ".repeat(numSpaces) + group.getMessage().getText());
+				group.getMessage().setOriginalX(group.getMessage().getOriginalX() - indentWidth);
+				group.getMessage().setOriginalWidth(group.getMessage().getOriginalWidth() + indentWidth);
+				group.getMessage().revalidate();
+			}
+
+			// Adjust the height of messages now that they have been shifted/indented
+			if (!group.getMessage().getText().isEmpty() && group.getMessage().getWidth() > 0)
+			{
+				int numLines = getTextLineCount(group.getMessage().getText(), group.getMessage().getWidth());
+				group.getMessage().setOriginalHeight(numLines * 14); // Height of each line is always 14
+				group.getMessage().revalidate();
+			}
+		}
 	}
 
 	private boolean checkGroupIronInClan(ChatTab chatTab, ChannelNameRemoval channelRemoval)

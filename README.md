@@ -4,6 +4,8 @@ All the below options are toggleable
 
 - Misc
   - Remove 'Welcome to RuneScape' message
+  - Adjust next line indentation
+    - Several options to reduce the indentation on the following lines of multi-line messages
 - Clan
   - Remove 'To talk in your clan's channel...' message
   - Remove clan name from messages
@@ -22,6 +24,4 @@ All the below options are toggleable
 
 ## Known Issues
 
-When 'remove group iron broadcasts from clan chat' is enabled, and you are on the clan tab, and the chat is reloaded (via sending/receiving a message or otherwise),
-then the scroll bar will jump slightly (though this *shouldn't* actually change your scroll positions) and,
-if there are not enough chats to fill the full height of the chatbox, all the chats will jump slightly.
+- Setting an indentation mode other than the default (`Message`) may shift multi-line messages to the right by one or two pixels

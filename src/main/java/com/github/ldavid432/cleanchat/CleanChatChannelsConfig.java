@@ -1,6 +1,7 @@
 package com.github.ldavid432.cleanchat;
 
 import static com.github.ldavid432.cleanchat.CleanChatChannelsConfig.GROUP;
+import com.github.ldavid432.cleanchat.data.IndentMode;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
@@ -10,7 +11,7 @@ import net.runelite.client.config.ConfigSection;
 public interface CleanChatChannelsConfig extends Config
 {
 	String GROUP = "cleanchat";
-	int CURRENT_VERSION = 1;
+	int CURRENT_VERSION = 2;
 
 	@ConfigItem(
 		keyName = "lastSeenVersion",
@@ -41,10 +42,26 @@ public interface CleanChatChannelsConfig extends Config
 		return true;
 	}
 
+	@ConfigItem(
+		keyName = "lineBreakIndentationMode",
+		name = "Indent Mode",
+		description = "Adjust the starting indent for the 2nd (and further) lines in multi-line messages (only in chat channels)<br>" +
+			"Message - Default, start directly under the first line<br>" +
+			"Name - Start under the username<br>" +
+			"Channel - Start under the channel name and after the timestamp. If channel removal is on, acts like Name<br>" +
+			"Start - Start at the start of the chat box<br>" +
+			"Note: Turning this on may make multi-line messages shift one or two pixels to the right",
+		position = 1
+	)
+	default IndentMode indentationMode()
+	{
+		return IndentMode.MESSAGE;
+	}
+
 	@ConfigSection(
 		name = "Clan Chat",
 		description = "Configure clan chat",
-		position = 1
+		position = 10
 	)
 	String clanSection = "clanSection";
 
@@ -99,7 +116,7 @@ public interface CleanChatChannelsConfig extends Config
 	@ConfigSection(
 		name = "Group Iron Chat",
 		description = "Configure group iron chat",
-		position = 2
+		position = 20
 	)
 	String ironSection = "ironSection";
 
@@ -144,7 +161,7 @@ public interface CleanChatChannelsConfig extends Config
 	@ConfigSection(
 		name = "Friends Chat",
 		description = "Configure friends chat",
-		position = 3
+		position = 30
 	)
 	String friendsSection = "friendsSection";
 

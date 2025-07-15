@@ -1,6 +1,10 @@
 package com.github.ldavid432.cleanchat;
 
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatLineBuffer;
@@ -14,10 +18,12 @@ public class CleanChatUtil
 	public static final String CLAN_INSTRUCTION_MESSAGE = "To talk in your clan's channel, start each line of chat with // or /c.";
 	public static final int GUEST_CLAN = -1;
 	public static final int SCRIPT_REBUILD_CHATBOX = 84;
-	public static final int SCRIPT_SCROLLBAR_VERTICAL_DRAG = 35;
-	public static final int SCRIPT_SCROLLBAR_VERTICAL_JUMP = 34;
+	// Scripts 32-36 are all about scrolling in different ways
+	public static final int SCRIPT_SCROLLBAR_MIN = 32;
+	public static final int SCRIPT_SCROLLBAR_MAX = 36;
 	public static final int VARC_INT_CHAT_TAB = 41;
 	public static final int MAX_CHANNEL_LIST_SIZE = 128;
+	private static final Pattern IMG_TAG_REGEXP = Pattern.compile("<img=[^>]*>");
 
 	public static String sanitizeName(String string)
 	{
@@ -68,7 +74,66 @@ public class CleanChatUtil
 				}
 				return CHAR_SIZE_MAP.getOrDefault(key, 5) + 2;
 			})
-			.reduce(0, Integer::sum);
+			.reduce(0, Integer::sum) + getChatIconsWidth(text);
+	}
+
+	private static int getChatIconsWidth(String text)
+	{
+		int imgCount = Math.toIntExact(IMG_TAG_REGEXP.matcher(text).results().count());
+		return imgCount * 13; // 11 + 2
+	}
+
+	public static int getTextLineCount(String text, int width)
+	{
+		Iterator<String> iterator = List.of(text.split("[ \u00A0]")).iterator();
+
+		int numLines = 0;
+		StringBuilder currentLine = new StringBuilder();
+
+		while (iterator.hasNext())
+		{
+			String next = iterator.next();
+			// Several spaces grouped will lead to a bunch of empty strings, but we still need to measure them
+			if (Objects.equals(next, "")) {
+				next = " ";
+			}
+
+			int currentWidth = getTextLength(currentLine.toString());
+
+			if (currentWidth < width)
+			{
+				// Start of the line
+				if (currentLine.toString().isEmpty())
+				{
+					currentLine.append(next);
+				}
+				// Adding a space character (happens when you have several spaces grouped)
+				else if (Objects.equals(next, " ") && currentWidth + getTextLength(next) < width)
+				{
+					currentLine.append(next);
+				}
+				// Adding the next chunk
+				else if (currentWidth + getTextLength(" " + next) < width)
+				{
+					currentLine.append(" ").append(next);
+				}
+				// Width too big, go to next line
+				else
+				{
+					numLines++;
+					currentLine = new StringBuilder(next);
+				}
+			}
+			// Width immediately too big, go to next line (this is probably a chunk that will get cut off)
+			else
+			{
+				numLines++;
+				currentLine = new StringBuilder(next);
+			}
+		}
+		numLines++;
+
+		return numLines;
 	}
 
 }

@@ -91,11 +91,13 @@ public class CleanChatChannelsPlugin extends Plugin
 			processAllChatHistory();
 			client.refreshChat();
 		} else if (client.getGameState() != GameState.LOGGED_IN && config.getLastSeenVersion() < CURRENT_VERSION) {
+			int lastSeenVersion = config.getLastSeenVersion();
 			config.setLstSeenVersion(CURRENT_VERSION);
 			// Since last seen version wasn't in 1.0 checking for only it will trigger for everyone who installs the plugin.
 			//  By only triggering this during startup and while not logged in we can "better" attempt to determine if this is a previous install or not.
 			//  Still not totally accurate but better than nothing.
-			chatMessageManager.queue(QueuedMessage.builder()
+			if (lastSeenVersion < 1) {
+				chatMessageManager.queue(QueuedMessage.builder()
 					.type(ChatMessageType.CONSOLE)
 					.runeLiteFormattedMessage(
 						ColorUtil.wrapWithColorTag(
@@ -104,7 +106,8 @@ public class CleanChatChannelsPlugin extends Plugin
 							Color.RED
 						)
 					)
-				.build());
+					.build());
+			}
 		}
 	}
 
@@ -151,7 +154,7 @@ public class CleanChatChannelsPlugin extends Plugin
 		processBlocks(event);
 	}
 
-	// TODO: Move blocking into a separate class
+	// TODO: Move blocking into ChannelNameReplacer
 	private void processBlocks(ChatMessage event)
 	{
 		boolean blockMessage = shouldBlockMessage(event);

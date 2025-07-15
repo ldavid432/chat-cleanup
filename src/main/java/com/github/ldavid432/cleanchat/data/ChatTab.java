@@ -4,6 +4,7 @@ import java.util.Arrays;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+// Enum 5620 https://abextm.github.io/cache2/#/viewer/enum/5620
 @AllArgsConstructor
 public enum ChatTab
 {
