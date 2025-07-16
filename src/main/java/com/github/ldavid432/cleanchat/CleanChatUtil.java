@@ -86,7 +86,8 @@ public class CleanChatUtil
 	// Mimics 'paraheight' cs2 instruction
 	public static int getTextLineCount(String text, int width)
 	{
-		Iterator<String> iterator = List.of(text.split("[ \u00A0]")).iterator();
+		// Positive lookahead ?= makes it so that the delimiter is included in the split strings
+		Iterator<String> iterator = List.of(text.split("(?=(<br>)|([ \u00A0]))")).iterator();
 
 		int numLines = 0;
 		StringBuilder currentLine = new StringBuilder();
@@ -94,10 +95,6 @@ public class CleanChatUtil
 		while (iterator.hasNext())
 		{
 			String next = iterator.next();
-			// Several spaces grouped will lead to a bunch of empty strings, but we still need to measure them
-			if (Objects.equals(next, "")) {
-				next = " ";
-			}
 
 			int currentWidth = getTextLength(currentLine.toString());
 
@@ -107,6 +104,12 @@ public class CleanChatUtil
 				if (currentLine.toString().isEmpty())
 				{
 					currentLine.append(next);
+				}
+				// Adding a line break (from game messages) - player messages get escaped as <lt>br<gt>
+				else if (next.startsWith("<br>"))
+				{
+					numLines++;
+					currentLine = new StringBuilder(next);
 				}
 				// Adding a space character (happens when you have several spaces grouped)
 				else if (Objects.equals(next, " ") && currentWidth + getTextLength(next) < width)
