@@ -58,13 +58,13 @@ public class CleanChatUtil
 		// Numbers
 		Map.entry('0', 6), Map.entry('1', 4), Map.entry('2', 6), Map.entry('3', 5), Map.entry('4', 5), Map.entry('5', 5), Map.entry('6', 6), Map.entry('7', 5), Map.entry('8', 6), Map.entry('9', 6),
 		// Symbols
-		Map.entry(' ', 1), Map.entry(':', 1), Map.entry(';', 2), Map.entry('"', 3), Map.entry('@', 11), Map.entry('!', 1), Map.entry('.', 1), Map.entry('\'', 2), Map.entry(',', 2), Map.entry('(', 2), Map.entry(')', 2), Map.entry('+', 5), Map.entry('-', 4), Map.entry('=', 6), Map.entry('?', 6), Map.entry('*', 7), Map.entry('/', 4), Map.entry('$', 6), Map.entry('£', 8), Map.entry('^', 6), Map.entry('{', 3), Map.entry('}', 3), Map.entry('[', 3), Map.entry(']', 3), Map.entry('&', 9), Map.entry('#', 11), Map.entry('°', 4),
+		Map.entry(' ', 1), Map.entry(':', 1), Map.entry(';', 2), Map.entry('"', 3), Map.entry('@', 11), Map.entry('!', 1), Map.entry('.', 1), Map.entry('\'', 2), Map.entry(',', 2), Map.entry('(', 2), Map.entry(')', 2), Map.entry('+', 5), Map.entry('-', 4), Map.entry('=', 6), Map.entry('?', 6), Map.entry('*', 7), Map.entry('/', 4), Map.entry('$', 6), Map.entry('£', 8), Map.entry('^', 6), Map.entry('{', 3), Map.entry('}', 3), Map.entry('[', 3), Map.entry(']', 3), Map.entry('&', 9), Map.entry('#', 11), Map.entry('°', 4), Map.entry('<', 5), Map.entry('>', 5),
 		// NBSP
 		Map.entry('\u00A0', 1));
 
 	public static int getTextLength(String text)
 	{
-		return Text.removeFormattingTags(text.replace("<lt>", "<").replace("<gt>", ">"))
+		return Text.removeFormattingTags(text).replace("<lt>", "<").replace("<gt>", ">")
 			.chars()
 			.mapToObj(ch -> (char) ch)
 			.map(key -> {
