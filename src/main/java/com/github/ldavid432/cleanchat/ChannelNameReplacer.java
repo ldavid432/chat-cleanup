@@ -10,6 +10,7 @@ import static com.github.ldavid432.cleanchat.CleanChatUtil.getTextLineCount;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.sanitizeName;
 import com.github.ldavid432.cleanchat.data.ChannelNameRemoval;
 import com.github.ldavid432.cleanchat.data.ChatTab;
+import com.github.ldavid432.cleanchat.data.IndentMode;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import java.util.ArrayList;
@@ -156,7 +157,7 @@ public class ChannelNameReplacer
 			return;
 		}
 
-		if (!ChannelNameRemoval.anyEnabled(config) && !config.removeGroupIronFromClan())
+		if (!ChannelNameRemoval.anyEnabled(config) && !config.removeGroupIronFromClan() && config.indentationMode() == IndentMode.MESSAGE)
 		{
 			return;
 		}
