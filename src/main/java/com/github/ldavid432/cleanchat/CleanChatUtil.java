@@ -64,7 +64,8 @@ public class CleanChatUtil
 
 	public static int getTextLength(String text)
 	{
-		return Text.removeTags(text).chars()
+		return Text.removeFormattingTags(text.replace("<lt>", "<").replace("<gt>", ">"))
+			.chars()
 			.mapToObj(ch -> (char) ch)
 			.map(key -> {
 				if (!CHAR_SIZE_MAP.containsKey(key))
