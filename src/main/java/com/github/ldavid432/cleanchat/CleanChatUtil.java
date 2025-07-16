@@ -3,7 +3,6 @@ package com.github.ldavid432.cleanchat;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
@@ -111,15 +110,10 @@ public class CleanChatUtil
 					numLines++;
 					currentLine = new StringBuilder(next);
 				}
-				// Adding a space character (happens when you have several spaces grouped)
-				else if (Objects.equals(next, " ") && currentWidth + getTextLength(next) < width)
+				// Adding the next chunk
+				else if (currentWidth + getTextLength(next) < width)
 				{
 					currentLine.append(next);
-				}
-				// Adding the next chunk
-				else if (currentWidth + getTextLength(" " + next) < width)
-				{
-					currentLine.append(" ").append(next);
 				}
 				// Width too big, go to next line
 				else
