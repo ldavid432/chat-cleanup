@@ -61,6 +61,8 @@ public class ChannelNameReplacer
 		private final Widget name;
 		private final Widget message;
 
+		private final Widget clickBox;
+
 		// TODO: Maybe group channelType, channelWidth, prefixWidth and nameWidth into an additional data class
 		private ChannelNameRemoval channelType = null;
 
@@ -176,9 +178,11 @@ public class ChannelNameReplacer
 		if (chatbox != null && selectedChatTab != ChatTab.CLOSED)
 		{
 			Widget[] chatWidgets = chatbox.getDynamicChildren().clone();
+			Widget[] clickboxWidgets = chatbox.getStaticChildren().clone();
 
 			List<ChatWidgetGroup> removedChats = new ArrayList<>();
 
+			// TODO: Make i = 0
 			// for (int i = 2; i < chats.length; i += 4)
 			List<ChatWidgetGroup> displayedChats = Stream.iterate(
 					2,
@@ -225,7 +229,7 @@ public class ChannelNameReplacer
 						}
 					}
 
-					return new ChatWidgetGroup(channelWidget, chatWidgets[rankWidgetIndex], chatWidgets[nameWidgetIndex], chatWidgets[messageWidgetIndex]);
+					return new ChatWidgetGroup(channelWidget, chatWidgets[rankWidgetIndex], chatWidgets[nameWidgetIndex], chatWidgets[messageWidgetIndex], clickboxWidgets[(i - 2) / 4]);
 				})
 				.filter(group -> {
 					// TODO: Move chat blocking in here
@@ -304,6 +308,9 @@ public class ChannelNameReplacer
 					widget.revalidate();
 				});
 
+				group.getClickBox().setOriginalY(widgetY);
+				group.getClickBox().revalidate();
+
 				y += group.getMessage().getHeight();
 			}
 
@@ -321,6 +328,9 @@ public class ChannelNameReplacer
 					widget.setHidden(true);
 					widget.setOriginalY(0);
 				});
+
+				group.getClickBox().setHidden(true);
+				group.getClickBox().setOriginalY(0);
 			}
 
 			chatbox.setScrollHeight(y);
@@ -542,8 +552,12 @@ public class ChannelNameReplacer
 			if (!group.getMessage().getText().isEmpty() && group.getMessage().getWidth() > 0)
 			{
 				int numLines = getTextLineCount(group.getMessage().getText(), group.getMessage().getWidth());
-				group.getMessage().setOriginalHeight(numLines * 14); // Height of each line is always 14
+				int height = numLines * 14; // Height of each line is always 14
+				group.getMessage().setOriginalHeight(height);
 				group.getMessage().revalidate();
+
+				group.getClickBox().setOriginalHeight(height);
+				group.getClickBox().revalidate();
 			}
 		}
 	}
