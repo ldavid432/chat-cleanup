@@ -369,7 +369,10 @@ public class ChannelNameReplacer
 		}
 		else
 		{
-			group.setNameWidth(group.getName().getWidth());
+			if (!group.getName().getText().isEmpty())
+			{
+				group.setNameWidth(group.getName().getWidth());
+			}
 		}
 
 		if (!group.getRank().isHidden())
