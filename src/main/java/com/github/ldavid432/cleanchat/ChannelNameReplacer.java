@@ -251,7 +251,7 @@ public class ChannelNameReplacer
 							{
 								group.setChannelType(channelRemoval);
 
-								blockChat = checkGroupIronInClan(selectedChatTab, channelRemoval);
+								blockChat = channelRemoval.isTabBlocked(config, selectedChatTab);
 
 								if (!blockChat && channelRemoval.isEnabled(config))
 								{
@@ -563,11 +563,6 @@ public class ChannelNameReplacer
 				group.getClickBox().revalidate();
 			}
 		}
-	}
-
-	private boolean checkGroupIronInClan(ChatTab chatTab, ChannelNameRemoval channelRemoval)
-	{
-		return config.removeGroupIronFromClan() && chatTab == ChatTab.CLAN && channelRemoval == ChannelNameRemoval.GROUP_IRON;
 	}
 
 	/**
