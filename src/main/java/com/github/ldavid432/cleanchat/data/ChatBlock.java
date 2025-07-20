@@ -23,6 +23,11 @@ public enum ChatBlock implements ChatTypeModifier
 		// "You are now a guest of x" is also included in this message, they are separated by a <br>
 		"To talk, start each line of chat with /// or /gc"
 	),
+	GUEST_CLAN_RECONNECTING(
+		CleanChatChannelsConfig::removeGuestClanReconnecting,
+		ChatMessageType.CLAN_GUEST_MESSAGE,
+		"Attempting to reconnect to guest channel automatically..."
+	),
 	GROUP_IRON_INSTRUCTION(
 		CleanChatChannelsConfig::removeGroupIronInstruction,
 		ChatMessageType.CLAN_GIM_MESSAGE,

@@ -89,12 +89,19 @@ public interface CleanChatChannelsConfig extends Config
 		return false;
 	}
 
+	@ConfigSection(
+		name = "Guest Clan Chat",
+		description = "Configure guest clan chat",
+		position = 15
+	)
+	String guestClanSection = "guestClanSection";
+
 	@ConfigItem(
 		keyName = "removeGuestClanInstruction",
-		name = "Remove guest startup message",
+		name = "Remove startup message",
 		description = "Remove message telling you how to chat in your guest clan channel",
-		section = clanSection,
-		position = 2
+		section = guestClanSection,
+		position = 0
 	)
 	default boolean removeGuestClanInstruction()
 	{
@@ -102,11 +109,23 @@ public interface CleanChatChannelsConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "removeGuestClanReconnecting",
+		name = "Remove reconnecting message",
+		description = "Remove 'Attempting to reconnect...' message in your guest clan channel",
+		section = guestClanSection,
+		position = 1
+	)
+	default boolean removeGuestClanReconnecting()
+	{
+		return false;
+	}
+
+	@ConfigItem(
 		keyName = "removeGuestClanName",
 		name = "Remove guest clan name",
 		description = "Remove guest clan name from guest clan chat messages",
-		section = clanSection,
-		position = 3
+		section = guestClanSection,
+		position = 2
 	)
 	default boolean removeGuestClanName()
 	{
