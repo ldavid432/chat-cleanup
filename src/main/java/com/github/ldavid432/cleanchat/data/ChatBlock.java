@@ -2,7 +2,6 @@ package com.github.ldavid432.cleanchat.data;
 
 import com.github.ldavid432.cleanchat.CleanChatChannelsConfig;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.CLAN_INSTRUCTION_MESSAGE;
-import java.util.List;
 import java.util.function.Function;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -10,7 +9,7 @@ import net.runelite.api.ChatMessageType;
 import net.runelite.api.events.ChatMessage;
 
 @AllArgsConstructor
-public enum ChatBlock implements ChatTypeModifier
+public enum ChatBlock
 {
 	CLAN_INSTRUCTION(
 		CleanChatChannelsConfig::removeClanInstruction,
@@ -60,10 +59,9 @@ public enum ChatBlock implements ChatTypeModifier
 		return isEnabled.apply(config);
 	}
 
-	@Override
 	public boolean appliesTo(CleanChatChannelsConfig config, ChatMessage event)
 	{
-		return ChatTypeModifier.super.appliesTo(config, event) && event.getMessage().contains(this.message);
+		return isEnabled(config) && chatMessageType == event.getType() && event.getMessage().contains(this.message);
 	}
 
 	private final Function<CleanChatChannelsConfig, Boolean> isEnabled;
@@ -71,10 +69,4 @@ public enum ChatBlock implements ChatTypeModifier
 	private final ChatMessageType chatMessageType;
 	@Getter
 	private final String message;
-
-	@Override
-	public List<ChatMessageType> getFromChatMessageTypes()
-	{
-		return List.of(chatMessageType);
-	}
 }
