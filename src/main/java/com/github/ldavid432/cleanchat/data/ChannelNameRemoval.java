@@ -40,7 +40,7 @@ public enum ChannelNameRemoval
 	private final BiFunction<CleanChatChannelsConfig, ChatTab, Boolean> isTabBlocked;
 
 	ChannelNameRemoval(Function<CleanChatChannelsConfig, Boolean> isEnabled, Function<ChannelNameManager, List<String>> getNames) {
-		this(isEnabled, getNames, (c, t) -> true);
+		this(isEnabled, getNames, (c, t) -> false);
 	}
 
 	public static boolean anyEnabled(CleanChatChannelsConfig config)
