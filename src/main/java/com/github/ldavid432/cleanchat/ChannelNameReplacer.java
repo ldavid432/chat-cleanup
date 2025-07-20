@@ -31,12 +31,16 @@ import static net.runelite.api.widgets.WidgetPositionMode.ABSOLUTE_CENTER;
 import static net.runelite.api.widgets.WidgetPositionMode.ABSOLUTE_TOP;
 import static net.runelite.api.widgets.WidgetSizeMode.ABSOLUTE;
 import static net.runelite.api.widgets.WidgetSizeMode.MINUS;
-import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.util.Text;
 
 /**
- * Removes channel name from chat widgets
+ * <ul>
+ *     <li>Removes channel name from chat widgets</li>
+ *     <li>Blocks certain channel messages</li>
+ *     <li>Indents multi-line messages</li>
+ *     <li>Adjusts message height based on name removal and indentation</li>
+ * </ul>
  */
 @Slf4j
 public class ChannelNameReplacer
@@ -46,9 +50,6 @@ public class ChannelNameReplacer
 
 	@Inject
 	private ChannelNameManager channelNameManager;
-
-	@Inject
-	private ClientThread clientThread;
 
 	@Inject
 	private Client client;

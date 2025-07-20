@@ -146,8 +146,6 @@ public class CleanChatChannelsPlugin extends Plugin
 		if (event.getMessage().equals(ChatBlock.WELCOME.getMessage()))
 		{
 			log.debug("World hopped or logged in. Refreshing chat.");
-			// Only process blocks because we want to wait for the individual chats to connect before replacing
-			//  This makes startup much less jarring
 			clientThread.invokeLater(this::processAllChatHistory);
 		}
 
