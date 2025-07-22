@@ -2,7 +2,6 @@ package com.github.ldavid432.cleanchat.data;
 
 import com.github.ldavid432.cleanchat.ChannelNameManager;
 import com.github.ldavid432.cleanchat.CleanChatChannelsConfig;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -41,10 +40,5 @@ public enum ChannelNameRemoval
 
 	ChannelNameRemoval(Function<CleanChatChannelsConfig, Boolean> isEnabled, Function<ChannelNameManager, List<String>> getNames) {
 		this(isEnabled, getNames, (c, t) -> false);
-	}
-
-	public static boolean anyEnabled(CleanChatChannelsConfig config)
-	{
-		return Arrays.stream(values()).anyMatch(channel -> channel.isEnabled(config));
 	}
 }

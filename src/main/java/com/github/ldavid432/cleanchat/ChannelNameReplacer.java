@@ -9,13 +9,14 @@ import static com.github.ldavid432.cleanchat.CleanChatUtil.getTextLength;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.getTextLineCount;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.sanitizeName;
 import com.github.ldavid432.cleanchat.data.ChannelNameRemoval;
+import com.github.ldavid432.cleanchat.data.ChatBlock;
 import com.github.ldavid432.cleanchat.data.ChatTab;
-import com.github.ldavid432.cleanchat.data.IndentMode;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -23,6 +24,8 @@ import javax.inject.Inject;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import net.runelite.api.GameState;
+import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.ScriptPostFired;
 import net.runelite.api.events.ScriptPreFired;
 import net.runelite.api.gameval.InterfaceID;
@@ -86,10 +89,20 @@ public class ChannelNameReplacer
 		}
 	}
 
-	private int lastScrollHeight = -1;
-	private int lastScrollY = -1;
+	private int lastScrollDiff = -1;
 	private int lastChatTab = ChatTab.CLOSED.getValue();
 	private boolean chatboxScrolled = false;
+
+	@Subscribe
+	public void onGameStateChanged(GameStateChanged event)
+	{
+		if (event.getGameState() == GameState.HOPPING || event.getGameState() == GameState.LOGIN_SCREEN)
+		{
+			// Reset scroll
+			lastScrollDiff = -1;
+			chatboxScrolled = false;
+		}
+	}
 
 	@Subscribe
 	public void onScriptPreFired(ScriptPreFired event)
@@ -138,34 +151,38 @@ public class ChannelNameReplacer
 		[2] = nothing
 		[3] = nothing
 
+	GIM or Clan broadcast after world hopping (before you have reconnected to the channel):
+		[0] = nothing
+		[1] = message
+		[2] = nothing
+		[3] = nothing
+
+	Clan instruction message (?) after world hopping:
+		[0] = message
+		[1] = Did you know? tip
+		[2] = nothing
+		[3] = nothing
+
 	These appear in the children array in this order even if the individual items aren't rendered
 	 ex: Username is hidden for broadcasts, rank icon is hidden for public chat */
 	@Subscribe
 	public void onScriptPostFired(ScriptPostFired event)
 	{
-		if (event.getScriptId() != SCRIPT_REBUILD_CHATBOX)
+		if (event.getScriptId() == SCRIPT_REBUILD_CHATBOX)
 		{
-			if (event.getScriptId() >= SCRIPT_SCROLLBAR_MIN && event.getScriptId() <= SCRIPT_SCROLLBAR_MAX && chatboxScrolled)
+			checkReplacements();
+		}
+		else if (event.getScriptId() >= SCRIPT_SCROLLBAR_MIN && event.getScriptId() <= SCRIPT_SCROLLBAR_MAX && chatboxScrolled)
+		{
+			chatboxScrolled = false;
+
+			Widget chatbox = client.getWidget(InterfaceID.Chatbox.SCROLLAREA);
+			if (chatbox != null)
 			{
-				chatboxScrolled = false;
-
-				Widget chatbox = client.getWidget(InterfaceID.Chatbox.SCROLLAREA);
-				if (chatbox != null)
-				{
-					lastScrollHeight = chatbox.getScrollHeight();
-					lastScrollY = chatbox.getScrollY();
-				}
+				lastScrollDiff = chatbox.getScrollHeight() - chatbox.getScrollY();
+				client.setVarcIntValue(7, chatbox.getScrollHeight() - lastScrollDiff);
 			}
-
-			return;
 		}
-
-		if (!ChannelNameRemoval.anyEnabled(config) && !config.removeGroupIronFromClan() && config.indentationMode() == IndentMode.MESSAGE)
-		{
-			return;
-		}
-
-		checkReplacements();
 	}
 
 	public void checkReplacements()
@@ -184,11 +201,11 @@ public class ChannelNameReplacer
 			List<ChatWidgetGroup> removedChats = new ArrayList<>();
 
 			// TODO: Make i = 0
+			// TODO: See if we can avoid looping through every single widget even if there is no text there
 			// for (int i = 2; i < chats.length; i += 4)
 			List<ChatWidgetGroup> displayedChats = Stream.iterate(
 					2,
-					// If [0] and [2] are empty we've reached the end of the populated chats
-					i -> i < chatWidgets.length && !(chatWidgets[i].getText().isEmpty() && chatWidgets[i - 2].getText().isEmpty()),
+					i -> i < chatWidgets.length,
 					i -> i + 4
 				)
 				.map(i -> {
@@ -224,19 +241,23 @@ public class ChannelNameReplacer
 								nameWidgetIndex = i; //                [2]
 							}
 						}
+						else if (chatWidgets[messageWidgetIndex].getText().isEmpty())
+						{
+							return null;
+						}
 						else
 						{
-							// Shouldn't see this unless it's an empty line, which we aren't looking at
+							// Clan/GIM broadcast after world hopping - just use default setup since we mainly care about the message in this case
 						}
 					}
 
 					return new ChatWidgetGroup(channelWidget, chatWidgets[rankWidgetIndex], chatWidgets[nameWidgetIndex], chatWidgets[messageWidgetIndex], clickboxWidgets[(i - 2) / 4]);
 				})
+				.filter(Objects::nonNull)
 				.filter(group -> {
-					// TODO: Move chat blocking in here
-					boolean blockChat = false;
+					boolean blockChat = Stream.of(ChatBlock.values()).anyMatch(block -> block.appliesTo(config, group.getMessage().getText()));
 
-					if (!group.getChannel().getText().isEmpty())
+					if (!blockChat && !group.getChannel().getText().isEmpty())
 					{
 						// If the text is not blank we *should* be guaranteed a match
 						for (ChannelNameRemoval channelRemoval : ChannelNameRemoval.values())
@@ -270,6 +291,12 @@ public class ChannelNameReplacer
 						}
 					}
 
+					// Totally bizarre situation where after hopping the clan instruction becomes the name and the previous 'did you know?' becomes the message
+					//  channel=nothing, name=clan instruction, message=did you know? ...
+					if (!blockChat && ChatBlock.CLAN_INSTRUCTION.appliesTo(config, group.getName().getText())) {
+						blockChat = true;
+					}
+
 					if (blockChat)
 					{
 						removedChats.add(group);
@@ -279,11 +306,11 @@ public class ChannelNameReplacer
 				})
 				.collect(Collectors.toList());
 
-			log.debug("Processed {} chat messages", displayedChats.size());
-
 			if (!removedChats.isEmpty())
 			{
-				log.debug("Hid {} chat messages", removedChats.size());
+				log.debug("Showing {} chat messages out of {}", displayedChats.size(), displayedChats.size() + removedChats.size());
+			} else {
+				log.debug("Showing {} chat messages", displayedChats.size());
 			}
 
 			Collections.reverse(displayedChats);
@@ -338,11 +365,14 @@ public class ChannelNameReplacer
 			chatbox.revalidateScroll();
 
 			// Replacing this script with Java allows us to avoid a clientThread.invokeLater as well as adjust the logic since we are modifying the true scroll height
-			scrollbar_resize(chatbox, selectedChatTab);
+			scrollbar_resize(chatbox);
 
-			// Store this since rebuildchatbox changes it before we can
-			lastScrollHeight = chatbox.getScrollHeight();
-			lastScrollY = chatbox.getScrollY();
+			// Store this since rebuildchatbox changes the scroll position before we can
+			lastScrollDiff = chatbox.getScrollHeight() - chatbox.getScrollY();
+		} else {
+			// chat closed - reset scroll
+			lastScrollDiff = -1;
+			chatboxScrolled = false;
 		}
 		lastChatTab = selectedChatTab.getValue();
 	}
@@ -383,7 +413,7 @@ public class ChannelNameReplacer
 	}
 
 	// Script 72
-	private void scrollbar_resize(Widget scrollArea, ChatTab selectedChatTab)
+	private void scrollbar_resize(Widget scrollArea)
 	{
 		Widget scrollBarContainer = client.getWidget(InterfaceID.Chatbox.CHATSCROLLBAR);
 
@@ -413,7 +443,7 @@ public class ChannelNameReplacer
 			scrollBar.setSize(0, scrollBarHeight, MINUS, ABSOLUTE);
 			scrollBar.revalidate();
 
-			scrollbar_vertical_doscroll(scrollBarContainer, scrollArea, scrollBar, selectedChatTab);
+			scrollbar_vertical_doscroll(scrollBarContainer, scrollArea, scrollBar);
 
 			scrollBarContainer.revalidateScroll();
 			scrollArea.revalidateScroll();
@@ -421,17 +451,24 @@ public class ChannelNameReplacer
 	}
 
 	// Script 37
-	private void scrollbar_vertical_doscroll(Widget scrollBarContainer, Widget scrollArea,
-											 Widget scrollBar, ChatTab selectedChatTab)
+	private void scrollbar_vertical_doscroll(Widget scrollBarContainer, Widget scrollArea, Widget scrollBar)
 	{
 		int int2;
-		if (lastChatTab != selectedChatTab.getValue() && lastChatTab != ChatTab.CLOSED.getValue())
+		if (lastChatTab != ChatTab.CLOSED.getValue() && lastScrollDiff != -1)
 		{
-			// Custom logic to store our scroll values since rebuildchatbox will override them
-			int2 = max(scrollArea.getScrollHeight() - (lastScrollHeight - lastScrollY), 0);
+			// Custom logic to restore our scroll values since rebuildchatbox will override them
+			int2 = max(scrollArea.getScrollHeight() - lastScrollDiff, 0);
+		}
+		else if(scrollArea.getHeight() < 0)
+		{
+			// For some reason scrollArea.getHeight is negative after the first login so we just default to 0
+			int2 = 0;
+			// The scrollHeight is also wrong after first login so just default to the base height
+			scrollArea.setScrollHeight(114);
 		}
 		else
 		{
+			// Original script logic
 			int2 = scrollArea.getScrollY();
 			int int3 = max(scrollArea.getScrollHeight() - scrollArea.getHeight(), 1);
 			int2 = max(min(int2, int3), 0);
@@ -449,7 +486,7 @@ public class ChannelNameReplacer
 		int int2 = max(scrollArea.getScrollHeight() - scrollArea.getHeight(), 1);
 		int int3 = scrollBarContainer.getHeight() - 32 - scrollBar.getHeight();
 
-		int scrollBarPos = max((16 + int3) * scrollArea.getScrollY() / int2, 16);
+		int scrollBarPos = max(16 + int3 * scrollArea.getScrollY() / int2, 16);
 		scrollBar.setPos(0, scrollBarPos, ABSOLUTE_CENTER, ABSOLUTE_TOP);
 		scrollBar.revalidate();
 

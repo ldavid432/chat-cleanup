@@ -1,4 +1,4 @@
-# Clean Chat
+# Clean Chat ![Install Count](https://img.shields.io/endpoint?url=https://api.runelite.net/pluginhub/shields/installs/plugin/clean-chat) ![Rank](https://img.shields.io/endpoint?url=https://api.runelite.net/pluginhub/shields/rank/plugin/clean-chat)
 
 All the below options are toggleable
 
@@ -25,3 +25,6 @@ All the below options are toggleable
 ## Known Issues
 
 - Setting an indentation mode other than the default (`Message`) may shift multi-line messages to the right by one or two pixels
+- After hopping clan/gim broadcasts don't have a channel for a few seconds
+  - Unfortunately this seems to just be a Chat History plugin or maybe even Jagex bug where the channel is not populated until you actually reconnect to it
+  - I may look at fixing this as a new "feature" in the future, but it is not caused by the Clean Chat plugin

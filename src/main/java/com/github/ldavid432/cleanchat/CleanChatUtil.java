@@ -4,11 +4,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.ChatLineBuffer;
-import net.runelite.api.ChatMessageType;
-import net.runelite.api.Client;
 import net.runelite.client.util.Text;
 
 @Slf4j
@@ -27,26 +23,6 @@ public class CleanChatUtil
 	public static String sanitizeName(String string)
 	{
 		return Text.removeTags(string).replace('\u00A0', ' ');
-	}
-
-	public static ChatMessageType sanitizeMessageType(ChatMessageType chatMessageType)
-	{
-		// GIM chats are actually just clan chats - only matters when getting the chat line buffers
-		switch (chatMessageType)
-		{
-			case CLAN_GIM_CHAT:
-				return ChatMessageType.CLAN_CHAT;
-			case CLAN_GIM_MESSAGE:
-				return ChatMessageType.CLAN_MESSAGE;
-			default:
-				return chatMessageType;
-		}
-	}
-
-	@Nullable
-	public static ChatLineBuffer getChatLineBuffer(Client client, ChatMessageType chatMessageType)
-	{
-		return client.getChatLineMap().get(sanitizeMessageType(chatMessageType).getType());
 	}
 
 	// Sizes sourced from: https://github.com/JamesShelton140/aqp-finder
