@@ -400,7 +400,7 @@ public class ChannelNameReplacer
 		}
 		else
 		{
-			if (!group.getName().getText().isEmpty())
+			if (!group.getName().getText().isEmpty() && !group.getName().isHidden())
 			{
 				group.setNameWidth(group.getName().getWidth());
 			}
