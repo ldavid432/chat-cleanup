@@ -578,12 +578,17 @@ public class ChannelNameReplacer
 				}
 			}
 
-			if (indentWidth > 0)
-			{
-				int numSpaces = max(0, indentWidth / 3);
+			int indentSpaces;
+			if (indentWidth > 0) {
+				indentSpaces = max(0, indentWidth / 3);
+			} else {
+				indentSpaces = 0;
+			}
 
+			if (indentSpaces > 0)
+			{
 				// Using spaces to keep the first line at the initial position (+/-2 pixels)
-				group.getMessage().setText(" ".repeat(numSpaces) + group.getMessage().getText());
+				group.getMessage().setText(" ".repeat(indentSpaces) + group.getMessage().getText());
 				group.getMessage().setOriginalX(group.getMessage().getOriginalX() - indentWidth);
 				group.getMessage().setOriginalWidth(group.getMessage().getOriginalWidth() + indentWidth);
 				group.getMessage().revalidate();
@@ -592,7 +597,7 @@ public class ChannelNameReplacer
 			// Adjust the height of messages now that they have been shifted/indented
 			if (!group.getMessage().getText().isEmpty() && group.getMessage().getWidth() > 0)
 			{
-				int numLines = getTextLineCount(group.getMessage().getText(), group.getMessage().getWidth());
+				int numLines = getTextLineCount(group.getMessage().getText(), group.getMessage().getWidth(), indentSpaces);
 				int height = numLines * 14; // Height of each line is always 14
 				group.getMessage().setOriginalHeight(height);
 				group.getMessage().revalidate();

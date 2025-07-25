@@ -60,7 +60,7 @@ public class CleanChatUtil
 	}
 
 	// Mimics 'paraheight' cs2 instruction
-	public static int getTextLineCount(String text, int width)
+	public static int getTextLineCount(String text, int width, int indentSpaces)
 	{
 		// Positive lookahead ?= makes it so that the delimiter is included in the split strings
 		Iterator<String> iterator = List.of(text.split("(?=(<br>)|([ \u00A0]))")).iterator();
@@ -89,6 +89,13 @@ public class CleanChatUtil
 				}
 				// Adding the next chunk
 				else if (currentWidth + getTextLength(next) < width)
+				{
+					currentLine.append(next);
+				}
+				// Adding the next chunk after the initial indent
+				// `currentWidth + getTextLength(next) > width` is implied
+				// add 1 to indentSpaces so that we include the next chunk after the indent on the first line
+				else if (numLines == 0 && currentLine.length() <= indentSpaces + 1)
 				{
 					currentLine.append(next);
 				}
