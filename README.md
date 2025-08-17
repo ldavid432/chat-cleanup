@@ -11,6 +11,7 @@ All the below options are toggleable
   - Remove clan name from messages
 - Guest Clan
   - Remove guest clan 'To talk...' message
+  - Remove guest clan 'Attempting to reconnect...' message
   - Remove guest clan name from messages
 - Friend's Chat
   - Remove 'To talk, start each line of chat with the / symbol.' message
