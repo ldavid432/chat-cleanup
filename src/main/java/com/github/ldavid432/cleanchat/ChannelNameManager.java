@@ -14,6 +14,7 @@ import net.runelite.api.clan.ClanChannel;
 import net.runelite.api.clan.ClanID;
 import net.runelite.api.events.ClanChannelChanged;
 import net.runelite.api.events.FriendsChatChanged;
+import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.Subscribe;
 
 /**
@@ -26,6 +27,9 @@ public class ChannelNameManager
 
 	@Inject
 	private Client client;
+
+	@Inject
+	private ClientThread clientThread;
 
 	// Store these as a collection so that even if you leave a channel the chats will still be "cleaned"
 	@Getter
@@ -41,25 +45,27 @@ public class ChannelNameManager
 	{
 		if (client.getGameState() == GameState.LOGGED_IN)
 		{
-			updateFriendsChatName();
+			clientThread.invokeLater(() -> {
+				updateFriendsChatName();
 
-			ClanChannel clanChannel = client.getClanChannel(ClanID.CLAN);
-			if (clanChannel != null)
-			{
-				addName(clanNames, clanChannel.getName());
-			}
+				ClanChannel clanChannel = client.getClanChannel(ClanID.CLAN);
+				if (clanChannel != null)
+				{
+					addName(clanNames, clanChannel.getName());
+				}
 
-			ClanChannel groupIronChannel = client.getClanChannel(ClanID.GROUP_IRONMAN);
-			if (groupIronChannel != null)
-			{
-				addName(groupIronNames, groupIronChannel.getName());
-			}
+				ClanChannel groupIronChannel = client.getClanChannel(ClanID.GROUP_IRONMAN);
+				if (groupIronChannel != null)
+				{
+					addName(groupIronNames, groupIronChannel.getName());
+				}
 
-			ClanChannel guestClanChannel = client.getGuestClanChannel();
-			if (guestClanChannel != null)
-			{
-				addName(guestClanNames, guestClanChannel.getName());
-			}
+				ClanChannel guestClanChannel = client.getGuestClanChannel();
+				if (guestClanChannel != null)
+				{
+					addName(guestClanNames, guestClanChannel.getName());
+				}
+			});
 		}
 	}
 
