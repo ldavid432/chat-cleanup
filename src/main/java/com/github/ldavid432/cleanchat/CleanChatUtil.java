@@ -88,7 +88,7 @@ public class CleanChatUtil
 					currentLine = new StringBuilder(next);
 				}
 				// Adding the next chunk
-				else if (currentWidth + getTextLength(next) < width)
+				else if (currentWidth + getTextLength(next) <= width)
 				{
 					currentLine.append(next);
 				}
