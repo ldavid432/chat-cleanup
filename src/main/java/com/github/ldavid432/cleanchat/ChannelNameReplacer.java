@@ -5,23 +5,19 @@ import static com.github.ldavid432.cleanchat.CleanChatUtil.SCRIPT_REBUILD_CHATBO
 import static com.github.ldavid432.cleanchat.CleanChatUtil.SCRIPT_SCROLLBAR_MAX;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.SCRIPT_SCROLLBAR_MIN;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.VARC_INT_CHAT_TAB;
-import static com.github.ldavid432.cleanchat.CleanChatUtil.getTextLength;
-import static com.github.ldavid432.cleanchat.CleanChatUtil.getTextLineCount;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.sanitizeName;
 import com.github.ldavid432.cleanchat.data.ChannelNameRemoval;
 import com.github.ldavid432.cleanchat.data.ChatBlock;
 import com.github.ldavid432.cleanchat.data.ChatTab;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Inject;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
@@ -56,38 +52,6 @@ public class ChannelNameReplacer
 
 	@Inject
 	private Client client;
-
-	@Data
-	private static class ChatWidgetGroup
-	{
-		private final Widget channel;
-		private final Widget rank;
-		private final Widget name;
-		private final Widget message;
-
-		private final Widget clickBox;
-
-		// TODO: Maybe group channelType, channelWidth, prefixWidth and nameWidth into an additional data class
-		private ChannelNameRemoval channelType = null;
-
-		private int removedWidth = 0;
-		// Width of the channel name (if present), ignores timestamp
-		private int channelWidth = 0;
-		// Width of the timestamp
-		private int prefixWidth = 0;
-		// width of the username + rank
-		private int nameWidth = 0;
-
-		public void onAllWidgets(Consumer<Widget> action)
-		{
-			Stream.of(channel, rank, name, message).forEach(action);
-		}
-
-		public void onNonChannelWidgets(Consumer<Widget> action)
-		{
-			Stream.of(rank, name, message).forEach(action);
-		}
-	}
 
 	private int lastScrollDiff = -1;
 	private int lastChatTab = ChatTab.CLOSED.getValue();
@@ -198,7 +162,7 @@ public class ChannelNameReplacer
 			Widget[] chatWidgets = chatbox.getDynamicChildren().clone();
 			Widget[] clickboxWidgets = chatbox.getStaticChildren().clone();
 
-			List<ChatWidgetGroup> removedChats = new ArrayList<>();
+			AtomicInteger removedCount = new AtomicInteger();
 
 			// TODO: Make i = 0
 			// TODO: See if we can avoid looping through every single widget even if there is no text there
@@ -277,16 +241,19 @@ public class ChannelNameReplacer
 
 								if (!blockChat && channelRemoval.isEnabled(config))
 								{
-									// Update widget text and removedWidth
-									group.setRemovedWidth(getTextLength("[" + matchedChannelName + "]") + updateChannelText(matchedChannelName, group.getChannel()));
+									group.removeFromChannel(
+										"[" + matchedChannelName + "]",
+										//language=RegExp
+										"\\[[^]\\[]*" + matchedChannelName + ".*]"
+									);
+								}
 
-									setIndentWidths(group, widgetChannelName, matchedChannelName);
-									break;
-								}
-								else if (!blockChat && !channelRemoval.isEnabled(config))
+								if (!blockChat)
 								{
-									setIndentWidths(group, widgetChannelName, matchedChannelName);
+									group.indent(config, matchedChannelName, widgetChannelName);
 								}
+
+								break;
 							}
 						}
 					}
@@ -299,24 +266,19 @@ public class ChannelNameReplacer
 
 					if (blockChat)
 					{
-						removedChats.add(group);
+						group.block();
+						removedCount.getAndIncrement();
 					}
 
 					return !blockChat;
 				})
+				// Calculate height last
+				.peek(ChatWidgetGroup::calculateHeight)
 				.collect(Collectors.toList());
 
-			if (!removedChats.isEmpty())
-			{
-				log.debug("Showing {} chat messages out of {}", displayedChats.size(), displayedChats.size() + removedChats.size());
-			} else {
-				log.debug("Showing {} chat messages", displayedChats.size());
-			}
+			log.debug("Showing {} chat messages out of {}", displayedChats.size(), displayedChats.size() + removedCount.get());
 
 			Collections.reverse(displayedChats);
-
-			// Update widgets width, height & text
-			updateWidgets(displayedChats);
 
 			// Calculate this after editing messages
 			int totalHeight = displayedChats.stream()
@@ -330,14 +292,7 @@ public class ChannelNameReplacer
 			// Place widgets vertically
 			for (ChatWidgetGroup group : displayedChats)
 			{
-				int widgetY = y;
-				group.onAllWidgets(widget -> {
-					widget.setOriginalY(widgetY);
-					widget.revalidate();
-				});
-
-				group.getClickBox().setOriginalY(widgetY);
-				group.getClickBox().revalidate();
+				group.place(y);
 
 				y += group.getMessage().getHeight();
 			}
@@ -349,17 +304,6 @@ public class ChannelNameReplacer
 			}
 
 			y = max(y, chatbox.getHeight());
-
-			for (ChatWidgetGroup group : removedChats)
-			{
-				group.onAllWidgets(widget -> {
-					widget.setHidden(true);
-					widget.setOriginalY(0);
-				});
-
-				group.getClickBox().setHidden(true);
-				group.getClickBox().setOriginalY(0);
-			}
 
 			chatbox.setScrollHeight(y);
 			chatbox.revalidateScroll();
@@ -375,41 +319,6 @@ public class ChannelNameReplacer
 			chatboxScrolled = false;
 		}
 		lastChatTab = selectedChatTab.getValue();
-	}
-
-	private void setIndentWidths(ChatWidgetGroup group, String widgetChannelText, String matchedChannelName)
-	{
-		int startOfChannel = widgetChannelText.indexOf("[" + matchedChannelName + "]");
-		int endOfChannel = startOfChannel + matchedChannelName.length() + 2;
-
-		String prefix = widgetChannelText.substring(0, startOfChannel);
-		int prefixWidth = getTextLength(prefix);
-		group.setPrefixWidth(prefixWidth);
-
-		String channel = widgetChannelText.substring(startOfChannel, endOfChannel);
-		int channelWidth = getTextLength(channel);
-		group.setChannelWidth(channelWidth);
-
-		// FC puts name + channel into the channel widget
-		if (group.getChannelType() == ChannelNameRemoval.FRIENDS_CHAT)
-		{
-			// TODO: Can we switch back to getTextLength here?
-			// For some reason the fc channel width is the entire length of the chatbox so we can't use getWidth
-			int prefixChanelNameWidth = group.getMessage().getOriginalX() - group.getChannel().getOriginalX();
-			group.setNameWidth(prefixChanelNameWidth - prefixWidth - channelWidth);
-		}
-		else
-		{
-			if (!group.getName().getText().isEmpty() && !group.getName().isHidden())
-			{
-				group.setNameWidth(group.getName().getWidth());
-			}
-		}
-
-		if (!group.getRank().isHidden())
-		{
-			group.setNameWidth(group.getNameWidth() + group.getRank().getWidth());
-		}
 	}
 
 	// Script 72
@@ -505,137 +414,4 @@ public class ChannelNameReplacer
 		}
 	}
 
-	private void updateWidgets(List<ChatWidgetGroup> groups)
-	{
-		for (ChatWidgetGroup group : groups)
-		{
-			// Shift widgets X left if channel was removed
-			group.onNonChannelWidgets(widget -> {
-				widget.setOriginalX(widget.getOriginalX() - group.getRemovedWidth());
-				widget.revalidate();
-			});
-
-			// Expand the width of messages if channel was removed
-			group.getMessage().setOriginalWidth(group.getMessage().getWidth() + group.getRemovedWidth());
-			group.getMessage().revalidate();
-
-			// Reduce channel width if it was removed
-			group.getChannel().setOriginalWidth(group.getChannel().getOriginalWidth() - group.getRemovedWidth());
-			group.getChannel().revalidate();
-
-			// Newline indentation handling
-
-			int indentWidth = 0;
-			// TODO: See if there's something that we are missing when measuring so we can avoid adding all these hardcoded offsets
-			// Don't need to mess with indentation on messages we don't edit
-			// TODO: Potentially handle other message types indent?
-			if (group.getChannelType() != null)
-			{
-				switch (config.indentationMode())
-				{
-					// Intentionally fallthrough
-					case START:
-						indentWidth += group.getPrefixWidth();
-
-						if (group.getChannelType().isEnabled(config))
-						{
-							if (group.getChannelType() == ChannelNameRemoval.FRIENDS_CHAT)
-							{
-								indentWidth += 1;
-							}
-							else
-							{
-								indentWidth -= 2;
-							}
-
-						}
-					case CHANNEL:
-						if (!group.getChannelType().isEnabled(config))
-						{
-							indentWidth += group.getChannelWidth();
-							if (group.getChannelType() != ChannelNameRemoval.FRIENDS_CHAT)
-							{
-								indentWidth += 1;
-							}
-							else
-							{
-								indentWidth += 4;
-							}
-
-						}
-					case NAME:
-						indentWidth += group.getNameWidth();
-						if (indentWidth > 0 && group.getChannelType() != ChannelNameRemoval.FRIENDS_CHAT)
-						{
-							indentWidth += 4;
-						}
-						else if (group.getChannelType() == ChannelNameRemoval.FRIENDS_CHAT)
-						{
-							indentWidth -= 4;
-						}
-					case MESSAGE:
-						// Already set by default
-				}
-			}
-
-			int indentSpaces;
-			if (indentWidth > 0) {
-				indentSpaces = max(0, indentWidth / 3);
-			} else {
-				indentSpaces = 0;
-			}
-
-			if (indentSpaces > 0)
-			{
-				// Using spaces to keep the first line at the initial position (+/-2 pixels)
-				group.getMessage().setText(" ".repeat(indentSpaces) + group.getMessage().getText());
-				group.getMessage().setOriginalX(group.getMessage().getOriginalX() - indentWidth);
-				group.getMessage().setOriginalWidth(group.getMessage().getOriginalWidth() + indentWidth);
-				group.getMessage().revalidate();
-			}
-
-			// Adjust the height of messages now that they have been shifted/indented
-			if (!group.getMessage().getText().isEmpty() && group.getMessage().getWidth() > 0)
-			{
-				int numLines = getTextLineCount(group.getMessage().getText(), group.getMessage().getWidth(), indentSpaces);
-				int height = numLines * 14; // Height of each line is always 14
-				group.getMessage().setOriginalHeight(height);
-				group.getMessage().revalidate();
-
-				group.getClickBox().setOriginalHeight(height);
-				group.getClickBox().revalidate();
-			}
-		}
-	}
-
-	/**
-	 * @return Any extra space removed
-	 */
-	private int updateChannelText(String channelName, Widget channelWidget)
-	{
-		int removedWidth = 0;
-
-		String newText = channelWidget.getText()
-			// Account for color tags when removing name
-			// TODO: Target the channel name more precisely, this should do for now to avoid targeting timestamps in brackets
-			.replaceFirst("\\[[^]\\[]*" + channelName + ".*]", "");
-
-		// Remove trailing spaces - probably only happens with timestamps turned on
-		if (newText.endsWith(" "))
-		{
-			newText = newText.substring(0, newText.length() - 1);
-			removedWidth += getTextLength(" ");
-		}
-
-		// Remove double spaces - mainly found in friends chat since it has sender + username
-		if (newText.contains("  "))
-		{
-			newText = newText.replaceFirst(" {2}", " ");
-			removedWidth += getTextLength(" ");
-		}
-
-		channelWidget.setText(newText);
-
-		return removedWidth;
-	}
 }
