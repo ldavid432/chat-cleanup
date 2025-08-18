@@ -43,6 +43,7 @@ class ChatWidgetGroup
 		});
 
 		getClickBox().setOriginalY(y);
+		getClickBox().setHidden(false);
 		getClickBox().revalidate();
 	}
 
