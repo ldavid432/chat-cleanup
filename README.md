@@ -1,11 +1,13 @@
 # Clean Chat ![Install Count](https://img.shields.io/endpoint?url=https://api.runelite.net/pluginhub/shields/installs/plugin/clean-chat) ![Rank](https://img.shields.io/endpoint?url=https://api.runelite.net/pluginhub/shields/rank/plugin/clean-chat)
 
-All the below options are toggleable
+All the below options are toggleable (most are **off** by default)
 
 - Misc
   - Remove 'Welcome to RuneScape' message
   - Adjust next line indentation
     - Several options to reduce the indentation on the following lines of multi-line messages
+  - Hide the chat scrollbar
+    - WHen hidden you can still scroll with your mouse wheel
 - Clan
   - Remove 'To talk in your clan's channel...' message
   - Remove clan name from messages

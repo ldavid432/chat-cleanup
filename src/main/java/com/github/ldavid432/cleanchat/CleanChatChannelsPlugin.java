@@ -1,6 +1,7 @@
 package com.github.ldavid432.cleanchat;
 
 import static com.github.ldavid432.cleanchat.CleanChatChannelsConfig.CURRENT_VERSION;
+import static com.github.ldavid432.cleanchat.CleanChatChannelsConfig.HIDE_SCROLLBAR_KEY;
 import com.google.inject.Provides;
 import java.awt.Color;
 import java.util.Objects;
@@ -9,6 +10,11 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
+import net.runelite.api.events.WidgetLoaded;
+import net.runelite.api.gameval.InterfaceID;
+import net.runelite.api.widgets.Widget;
+import net.runelite.api.widgets.WidgetSizeMode;
+import net.runelite.client.callback.ClientThread;
 import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.config.ConfigManager;
@@ -30,6 +36,9 @@ public class CleanChatChannelsPlugin extends Plugin
 
 	@Inject
 	private Client client;
+
+	@Inject
+	private ClientThread clientThread;
 
 	@Inject
 	private CleanChatChannelsConfig config;
@@ -102,6 +111,39 @@ public class CleanChatChannelsPlugin extends Plugin
 		if (Objects.equals(event.getGroup(), CleanChatChannelsConfig.GROUP))
 		{
 			log.debug("Config changed. Refreshing chat.");
+			client.refreshChat();
+
+			if (Objects.equals(event.getKey(), HIDE_SCROLLBAR_KEY))
+			{
+				clientThread.invoke(this::handleScrollbarVisibility);
+			}
+		}
+	}
+
+	@Subscribe
+	public void onWidgetLoaded(WidgetLoaded event)
+	{
+		if (event.getGroupId() == InterfaceID.CHATBOX)
+		{
+			handleScrollbarVisibility();
+		}
+	}
+
+	private void handleScrollbarVisibility()
+	{
+		Widget chatbox = client.getWidget(InterfaceID.Chatbox.SCROLLAREA);
+		Widget scrollBarContainer = client.getWidget(InterfaceID.Chatbox.CHATSCROLLBAR);
+		if (chatbox != null && scrollBarContainer != null) {
+			scrollBarContainer.setHidden(config.hideScrollbar());
+
+			if (config.hideScrollbar()) {
+				chatbox.setOriginalWidth(chatbox.getWidth() + scrollBarContainer.getWidth());
+			} else {
+				chatbox.setOriginalWidth(chatbox.getWidth() - scrollBarContainer.getWidth());
+			}
+			chatbox.setWidthMode(WidgetSizeMode.ABSOLUTE);
+			chatbox.revalidate();
+
 			client.refreshChat();
 		}
 	}

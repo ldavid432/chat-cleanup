@@ -201,7 +201,7 @@ class ChatWidgetGroup
 		});
 
 		// Expand the width of messages if channel was removed
-		getMessage().setOriginalWidth(getMessage().getWidth() + removedWidth);
+		getMessage().setOriginalWidth(getMessage().getOriginalWidth() + removedWidth);
 		getMessage().revalidate();
 
 		// Reduce channel width if it was removed

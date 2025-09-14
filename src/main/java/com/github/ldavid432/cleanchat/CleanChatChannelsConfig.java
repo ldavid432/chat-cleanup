@@ -11,6 +11,7 @@ import net.runelite.client.config.ConfigSection;
 public interface CleanChatChannelsConfig extends Config
 {
 	String GROUP = "cleanchat";
+	String HIDE_SCROLLBAR_KEY = "hideScrollbar";
 	int CURRENT_VERSION = 2;
 
 	@ConfigItem(
@@ -56,6 +57,17 @@ public interface CleanChatChannelsConfig extends Config
 	default IndentMode indentationMode()
 	{
 		return IndentMode.MESSAGE;
+	}
+
+	@ConfigItem(
+		keyName = HIDE_SCROLLBAR_KEY,
+		name = "Hide Scrollbar",
+		description = "Hide the chatbox scrollbar. You can still scroll with the mouse wheel like normal.",
+		position = 2
+	)
+	default boolean hideScrollbar()
+	{
+		return false;
 	}
 
 	@ConfigSection(
