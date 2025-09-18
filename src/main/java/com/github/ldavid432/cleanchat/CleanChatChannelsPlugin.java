@@ -13,7 +13,6 @@ import net.runelite.api.GameState;
 import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.Widget;
-import net.runelite.api.widgets.WidgetSizeMode;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.chat.QueuedMessage;
@@ -136,12 +135,11 @@ public class CleanChatChannelsPlugin extends Plugin
 		if (chatbox != null && scrollBarContainer != null) {
 			scrollBarContainer.setHidden(config.hideScrollbar());
 
+			// width mode is MINUS, so we if we want to match the parent width we use 0
 			if (config.hideScrollbar()) {
-				chatbox.setOriginalWidth(chatbox.getWidth() + scrollBarContainer.getWidth());
-				chatbox.setWidthMode(WidgetSizeMode.ABSOLUTE);
+				chatbox.setOriginalWidth(0);
 			} else if (isConfigChange) {
-				chatbox.setOriginalWidth(chatbox.getWidth() - scrollBarContainer.getWidth());
-				chatbox.setWidthMode(WidgetSizeMode.ABSOLUTE);
+				chatbox.setOriginalWidth(16);
 			}
 			chatbox.revalidate();
 
