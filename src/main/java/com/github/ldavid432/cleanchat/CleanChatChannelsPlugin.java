@@ -115,7 +115,7 @@ public class CleanChatChannelsPlugin extends Plugin
 
 			if (Objects.equals(event.getKey(), HIDE_SCROLLBAR_KEY))
 			{
-				clientThread.invoke(this::handleScrollbarVisibility);
+				clientThread.invoke(() -> handleScrollbarVisibility(true));
 			}
 		}
 	}
@@ -125,11 +125,11 @@ public class CleanChatChannelsPlugin extends Plugin
 	{
 		if (event.getGroupId() == InterfaceID.CHATBOX)
 		{
-			handleScrollbarVisibility();
+			handleScrollbarVisibility(false);
 		}
 	}
 
-	private void handleScrollbarVisibility()
+	private void handleScrollbarVisibility(boolean isConfigChange)
 	{
 		Widget chatbox = client.getWidget(InterfaceID.Chatbox.SCROLLAREA);
 		Widget scrollBarContainer = client.getWidget(InterfaceID.Chatbox.CHATSCROLLBAR);
@@ -138,10 +138,11 @@ public class CleanChatChannelsPlugin extends Plugin
 
 			if (config.hideScrollbar()) {
 				chatbox.setOriginalWidth(chatbox.getWidth() + scrollBarContainer.getWidth());
-			} else {
+				chatbox.setWidthMode(WidgetSizeMode.ABSOLUTE);
+			} else if (isConfigChange) {
 				chatbox.setOriginalWidth(chatbox.getWidth() - scrollBarContainer.getWidth());
+				chatbox.setWidthMode(WidgetSizeMode.ABSOLUTE);
 			}
-			chatbox.setWidthMode(WidgetSizeMode.ABSOLUTE);
 			chatbox.revalidate();
 
 			client.refreshChat();
