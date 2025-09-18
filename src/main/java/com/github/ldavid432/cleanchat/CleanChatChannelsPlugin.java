@@ -114,7 +114,7 @@ public class CleanChatChannelsPlugin extends Plugin
 
 			if (Objects.equals(event.getKey(), HIDE_SCROLLBAR_KEY))
 			{
-				clientThread.invoke(() -> handleScrollbarVisibility(true));
+				clientThread.invoke(this::handleScrollbarVisibility);
 			}
 		}
 	}
@@ -124,11 +124,11 @@ public class CleanChatChannelsPlugin extends Plugin
 	{
 		if (event.getGroupId() == InterfaceID.CHATBOX)
 		{
-			handleScrollbarVisibility(false);
+			handleScrollbarVisibility();
 		}
 	}
 
-	private void handleScrollbarVisibility(boolean isConfigChange)
+	private void handleScrollbarVisibility()
 	{
 		Widget chatbox = client.getWidget(InterfaceID.Chatbox.SCROLLAREA);
 		Widget scrollBarContainer = client.getWidget(InterfaceID.Chatbox.CHATSCROLLBAR);
@@ -138,7 +138,7 @@ public class CleanChatChannelsPlugin extends Plugin
 			// width mode is MINUS, so we if we want to match the parent width we use 0
 			if (config.hideScrollbar()) {
 				chatbox.setOriginalWidth(0);
-			} else if (isConfigChange) {
+			} else {
 				chatbox.setOriginalWidth(16);
 			}
 			chatbox.revalidate();
