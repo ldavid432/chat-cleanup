@@ -139,7 +139,7 @@ public class CleanChatChannelsPlugin extends Plugin
 			if (config.hideScrollbar()) {
 				chatbox.setOriginalWidth(0);
 			} else {
-				chatbox.setOriginalWidth(16);
+				chatbox.setOriginalWidth(scrollBarContainer.getWidth());
 			}
 			chatbox.revalidate();
 
