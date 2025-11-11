@@ -67,6 +67,8 @@ public class CleanChatChannelsPlugin extends Plugin
 		eventBus.register(channelNameManager);
 		channelNameManager.startup();
 
+		clientThread.invoke(() -> handleScrollbarVisibility());
+
 		if (client.getGameState() == GameState.LOGGED_IN)
 		{
 			log.debug("Plugin enabled. Refreshing chat.");
@@ -101,6 +103,7 @@ public class CleanChatChannelsPlugin extends Plugin
 
 		// Remove all our shenanigans
 		log.debug("Plugin disabled. Refreshing chat.");
+		clientThread.invoke(() -> handleScrollbarVisibility(false));
 		client.refreshChat();
 	}
 
@@ -114,7 +117,7 @@ public class CleanChatChannelsPlugin extends Plugin
 
 			if (Objects.equals(event.getKey(), HIDE_SCROLLBAR_KEY))
 			{
-				clientThread.invoke(this::handleScrollbarVisibility);
+				clientThread.invoke(() -> handleScrollbarVisibility());
 			}
 		}
 	}
@@ -130,13 +133,18 @@ public class CleanChatChannelsPlugin extends Plugin
 
 	private void handleScrollbarVisibility()
 	{
+		handleScrollbarVisibility(config.hideScrollbar());
+	}
+
+	private void handleScrollbarVisibility(boolean hideScrollbar)
+	{
 		Widget chatbox = client.getWidget(InterfaceID.Chatbox.SCROLLAREA);
 		Widget scrollBarContainer = client.getWidget(InterfaceID.Chatbox.CHATSCROLLBAR);
 		if (chatbox != null && scrollBarContainer != null) {
-			scrollBarContainer.setHidden(config.hideScrollbar());
+			scrollBarContainer.setHidden(hideScrollbar);
 
 			// width mode is MINUS, so we if we want to match the parent width we use 0
-			if (config.hideScrollbar()) {
+			if (hideScrollbar) {
 				chatbox.setOriginalWidth(0);
 			} else {
 				chatbox.setOriginalWidth(scrollBarContainer.getWidth());
