@@ -8,6 +8,7 @@ import static com.github.ldavid432.cleanchat.CleanChatUtil.VARC_INT_CHAT_TAB;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.sanitizeName;
 import com.github.ldavid432.cleanchat.data.ChannelNameRemoval;
 import com.github.ldavid432.cleanchat.data.ChatTab;
+import java.awt.Color;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import java.util.Collections;
@@ -30,6 +31,7 @@ import static net.runelite.api.widgets.WidgetPositionMode.ABSOLUTE_TOP;
 import static net.runelite.api.widgets.WidgetSizeMode.ABSOLUTE;
 import static net.runelite.api.widgets.WidgetSizeMode.MINUS;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.Text;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -226,6 +228,7 @@ public class ChatWidgetEditor
 
 						ChannelNameRemoval channelRemoval = match.getLeft();
 						String matchedChannelName = match.getRight();
+						String widgetChannelText = sanitizeName(group.getChannel().getText());
 
 						group.setChannelType(channelRemoval);
 
@@ -236,9 +239,19 @@ public class ChatWidgetEditor
 								//language=RegExp
 								"\\[[^]\\[]*" + matchedChannelName + ".*]"
 							);
+						} else if (!channelRemoval.getShortName(config).isBlank()) {
+							group.replaceChannelName(
+								"[" + matchedChannelName + "]",
+								//language=RegExp
+								"\\[[^]\\[]*" + matchedChannelName + ".*]", // TODO: Potentially allow a custom color for channel names
+								"[" + ColorUtil.wrapWithColorTag(config.getShortClanName(), Color.BLUE) + "]"
+							);
+
+							matchedChannelName = config.getShortClanName();
+							widgetChannelText = sanitizeName("[" + config.getShortClanName() + "]");
 						}
 
-						group.indent(config, matchedChannelName, sanitizeName(group.getChannel().getText()));
+						group.indent(config, matchedChannelName, widgetChannelText);
 					}
 
 					// Calculate height last

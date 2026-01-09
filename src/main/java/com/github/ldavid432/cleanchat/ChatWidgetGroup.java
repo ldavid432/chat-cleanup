@@ -9,8 +9,10 @@ import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.widgets.Widget;
 
+@Slf4j
 @Getter
 @RequiredArgsConstructor
 class ChatWidgetGroup
@@ -170,12 +172,18 @@ class ChatWidgetGroup
 	// TODO: Only pass in regex and get the matched string from regex - or use regex before this call and pass in the results
 	public void removeFromChannel(String text, String textRegex)
 	{
-		int removedWidth = getTextLength(text);
+		replaceChannelName(text, textRegex, "");
+	}
+
+	public void replaceChannelName(String text, String textRegex, String newChannelName)
+	{
+		int currentWidth = getTextLength(text);
+		int newWidth = getTextLength(newChannelName);
+		int removedWidth = currentWidth - newWidth;
 
 		String newText = getChannel().getText()
-			// Account for color tags when removing name
 			// TODO: Target the channel name more precisely, this should do for now to avoid targeting timestamps in brackets
-			.replaceFirst(textRegex, "");
+			.replaceFirst(textRegex, newChannelName);
 
 		// Remove trailing spaces - probably only happens with timestamps turned on
 		if (newText.endsWith(" "))

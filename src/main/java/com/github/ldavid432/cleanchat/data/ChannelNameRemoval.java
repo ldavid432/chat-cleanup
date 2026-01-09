@@ -13,13 +13,14 @@ import org.apache.commons.lang3.tuple.Pair;
 @AllArgsConstructor
 public enum ChannelNameRemoval
 {
-	CLAN(CleanChatChannelsConfig::removeClanName, ChannelNameManager::getClanNames),
-	GUEST_CLAN(CleanChatChannelsConfig::removeGuestClanName, ChannelNameManager::getGuestClanNames),
-	FRIENDS_CHAT(CleanChatChannelsConfig::removeFriendsChatName, ChannelNameManager::getFriendsChatNames),
+	CLAN(CleanChatChannelsConfig::removeClanName, ChannelNameManager::getClanNames, CleanChatChannelsConfig::getShortClanName),
+	GUEST_CLAN(CleanChatChannelsConfig::removeGuestClanName, ChannelNameManager::getGuestClanNames, CleanChatChannelsConfig::getShortGuestClanName),
+	FRIENDS_CHAT(CleanChatChannelsConfig::removeFriendsChatName, ChannelNameManager::getFriendsChatNames, CleanChatChannelsConfig::getShortFriendsName),
 	GROUP_IRON(
 		CleanChatChannelsConfig::removeGroupIronName,
 		ChannelNameManager::getGroupIronNames,
-		(config, tab) -> config.removeGroupIronFromClan() && tab == ChatTab.CLAN
+		(config, tab) -> config.removeGroupIronFromClan() && tab == ChatTab.CLAN,
+		CleanChatChannelsConfig::getShortGroupIronName
 	);
 
 	public List<String> getNames(ChannelNameManager channelNameManager)
@@ -37,12 +38,20 @@ public enum ChannelNameRemoval
 		return isTabBlocked.apply(config, tab);
 	}
 
+	public String getShortName(CleanChatChannelsConfig config)
+	{
+		return getShortName.apply(config);
+	}
+
 	private final Function<CleanChatChannelsConfig, Boolean> isEnabled;
 	private final Function<ChannelNameManager, List<String>> getNames;
 	private final BiFunction<CleanChatChannelsConfig, ChatTab, Boolean> isTabBlocked;
+	private final Function<CleanChatChannelsConfig, String> getShortName;
 
-	ChannelNameRemoval(Function<CleanChatChannelsConfig, Boolean> isEnabled, Function<ChannelNameManager, List<String>> getNames) {
-		this(isEnabled, getNames, (c, t) -> false);
+	ChannelNameRemoval(Function<CleanChatChannelsConfig, Boolean> isEnabled, Function<ChannelNameManager, List<String>> getNames,
+					   Function<CleanChatChannelsConfig, String> getShortName)
+	{
+		this(isEnabled, getNames, (c, t) -> false, getShortName);
 	}
 
 	public static Pair<ChannelNameRemoval, String> findChannelMatch(String channel, ChannelNameManager channelNameManager)
