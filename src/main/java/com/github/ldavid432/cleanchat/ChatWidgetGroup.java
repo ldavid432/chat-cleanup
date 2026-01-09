@@ -209,15 +209,4 @@ class ChatWidgetGroup
 		getChannel().revalidate();
 	}
 
-	public void block()
-	{
-		onAllWidgets(widget -> {
-			widget.setHidden(true);
-			widget.setOriginalY(0);
-		});
-
-		getClickBox().setHidden(true);
-		getClickBox().setOriginalY(0);
-	}
-
 }

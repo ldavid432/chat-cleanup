@@ -2,10 +2,13 @@ package com.github.ldavid432.cleanchat.data;
 
 import com.github.ldavid432.cleanchat.ChannelNameManager;
 import com.github.ldavid432.cleanchat.CleanChatChannelsConfig;
+import com.github.ldavid432.cleanchat.CleanChatUtil;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.sanitizeName;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import lombok.AllArgsConstructor;
+import org.apache.commons.lang3.tuple.Pair;
 
 @AllArgsConstructor
 public enum ChannelNameRemoval
@@ -40,5 +43,29 @@ public enum ChannelNameRemoval
 
 	ChannelNameRemoval(Function<CleanChatChannelsConfig, Boolean> isEnabled, Function<ChannelNameManager, List<String>> getNames) {
 		this(isEnabled, getNames, (c, t) -> false);
+	}
+
+	public static Pair<ChannelNameRemoval, String> findChannelMatch(String channel, ChannelNameManager channelNameManager)
+	{
+		for (ChannelNameRemoval channelRemoval : ChannelNameRemoval.values())
+		{
+			if (channel == null)
+			{
+				break;
+			}
+			String widgetChannelName = sanitizeName(channel);
+			String matchedChannelName = channelRemoval.getNames(channelNameManager).stream()
+				.map(CleanChatUtil::sanitizeName)
+				.filter(channel1 -> widgetChannelName.contains("[" + channel1 + "]"))
+				.findFirst()
+				.orElse(null);
+
+			if (matchedChannelName != null)
+			{
+				return Pair.of(channelRemoval, matchedChannelName);
+			}
+		}
+
+		return null;
 	}
 }

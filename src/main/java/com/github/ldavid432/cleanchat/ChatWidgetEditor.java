@@ -7,17 +7,16 @@ import static com.github.ldavid432.cleanchat.CleanChatUtil.SCRIPT_SCROLLBAR_MIN;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.VARC_INT_CHAT_TAB;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.sanitizeName;
 import com.github.ldavid432.cleanchat.data.ChannelNameRemoval;
-import com.github.ldavid432.cleanchat.data.ChatBlock;
 import com.github.ldavid432.cleanchat.data.ChatTab;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
@@ -32,17 +31,18 @@ import static net.runelite.api.widgets.WidgetSizeMode.ABSOLUTE;
 import static net.runelite.api.widgets.WidgetSizeMode.MINUS;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.util.Text;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * <ul>
  *     <li>Removes channel name from chat widgets</li>
- *     <li>Blocks certain channel messages</li>
  *     <li>Indents multi-line messages</li>
  *     <li>Adjusts message height based on name removal and indentation</li>
  * </ul>
  */
 @Slf4j
-public class ChannelNameReplacer
+@Singleton
+public class ChatWidgetEditor
 {
 	@Inject
 	private CleanChatChannelsConfig config;
@@ -162,8 +162,6 @@ public class ChannelNameReplacer
 			Widget[] chatWidgets = chatbox.getDynamicChildren().clone();
 			Widget[] clickboxWidgets = chatbox.getStaticChildren().clone();
 
-			AtomicInteger removedCount = new AtomicInteger();
-
 			// TODO: Make i = 0
 			// TODO: See if we can avoid looping through every single widget even if there is no text there
 			// for (int i = 2; i < chats.length; i += 4)
@@ -218,65 +216,35 @@ public class ChannelNameReplacer
 					return new ChatWidgetGroup(channelWidget, chatWidgets[rankWidgetIndex], chatWidgets[nameWidgetIndex], chatWidgets[messageWidgetIndex], clickboxWidgets[(i - 2) / 4]);
 				})
 				.filter(Objects::nonNull)
-				.filter(group -> {
-					boolean blockChat = Stream.of(ChatBlock.values()).anyMatch(block -> block.appliesTo(config, group.getMessage().getText()));
-
-					if (!blockChat && !group.getChannel().getText().isEmpty())
+				.peek(group -> {
+					if (!group.getChannel().getText().isEmpty())
 					{
-						// If the text is not blank we *should* be guaranteed a match
-						for (ChannelNameRemoval channelRemoval : ChannelNameRemoval.values())
-						{
-							String widgetChannelName = sanitizeName(group.getChannel().getText());
-							String matchedChannelName = channelRemoval.getNames(channelNameManager).stream()
-								.map(CleanChatUtil::sanitizeName)
-								.filter(channel -> widgetChannelName.contains("[" + channel + "]"))
-								.findFirst()
-								.orElse(null);
-
-							if (matchedChannelName != null)
-							{
-								group.setChannelType(channelRemoval);
-
-								blockChat = channelRemoval.isTabBlocked(config, selectedChatTab);
-
-								if (!blockChat && channelRemoval.isEnabled(config))
-								{
-									group.removeFromChannel(
-										"[" + matchedChannelName + "]",
-										//language=RegExp
-										"\\[[^]\\[]*" + matchedChannelName + ".*]"
-									);
-								}
-
-								if (!blockChat)
-								{
-									group.indent(config, matchedChannelName, widgetChannelName);
-								}
-
-								break;
-							}
+						Pair<ChannelNameRemoval, String> match = ChannelNameRemoval.findChannelMatch(group.getChannel().getText(), channelNameManager);
+						if (match == null) {
+							return;
 						}
+
+						ChannelNameRemoval channelRemoval = match.getLeft();
+						String matchedChannelName = match.getRight();
+
+						group.setChannelType(channelRemoval);
+
+						if (channelRemoval.isEnabled(config))
+						{
+							group.removeFromChannel(
+								"[" + matchedChannelName + "]",
+								//language=RegExp
+								"\\[[^]\\[]*" + matchedChannelName + ".*]"
+							);
+						}
+
+						group.indent(config, matchedChannelName, sanitizeName(group.getChannel().getText()));
 					}
 
-					// Totally bizarre situation where after hopping the clan instruction becomes the name and the previous 'did you know?' becomes the message
-					//  channel=nothing, name=clan instruction, message=did you know? ...
-					if (!blockChat && ChatBlock.CLAN_INSTRUCTION.appliesTo(config, group.getName().getText())) {
-						blockChat = true;
-					}
-
-					if (blockChat)
-					{
-						group.block();
-						removedCount.getAndIncrement();
-					}
-
-					return !blockChat;
+					// Calculate height last
+					group.calculateHeight();
 				})
-				// Calculate height last
-				.peek(ChatWidgetGroup::calculateHeight)
 				.collect(Collectors.toList());
-
-			log.debug("Showing {} chat messages out of {}", displayedChats.size(), displayedChats.size() + removedCount.get());
 
 			Collections.reverse(displayedChats);
 
@@ -313,7 +281,9 @@ public class ChannelNameReplacer
 
 			// Store this since rebuildchatbox changes the scroll position before we can
 			lastScrollDiff = chatbox.getScrollHeight() - chatbox.getScrollY();
-		} else {
+		}
+		else
+		{
 			// chat closed - reset scroll
 			lastScrollDiff = -1;
 			chatboxScrolled = false;
@@ -368,7 +338,7 @@ public class ChannelNameReplacer
 			// Custom logic to restore our scroll values since rebuildchatbox will override them
 			int2 = max(scrollArea.getScrollHeight() - lastScrollDiff, 0);
 		}
-		else if(scrollArea.getHeight() < 0)
+		else if (scrollArea.getHeight() < 0)
 		{
 			// For some reason scrollArea.getHeight is negative after the first login so we just default to 0
 			int2 = 0;

@@ -46,7 +46,10 @@ public class CleanChatChannelsPlugin extends Plugin
 	private ChannelNameManager channelNameManager;
 
 	@Inject
-	private ChannelNameReplacer channelNameReplacer;
+	private ChatWidgetEditor chatWidgetEditor;
+
+	@Inject
+	private ChatBlocker chatBlocker;
 
 	@Inject
 	private EventBus eventBus;
@@ -63,7 +66,8 @@ public class CleanChatChannelsPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
-		eventBus.register(channelNameReplacer);
+		eventBus.register(chatBlocker);
+		eventBus.register(chatWidgetEditor);
 		eventBus.register(channelNameManager);
 		channelNameManager.startup();
 
@@ -97,7 +101,8 @@ public class CleanChatChannelsPlugin extends Plugin
 	@Override
 	protected void shutDown() throws Exception
 	{
-		eventBus.unregister(channelNameReplacer);
+		eventBus.unregister(chatBlocker);
+		eventBus.unregister(chatWidgetEditor);
 		eventBus.unregister(channelNameManager);
 		channelNameManager.shutdown();
 
