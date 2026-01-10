@@ -8,6 +8,8 @@ All the below options are toggleable (most are **off** by default)
     - Several options to reduce the indentation on the following lines of multi-line messages
   - Hide the chat scrollbar
     - WHen hidden you can still scroll with your mouse wheel
+  - Set a custom name for each channel
+    - Intended to help you reduce the channel name size instead of full removal, but can also be customized to anything you want
 - Clan
   - Remove 'To talk in your clan's channel...' message
   - Remove clan name from messages
@@ -24,6 +26,14 @@ All the below options are toggleable (most are **off** by default)
   - Remove 'To talk in your Ironman Group's channel...' message
   - Remove group name from messages
   - Remove group broadcasts from the clan chat tab (only display them in group tab)
+
+### Custom channel name
+
+- To reference your current clan name use `$$`
+- To add color wrap whatever you want to color with: `<col=123456>` and `</col>` where `123456` is a hex color code
+  - Example (blue): `[<col=0000ff>My Clan</col>]`
+- Can also be used to remove the brackets around your clan name if you so desire
+- To disable either leave blank or reset to the default value (right-click the specific config name)
 
 ## Known Issues
 

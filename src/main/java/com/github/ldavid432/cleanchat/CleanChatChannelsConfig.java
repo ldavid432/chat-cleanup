@@ -2,10 +2,12 @@ package com.github.ldavid432.cleanchat;
 
 import static com.github.ldavid432.cleanchat.CleanChatChannelsConfig.GROUP;
 import com.github.ldavid432.cleanchat.data.IndentMode;
+import java.awt.Color;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
+import net.runelite.client.util.ColorUtil;
 
 @ConfigGroup(GROUP)
 public interface CleanChatChannelsConfig extends Config
@@ -13,6 +15,7 @@ public interface CleanChatChannelsConfig extends Config
 	String GROUP = "cleanchat";
 	String HIDE_SCROLLBAR_KEY = "hideScrollbar";
 	int CURRENT_VERSION = 2;
+	String DEFAULT_CUSTOM_CHANNEL_NAME = "[" + ColorUtil.wrapWithColorTag("$$", Color.BLUE) + "]";
 
 	@ConfigItem(
 		keyName = "lastSeenVersion",
@@ -104,13 +107,16 @@ public interface CleanChatChannelsConfig extends Config
 	@ConfigItem(
 		keyName = "shortClanName",
 		name = "Custom clan name",
-		description = "Replace your clan name with a custom one in clan chat messages. Leave blank to disable",
+		description = "Replace your clan name with a custom one in clan chat messages.<br>" +
+			"Leave blank (or the default value) to disable<br>" +
+			"You can reference your current clan name using $$.<br>" +
+			"See the plugin details page for more info (right-click plugin name and click support)",
 		section = clanSection,
 		position = 2
 	)
 	default String getShortClanName()
 	{
-		return "";
+		return DEFAULT_CUSTOM_CHANNEL_NAME;
 	}
 
 	@ConfigSection(
@@ -165,7 +171,7 @@ public interface CleanChatChannelsConfig extends Config
 	)
 	default String getShortGuestClanName()
 	{
-		return "";
+		return DEFAULT_CUSTOM_CHANNEL_NAME;
 	}
 
 	@ConfigSection(
@@ -220,7 +226,7 @@ public interface CleanChatChannelsConfig extends Config
 	)
 	default String getShortGroupIronName()
 	{
-		return "";
+		return DEFAULT_CUSTOM_CHANNEL_NAME;
 	}
 
 	@ConfigSection(
@@ -287,6 +293,6 @@ public interface CleanChatChannelsConfig extends Config
 	)
 	default String getShortFriendsName()
 	{
-		return "";
+		return DEFAULT_CUSTOM_CHANNEL_NAME;
 	}
 }

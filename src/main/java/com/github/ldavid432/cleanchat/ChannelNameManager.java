@@ -1,8 +1,10 @@
 package com.github.ldavid432.cleanchat;
 
+import static com.github.ldavid432.cleanchat.CleanChatChannelsConfig.DEFAULT_CUSTOM_CHANNEL_NAME;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.MAX_CHANNEL_LIST_SIZE;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import lombok.Getter;
@@ -16,9 +18,10 @@ import net.runelite.api.events.ClanChannelChanged;
 import net.runelite.api.events.FriendsChatChanged;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 
 /**
- * Tracks current and previous chat channel names for use in the ChatChannelReplacer
+ * Tracks current and previous chat channel names for use in the ChatWidgetEditor
  */
 @Slf4j
 @Singleton
@@ -31,6 +34,9 @@ public class ChannelNameManager
 	@Inject
 	private ClientThread clientThread;
 
+	@Inject
+	private CleanChatChannelsConfig config;
+
 	// Store these as a collection so that even if you leave a channel the chats will still be "cleaned"
 	@Getter
 	private final List<String> clanNames = new ArrayList<>();
@@ -40,6 +46,15 @@ public class ChannelNameManager
 	private final List<String> friendsChatNames = new ArrayList<>();
 	@Getter
 	private final List<String> groupIronNames = new ArrayList<>();
+
+	@Getter
+	private String shortClanName = DEFAULT_CUSTOM_CHANNEL_NAME;
+	@Getter
+	private String shortGuestClanName = DEFAULT_CUSTOM_CHANNEL_NAME;
+	@Getter
+	private String shortFriendsChatName = DEFAULT_CUSTOM_CHANNEL_NAME;
+	@Getter
+	private String shortGroupIronName = DEFAULT_CUSTOM_CHANNEL_NAME;
 
 	public void startup()
 	{
@@ -67,9 +82,12 @@ public class ChannelNameManager
 				}
 			});
 		}
+
+		updateShortNames();
 	}
 
-	public void shutdown() {
+	public void shutdown()
+	{
 		clanNames.clear();
 		groupIronNames.clear();
 		guestClanNames.clear();
@@ -132,5 +150,22 @@ public class ChannelNameManager
 		}
 
 		nameList.add(name);
+	}
+
+	@Subscribe
+	public void onConfigChanged(ConfigChanged event)
+	{
+		if (Objects.equals(event.getGroup(), CleanChatChannelsConfig.GROUP) && event.getKey().startsWith("short"))
+		{
+			updateShortNames();
+		}
+	}
+
+	private void updateShortNames()
+	{
+		shortClanName = config.getShortClanName();
+		shortGuestClanName = config.getShortGuestClanName();
+		shortFriendsChatName = config.getShortFriendsName();
+		shortGroupIronName = config.getShortGroupIronName();
 	}
 }

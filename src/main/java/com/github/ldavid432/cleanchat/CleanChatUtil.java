@@ -118,4 +118,14 @@ public class CleanChatUtil
 		return numLines;
 	}
 
+	public static String wrapChannelName(String channelName)
+	{
+		return "[" + channelName + "]";
+	}
+
+	public static String wrapChannelNameRegex(String channelName)
+	{
+		return "\\[[^]\\[]*" + channelName + ".*]";
+	}
+
 }

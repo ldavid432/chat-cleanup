@@ -2,9 +2,11 @@ package com.github.ldavid432.cleanchat.data;
 
 import com.github.ldavid432.cleanchat.ChannelNameManager;
 import com.github.ldavid432.cleanchat.CleanChatChannelsConfig;
+import static com.github.ldavid432.cleanchat.CleanChatChannelsConfig.DEFAULT_CUSTOM_CHANNEL_NAME;
 import com.github.ldavid432.cleanchat.CleanChatUtil;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.sanitizeName;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import lombok.AllArgsConstructor;
@@ -13,14 +15,15 @@ import org.apache.commons.lang3.tuple.Pair;
 @AllArgsConstructor
 public enum ChannelNameRemoval
 {
-	CLAN(CleanChatChannelsConfig::removeClanName, ChannelNameManager::getClanNames, CleanChatChannelsConfig::getShortClanName),
-	GUEST_CLAN(CleanChatChannelsConfig::removeGuestClanName, ChannelNameManager::getGuestClanNames, CleanChatChannelsConfig::getShortGuestClanName),
-	FRIENDS_CHAT(CleanChatChannelsConfig::removeFriendsChatName, ChannelNameManager::getFriendsChatNames, CleanChatChannelsConfig::getShortFriendsName),
+	// TODO: Cache booleans & indent mode config values
+	CLAN(CleanChatChannelsConfig::removeClanName, ChannelNameManager::getClanNames, ChannelNameManager::getShortClanName),
+	GUEST_CLAN(CleanChatChannelsConfig::removeGuestClanName, ChannelNameManager::getGuestClanNames, ChannelNameManager::getShortGuestClanName),
+	FRIENDS_CHAT(CleanChatChannelsConfig::removeFriendsChatName, ChannelNameManager::getFriendsChatNames, ChannelNameManager::getShortFriendsChatName),
 	GROUP_IRON(
 		CleanChatChannelsConfig::removeGroupIronName,
 		ChannelNameManager::getGroupIronNames,
 		(config, tab) -> config.removeGroupIronFromClan() && tab == ChatTab.CLAN,
-		CleanChatChannelsConfig::getShortGroupIronName
+		ChannelNameManager::getShortGroupIronName
 	);
 
 	public List<String> getNames(ChannelNameManager channelNameManager)
@@ -38,18 +41,40 @@ public enum ChannelNameRemoval
 		return isTabBlocked.apply(config, tab);
 	}
 
-	public String getShortName(CleanChatChannelsConfig config)
+	public boolean isShortNameDefault(ChannelNameManager channelNameManager)
 	{
-		return getShortName.apply(config);
+		return Objects.equals(getShortName.apply(channelNameManager), DEFAULT_CUSTOM_CHANNEL_NAME);
+	}
+
+	public String getShortName(ChannelNameManager channelNameManager)
+	{
+		final String shortName = getShortName.apply(channelNameManager);
+
+		if (shortName.contains("$$"))
+		{
+			final List<String> names = getNames(channelNameManager);
+			if (!names.isEmpty())
+			{
+				return shortName.replace("$$", names.get(0));
+			}
+			else
+			{
+				return null;
+			}
+		}
+		else
+		{
+			return shortName;
+		}
 	}
 
 	private final Function<CleanChatChannelsConfig, Boolean> isEnabled;
 	private final Function<ChannelNameManager, List<String>> getNames;
 	private final BiFunction<CleanChatChannelsConfig, ChatTab, Boolean> isTabBlocked;
-	private final Function<CleanChatChannelsConfig, String> getShortName;
+	private final Function<ChannelNameManager, String> getShortName;
 
 	ChannelNameRemoval(Function<CleanChatChannelsConfig, Boolean> isEnabled, Function<ChannelNameManager, List<String>> getNames,
-					   Function<CleanChatChannelsConfig, String> getShortName)
+					   Function<ChannelNameManager, String> getShortName)
 	{
 		this(isEnabled, getNames, (c, t) -> false, getShortName);
 	}

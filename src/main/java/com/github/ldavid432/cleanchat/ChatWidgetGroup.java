@@ -65,8 +65,8 @@ class ChatWidgetGroup
 
 	public void indent(CleanChatChannelsConfig config, String matchedChannelName, String widgetChannelText)
 	{
-		int startOfChannel = widgetChannelText.indexOf("[" + matchedChannelName + "]");
-		int endOfChannel = startOfChannel + matchedChannelName.length() + 2;
+		int startOfChannel = widgetChannelText.indexOf(matchedChannelName);
+		int endOfChannel = startOfChannel + matchedChannelName.length();
 
 		int indentWidth = 0;
 
@@ -175,7 +175,7 @@ class ChatWidgetGroup
 		replaceChannelName(text, textRegex, "");
 	}
 
-	public void replaceChannelName(String text, String textRegex, String newChannelName)
+	public String replaceChannelName(String text, String textRegex, String newChannelName)
 	{
 		int currentWidth = getTextLength(text);
 		int newWidth = getTextLength(newChannelName);
@@ -215,6 +215,8 @@ class ChatWidgetGroup
 		// Reduce channel width if it was removed
 		getChannel().setOriginalWidth(getChannel().getOriginalWidth() - removedWidth);
 		getChannel().revalidate();
+
+		return newText;
 	}
 
 }
