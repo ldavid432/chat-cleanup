@@ -30,6 +30,7 @@ All the below options are toggleable (most are **off** by default)
 ### Custom channel name
 
 - To reference your current clan name use `$$`
+  - Example: `~$$~` becomes `~My Clan~`
 - To add color wrap whatever you want to color with: `<col=123456>` and `</col>` where `123456` is a hex color code
   - Example (blue): `[<col=0000ff>My Clan</col>]`
 - Can also be used to remove the brackets around your clan name if you so desire

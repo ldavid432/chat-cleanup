@@ -6,8 +6,8 @@ import static com.github.ldavid432.cleanchat.CleanChatUtil.SCRIPT_SCROLLBAR_MAX;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.SCRIPT_SCROLLBAR_MIN;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.VARC_INT_CHAT_TAB;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.sanitizeName;
-import static com.github.ldavid432.cleanchat.CleanChatUtil.wrapChannelName;
-import static com.github.ldavid432.cleanchat.CleanChatUtil.wrapChannelNameRegex;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.wrapWithBrackets;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.wrapWithChannelNameRegex;
 import com.github.ldavid432.cleanchat.data.ChannelNameRemoval;
 import com.github.ldavid432.cleanchat.data.ChatTab;
 import static java.lang.Math.max;
@@ -236,19 +236,19 @@ public class ChatWidgetEditor
 						if (channelRemoval.isEnabled(config))
 						{
 							group.removeFromChannel(
-								wrapChannelName(matchedChannelName),
+								wrapWithBrackets(matchedChannelName),
 								//language=RegExp
-								wrapChannelNameRegex(matchedChannelName)
+								wrapWithChannelNameRegex(matchedChannelName)
 							);
 
-							matchedChannelName = wrapChannelName(matchedChannelName);
+							matchedChannelName = wrapWithBrackets(matchedChannelName);
 						}
 						else if (shortName != null && !shortName.isBlank() && !channelRemoval.isShortNameDefault(channelNameManager))
 						{
 							String updatedChannelText = group.replaceChannelName(
-								wrapChannelName(matchedChannelName),
+								wrapWithBrackets(matchedChannelName),
 								//language=RegExp
-								wrapChannelNameRegex(matchedChannelName),
+								wrapWithChannelNameRegex(matchedChannelName),
 								shortName
 							);
 
@@ -257,7 +257,7 @@ public class ChatWidgetEditor
 						}
 						else
 						{
-							matchedChannelName = wrapChannelName(matchedChannelName);
+							matchedChannelName = wrapWithBrackets(matchedChannelName);
 						}
 
 						group.indent(config, matchedChannelName, widgetChannelText);

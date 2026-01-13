@@ -19,6 +19,7 @@ public class CleanChatUtil
 	public static final int VARC_INT_CHAT_TAB = 41;
 	public static final int MAX_CHANNEL_LIST_SIZE = 128;
 	private static final Pattern IMG_TAG_REGEXP = Pattern.compile("<img=[^>]*>");
+	public static final String CURRENT_CLAN_REPLACER = "$$";
 
 	public static String sanitizeName(String string)
 	{
@@ -118,12 +119,12 @@ public class CleanChatUtil
 		return numLines;
 	}
 
-	public static String wrapChannelName(String channelName)
+	public static String wrapWithBrackets(String channelName)
 	{
 		return "[" + channelName + "]";
 	}
 
-	public static String wrapChannelNameRegex(String channelName)
+	public static String wrapWithChannelNameRegex(String channelName)
 	{
 		return "\\[[^]\\[]*" + channelName + ".*]";
 	}

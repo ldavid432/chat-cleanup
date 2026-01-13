@@ -4,6 +4,7 @@ import com.github.ldavid432.cleanchat.ChannelNameManager;
 import com.github.ldavid432.cleanchat.CleanChatChannelsConfig;
 import static com.github.ldavid432.cleanchat.CleanChatChannelsConfig.DEFAULT_CUSTOM_CHANNEL_NAME;
 import com.github.ldavid432.cleanchat.CleanChatUtil;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.CURRENT_CLAN_REPLACER;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.sanitizeName;
 import java.util.List;
 import java.util.Objects;
@@ -50,12 +51,12 @@ public enum ChannelNameRemoval
 	{
 		final String shortName = getShortName.apply(channelNameManager);
 
-		if (shortName.contains("$$"))
+		if (shortName.contains(CURRENT_CLAN_REPLACER))
 		{
 			final List<String> names = getNames(channelNameManager);
 			if (!names.isEmpty())
 			{
-				return shortName.replace("$$", names.get(0));
+				return shortName.replace(CURRENT_CLAN_REPLACER, names.get(0));
 			}
 			else
 			{

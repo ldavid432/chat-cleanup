@@ -1,13 +1,15 @@
 package com.github.ldavid432.cleanchat;
 
 import static com.github.ldavid432.cleanchat.CleanChatChannelsConfig.GROUP;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.CURRENT_CLAN_REPLACER;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.wrapWithBrackets;
 import com.github.ldavid432.cleanchat.data.IndentMode;
 import java.awt.Color;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
-import net.runelite.client.util.ColorUtil;
+import static net.runelite.client.util.ColorUtil.wrapWithColorTag;
 
 @ConfigGroup(GROUP)
 public interface CleanChatChannelsConfig extends Config
@@ -15,7 +17,7 @@ public interface CleanChatChannelsConfig extends Config
 	String GROUP = "cleanchat";
 	String HIDE_SCROLLBAR_KEY = "hideScrollbar";
 	int CURRENT_VERSION = 2;
-	String DEFAULT_CUSTOM_CHANNEL_NAME = "[" + ColorUtil.wrapWithColorTag("$$", Color.BLUE) + "]";
+	String DEFAULT_CUSTOM_CHANNEL_NAME = wrapWithBrackets(wrapWithColorTag(CURRENT_CLAN_REPLACER, Color.BLUE));
 
 	@ConfigItem(
 		keyName = "lastSeenVersion",
