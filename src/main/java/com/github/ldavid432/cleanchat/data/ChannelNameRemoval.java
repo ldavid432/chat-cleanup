@@ -90,7 +90,7 @@ public enum ChannelNameRemoval
 			String widgetChannelName = sanitizeName(channel);
 			String matchedChannelName = channelRemoval.getNames(channelNameManager).stream()
 				.map(CleanChatUtil::sanitizeName)
-				.filter(channel1 -> widgetChannelName.contains("[" + channel1 + "]"))
+				.filter(widgetChannelName::contains)
 				.findFirst()
 				.orElse(null);
 
