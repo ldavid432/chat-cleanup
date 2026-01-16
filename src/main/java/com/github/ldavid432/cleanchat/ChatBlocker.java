@@ -26,7 +26,6 @@
  */
 package com.github.ldavid432.cleanchat;
 
-import static com.github.ldavid432.cleanchat.CleanChatUtil.VARC_INT_CHAT_TAB;
 import com.github.ldavid432.cleanchat.data.ChannelNameRemoval;
 import com.github.ldavid432.cleanchat.data.ChatBlock;
 import com.github.ldavid432.cleanchat.data.ChatTab;
@@ -37,6 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.MessageNode;
 import net.runelite.api.events.ScriptCallbackEvent;
+import net.runelite.api.gameval.VarClientID;
 import net.runelite.client.eventbus.Subscribe;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -77,7 +77,7 @@ public class ChatBlocker
 
 		// end core RL
 
-		ChatTab selectedChatTab = ChatTab.of(client.getVarcIntValue(VARC_INT_CHAT_TAB));
+		ChatTab selectedChatTab = ChatTab.of(client.getVarcIntValue(VarClientID.CHAT_VIEW));
 
 		boolean blockChat = Stream.of(ChatBlock.values()).anyMatch(block -> block.appliesTo(config, message));
 
