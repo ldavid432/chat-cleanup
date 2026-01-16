@@ -16,7 +16,6 @@ public class CleanChatUtil
 	// Scripts 32-36 are all about scrolling in different ways
 	public static final int SCRIPT_SCROLLBAR_MIN = 32;
 	public static final int SCRIPT_SCROLLBAR_MAX = 36;
-	public static final int VARC_INT_CHAT_TAB = 41;
 	public static final int MAX_CHANNEL_LIST_SIZE = 128;
 	private static final Pattern IMG_TAG_REGEXP = Pattern.compile("<img=[^>]*>");
 	public static final String CURRENT_CLAN_REPLACER = "$$";

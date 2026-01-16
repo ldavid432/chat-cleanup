@@ -4,7 +4,6 @@ import static com.github.ldavid432.cleanchat.CleanChatUtil.CLAN_INSTRUCTION_MESS
 import static com.github.ldavid432.cleanchat.CleanChatUtil.SCRIPT_REBUILD_CHATBOX;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.SCRIPT_SCROLLBAR_MAX;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.SCRIPT_SCROLLBAR_MIN;
-import static com.github.ldavid432.cleanchat.CleanChatUtil.VARC_INT_CHAT_TAB;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.sanitizeName;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.wrapWithBrackets;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.wrapWithChannelNameRegex;
@@ -26,6 +25,7 @@ import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.ScriptPostFired;
 import net.runelite.api.events.ScriptPreFired;
 import net.runelite.api.gameval.InterfaceID;
+import net.runelite.api.gameval.VarClientID;
 import net.runelite.api.widgets.Widget;
 import static net.runelite.api.widgets.WidgetPositionMode.ABSOLUTE_CENTER;
 import static net.runelite.api.widgets.WidgetPositionMode.ABSOLUTE_TOP;
@@ -157,7 +157,7 @@ public class ChatWidgetEditor
 		channelNameManager.updateFriendsChatName();
 
 		Widget chatbox = client.getWidget(InterfaceID.Chatbox.SCROLLAREA);
-		ChatTab selectedChatTab = ChatTab.of(client.getVarcIntValue(VARC_INT_CHAT_TAB));
+		ChatTab selectedChatTab = ChatTab.of(client.getVarcIntValue(VarClientID.CHAT_VIEW));
 
 		if (chatbox != null && selectedChatTab != ChatTab.CLOSED)
 		{
