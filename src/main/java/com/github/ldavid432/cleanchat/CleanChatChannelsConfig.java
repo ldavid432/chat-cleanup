@@ -111,7 +111,7 @@ public interface CleanChatChannelsConfig extends Config
 		name = "Custom clan name",
 		description = "Replace your clan name with a custom one in clan chat messages.<br>" +
 			"Leave blank (or the default value) to disable<br>" +
-			"You can reference your current clan name using $$.<br>" +
+			"You can reference your current clan name using $$<br>" +
 			"See the plugin details page for more info (right-click plugin name and click support)",
 		section = clanSection,
 		position = 2
@@ -167,7 +167,10 @@ public interface CleanChatChannelsConfig extends Config
 	@ConfigItem(
 		keyName = "shortGuestClanName",
 		name = "Custom guest clan name",
-		description = "Replace your guest clan name with a custom one in guest clan chat messages. Leave blank to disable",
+		description = "Replace your guest clan name with a custom one in guest clan chat messages. Leave blank to disable" +
+			"Leave blank (or the default value) to disable<br>" +
+			"You can reference your current clan name using $$<br>" +
+			"See the plugin details page for more info (right-click plugin name and click support)",
 		section = guestClanSection,
 		position = 3
 	)
@@ -222,7 +225,10 @@ public interface CleanChatChannelsConfig extends Config
 	@ConfigItem(
 		keyName = "shortGroupIronName",
 		name = "Custom GIM name",
-		description = "Replace your GIM name with a custom one in GIM chat messages. Leave blank to disable",
+		description = "Replace your GIM name with a custom one in GIM chat messages. Leave blank to disable" +
+			"Leave blank (or the default value) to disable<br>" +
+			"You can reference your current clan name using $$<br>" +
+			"See the plugin details page for more info (right-click plugin name and click support)",
 		section = ironSection,
 		position = 3
 	)
@@ -289,7 +295,10 @@ public interface CleanChatChannelsConfig extends Config
 	@ConfigItem(
 		keyName = "shortFriendsName",
 		name = "Custom friends chat name",
-		description = "Replace your friends chat name with a custom one in friends chat messages. Leave blank to disable",
+		description = "Replace your friends chat name with a custom one in friends chat messages. Leave blank to disable" +
+			"Leave blank (or the default value) to disable<br>" +
+			"You can reference your current clan name using $$<br>" +
+			"See the plugin details page for more info (right-click plugin name and click support)",
 		section = friendsSection,
 		position = 4
 	)
