@@ -146,7 +146,7 @@ public class ChatWidgetEditor
 			if (chatbox != null)
 			{
 				lastScrollDiff = chatbox.getScrollHeight() - chatbox.getScrollY();
-				client.setVarcIntValue(7, chatbox.getScrollHeight() - lastScrollDiff);
+				client.setVarcIntValue(VarClientID.CHAT_LASTSCROLLPOS, chatbox.getScrollHeight() - lastScrollDiff);
 			}
 		}
 	}
@@ -376,7 +376,7 @@ public class ChatWidgetEditor
 		}
 		scrollArea.setScrollY(int2);
 		scrollArea.revalidateScroll();
-		client.setVarcIntValue(7, scrollArea.getScrollY());
+		client.setVarcIntValue(VarClientID.CHAT_LASTSCROLLPOS, scrollArea.getScrollY());
 
 		scrollbar_vertical_setdragger(scrollBarContainer, scrollArea, scrollBar);
 	}
