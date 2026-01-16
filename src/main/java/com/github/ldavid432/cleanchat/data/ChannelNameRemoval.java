@@ -47,21 +47,13 @@ public enum ChannelNameRemoval
 		return Objects.equals(getShortName.apply(channelNameManager), DEFAULT_CUSTOM_CHANNEL_NAME);
 	}
 
-	public String getShortName(ChannelNameManager channelNameManager)
+	public String getShortName(ChannelNameManager channelNameManager, String matchedName)
 	{
 		final String shortName = getShortName.apply(channelNameManager);
 
 		if (shortName.contains(CURRENT_CLAN_REPLACER))
 		{
-			final List<String> names = getNames(channelNameManager);
-			if (!names.isEmpty())
-			{
-				return shortName.replace(CURRENT_CLAN_REPLACER, names.get(0));
-			}
-			else
-			{
-				return null;
-			}
+			return shortName.replace(CURRENT_CLAN_REPLACER, matchedName);
 		}
 		else
 		{

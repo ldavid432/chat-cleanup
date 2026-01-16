@@ -1,6 +1,7 @@
 plugins {
 	id 'java'
 	id 'idea'
+    id 'java-test-fixtures'
 }
 
 idea {

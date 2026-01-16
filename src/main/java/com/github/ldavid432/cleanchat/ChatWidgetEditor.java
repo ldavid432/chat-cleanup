@@ -229,7 +229,7 @@ public class ChatWidgetEditor
 						ChannelNameRemoval channelRemoval = match.getLeft();
 						String matchedChannelName = match.getRight();
 						String widgetChannelText = sanitizeName(group.getChannel().getText());
-						String shortName = channelRemoval.getShortName(channelNameManager);
+						String shortName = channelRemoval.getShortName(channelNameManager, matchedChannelName);
 
 						group.setChannelType(channelRemoval);
 
@@ -243,7 +243,7 @@ public class ChatWidgetEditor
 
 							matchedChannelName = wrapWithBrackets(matchedChannelName);
 						}
-						else if (shortName != null && !shortName.isBlank() && !channelRemoval.isShortNameDefault(channelNameManager))
+						else if (!shortName.isBlank() && !channelRemoval.isShortNameDefault(channelNameManager))
 						{
 							String updatedChannelText = group.replaceChannelName(
 								wrapWithBrackets(matchedChannelName),
