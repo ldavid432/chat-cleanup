@@ -2,6 +2,8 @@ package com.github.ldavid432.cleanchat;
 
 import static com.github.ldavid432.cleanchat.CleanChatUtil.getTextLength;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.getTextLineCount;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.wrapWithBrackets;
+import static com.github.ldavid432.cleanchat.CleanChatUtil.wrapWithChannelNameRegex;
 import com.github.ldavid432.cleanchat.data.ChannelNameRemoval;
 import static java.lang.Math.max;
 import java.util.function.Consumer;
@@ -169,21 +171,20 @@ class ChatWidgetGroup
 		}
 	}
 
-	// TODO: Only pass in regex and get the matched string from regex - or use regex before this call and pass in the results
-	public void removeFromChannel(String text, String textRegex)
+	public void removeFromChannel(String text)
 	{
-		replaceChannelName(text, textRegex, "");
+		replaceChannelName(text, "");
 	}
 
-	public String replaceChannelName(String text, String textRegex, String newChannelName)
+	public String replaceChannelName(String text, String newChannelName)
 	{
-		int currentWidth = getTextLength(text);
+		int currentWidth = getTextLength(wrapWithBrackets(text));
 		int newWidth = getTextLength(newChannelName);
 		int removedWidth = currentWidth - newWidth;
 
 		String newText = getChannel().getText()
 			// TODO: Target the channel name more precisely, this should do for now to avoid targeting timestamps in brackets
-			.replaceFirst(textRegex, newChannelName);
+			.replaceFirst(wrapWithChannelNameRegex(text), newChannelName);
 
 		// Remove trailing spaces - probably only happens with timestamps turned on
 		if (newText.endsWith(" "))

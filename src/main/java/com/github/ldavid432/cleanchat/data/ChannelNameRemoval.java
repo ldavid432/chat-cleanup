@@ -44,6 +44,7 @@ public enum ChannelNameRemoval
 
 	public boolean isShortNameDefault(ChannelNameManager channelNameManager)
 	{
+		// Compares *un-substituted* shortName
 		return Objects.equals(getShortName.apply(channelNameManager), DEFAULT_CUSTOM_CHANNEL_NAME);
 	}
 

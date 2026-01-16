@@ -6,7 +6,6 @@ import static com.github.ldavid432.cleanchat.CleanChatUtil.SCRIPT_SCROLLBAR_MAX;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.SCRIPT_SCROLLBAR_MIN;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.sanitizeName;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.wrapWithBrackets;
-import static com.github.ldavid432.cleanchat.CleanChatUtil.wrapWithChannelNameRegex;
 import com.github.ldavid432.cleanchat.data.ChannelNameRemoval;
 import com.github.ldavid432.cleanchat.data.ChatTab;
 import static java.lang.Math.max;
@@ -235,22 +234,13 @@ public class ChatWidgetEditor
 
 						if (channelRemoval.isEnabled(config))
 						{
-							group.removeFromChannel(
-								wrapWithBrackets(matchedChannelName),
-								//language=RegExp
-								wrapWithChannelNameRegex(matchedChannelName)
-							);
+							group.removeFromChannel(matchedChannelName);
 
 							matchedChannelName = wrapWithBrackets(matchedChannelName);
 						}
 						else if (!shortName.isBlank() && !channelRemoval.isShortNameDefault(channelNameManager))
 						{
-							String updatedChannelText = group.replaceChannelName(
-								wrapWithBrackets(matchedChannelName),
-								//language=RegExp
-								wrapWithChannelNameRegex(matchedChannelName),
-								shortName
-							);
+							String updatedChannelText = group.replaceChannelName(matchedChannelName, shortName);
 
 							matchedChannelName = sanitizeName(shortName);
 							widgetChannelText = sanitizeName(updatedChannelText);
