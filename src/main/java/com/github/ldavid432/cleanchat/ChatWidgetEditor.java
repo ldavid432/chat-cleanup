@@ -251,6 +251,10 @@ public class ChatWidgetEditor
 						}
 
 						group.indent(config, matchedChannelName, widgetChannelText);
+
+						if (channelRemoval.isRemoveRankEnabled(config)) {
+							group.removeRank();
+						}
 					}
 
 					// Calculate height last

@@ -16,26 +16,7 @@ public interface CleanChatChannelsConfig extends Config
 {
 	String GROUP = "cleanchat";
 	String HIDE_SCROLLBAR_KEY = "hideScrollbar";
-	int CURRENT_VERSION = 2;
 	String DEFAULT_CUSTOM_CHANNEL_NAME = wrapWithBrackets(wrapWithColorTag(CURRENT_CLAN_REPLACER, Color.BLUE));
-
-	@ConfigItem(
-		keyName = "lastSeenVersion",
-		name = "",
-		description = "",
-		hidden = true
-	)
-	default int getLastSeenVersion()
-	{
-		return -1;
-	}
-
-	@ConfigItem(
-		keyName = "lastSeenVersion",
-		name = "",
-		description = ""
-	)
-	void setLstSeenVersion(int lastSeenVersion);
 
 	@ConfigItem(
 		keyName = "removeWelcome",
@@ -121,6 +102,18 @@ public interface CleanChatChannelsConfig extends Config
 		return DEFAULT_CUSTOM_CHANNEL_NAME;
 	}
 
+	@ConfigItem(
+		keyName = "removeClanRank",
+		name = "Remove clan rank",
+		description = "Remove ranks from usernames in the clan chat",
+		section = clanSection,
+		position = 3
+	)
+	default boolean removeClanRank()
+	{
+		return false;
+	}
+
 	@ConfigSection(
 		name = "Guest Clan Chat",
 		description = "Configure guest clan chat",
@@ -179,6 +172,8 @@ public interface CleanChatChannelsConfig extends Config
 		return DEFAULT_CUSTOM_CHANNEL_NAME;
 	}
 
+	// TODO: guest clan ranks?
+
 	@ConfigSection(
 		name = "Group Iron Chat",
 		description = "Configure group iron chat",
@@ -236,6 +231,8 @@ public interface CleanChatChannelsConfig extends Config
 	{
 		return DEFAULT_CUSTOM_CHANNEL_NAME;
 	}
+
+	// TODO: Remove GIM icon in GIM chat?
 
 	@ConfigSection(
 		name = "Friends Chat",
@@ -306,4 +303,7 @@ public interface CleanChatChannelsConfig extends Config
 	{
 		return DEFAULT_CUSTOM_CHANNEL_NAME;
 	}
+
+	// TODO: Friends chat rank? Can you even see those?
+
 }

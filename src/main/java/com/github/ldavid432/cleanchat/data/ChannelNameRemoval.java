@@ -17,14 +17,33 @@ import org.apache.commons.lang3.tuple.Pair;
 public enum ChannelNameRemoval
 {
 	// TODO: Cache booleans & indent mode config values
-	CLAN(CleanChatChannelsConfig::removeClanName, ChannelNameManager::getClanNames, ChannelNameManager::getShortClanName),
-	GUEST_CLAN(CleanChatChannelsConfig::removeGuestClanName, ChannelNameManager::getGuestClanNames, ChannelNameManager::getShortGuestClanName),
-	FRIENDS_CHAT(CleanChatChannelsConfig::removeFriendsChatName, ChannelNameManager::getFriendsChatNames, ChannelNameManager::getShortFriendsChatName),
+	CLAN(
+		CleanChatChannelsConfig::removeClanName,
+		ChannelNameManager::getClanNames,
+		(c, t) -> false,
+		ChannelNameManager::getShortClanName,
+		CleanChatChannelsConfig::removeClanRank
+	),
+	GUEST_CLAN(
+		CleanChatChannelsConfig::removeGuestClanName,
+		ChannelNameManager::getGuestClanNames,
+		(c, t) -> false,
+		ChannelNameManager::getShortGuestClanName,
+		c -> false
+	),
+	FRIENDS_CHAT(
+		CleanChatChannelsConfig::removeFriendsChatName,
+		ChannelNameManager::getFriendsChatNames,
+		(c, t) -> false,
+		ChannelNameManager::getShortFriendsChatName,
+		c -> false
+	),
 	GROUP_IRON(
 		CleanChatChannelsConfig::removeGroupIronName,
 		ChannelNameManager::getGroupIronNames,
 		(config, tab) -> config.removeGroupIronFromClan() && tab == ChatTab.CLAN,
-		ChannelNameManager::getShortGroupIronName
+		ChannelNameManager::getShortGroupIronName,
+		c -> false
 	);
 
 	public List<String> getNames(ChannelNameManager channelNameManager)
@@ -62,16 +81,16 @@ public enum ChannelNameRemoval
 		}
 	}
 
+	public boolean isRemoveRankEnabled(CleanChatChannelsConfig config)
+	{
+		return isRemoveRank.apply(config);
+	}
+
 	private final Function<CleanChatChannelsConfig, Boolean> isEnabled;
 	private final Function<ChannelNameManager, List<String>> getNames;
 	private final BiFunction<CleanChatChannelsConfig, ChatTab, Boolean> isTabBlocked;
 	private final Function<ChannelNameManager, String> getShortName;
-
-	ChannelNameRemoval(Function<CleanChatChannelsConfig, Boolean> isEnabled, Function<ChannelNameManager, List<String>> getNames,
-					   Function<ChannelNameManager, String> getShortName)
-	{
-		this(isEnabled, getNames, (c, t) -> false, getShortName);
-	}
+	private final Function<CleanChatChannelsConfig, Boolean> isRemoveRank;
 
 	public static Pair<ChannelNameRemoval, String> findChannelMatch(String channel, ChannelNameManager channelNameManager)
 	{

@@ -220,4 +220,31 @@ class ChatWidgetGroup
 		return newText;
 	}
 
+	public void removeRank()
+	{
+		if (!getRank().isHidden()) {
+			getRank().setHidden(true);
+
+			int removedWidth = getRank().getWidth();
+
+			shiftLeft(getName(), removedWidth);
+			shiftLeft(getMessage(), removedWidth);
+
+			// Expand the width of messages if rank was removed
+			expand(getMessage(), removedWidth);
+		}
+	}
+
+	private void shiftLeft(Widget widget, int width)
+	{
+		widget.setOriginalX(widget.getOriginalX() - width);
+		widget.revalidate();
+	}
+
+	private void expand(Widget widget, int width)
+	{
+		widget.setOriginalWidth(widget.getOriginalWidth() + width);
+		widget.revalidate();
+	}
+
 }
