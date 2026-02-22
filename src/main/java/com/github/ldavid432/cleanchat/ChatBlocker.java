@@ -26,7 +26,7 @@
  */
 package com.github.ldavid432.cleanchat;
 
-import com.github.ldavid432.cleanchat.data.ChannelNameRemoval;
+import com.github.ldavid432.cleanchat.data.ChatChannel;
 import com.github.ldavid432.cleanchat.data.ChatBlock;
 import com.github.ldavid432.cleanchat.data.ChatTab;
 import java.util.stream.Stream;
@@ -73,7 +73,7 @@ public class ChatBlocker
 		String message = (String) objectStack[objectStackSize - 1];
 
 		final MessageNode messageNode = client.getMessages().get(messageId);
-		final String channel = messageNode.getSender();
+		final String channelText = messageNode.getSender();
 
 		// end core RL
 
@@ -83,19 +83,19 @@ public class ChatBlocker
 
 		if (!blockChat && !message.isEmpty())
 		{
-			Pair<ChannelNameRemoval, String> match = ChannelNameRemoval.findChannelMatch(channel, channelNameManager);
+			Pair<ChatChannel, String> match = ChatChannel.findChannelMatch(channelText, channelNameManager);
 			if (match == null) {
 				return;
 			}
 
-			ChannelNameRemoval channelRemoval = match.getLeft();
+			ChatChannel channel = match.getLeft();
 
-			blockChat = channelRemoval.isTabBlocked(config, selectedChatTab);
+			blockChat = channel.isTabBlocked(config, selectedChatTab);
 		}
 
 		// Totally bizarre situation where after hopping the clan instruction becomes the name and the previous 'did you know?' becomes the message
 		//  channel=nothing, name=clan instruction, message=did you know? ...
-		if (!blockChat && ChatBlock.CLAN_INSTRUCTION.appliesTo(config, channel))
+		if (!blockChat && ChatBlock.CLAN_INSTRUCTION.appliesTo(config, channelText))
 		{
 			blockChat = true;
 		}

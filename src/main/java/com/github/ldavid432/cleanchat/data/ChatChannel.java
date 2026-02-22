@@ -14,7 +14,7 @@ import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 
 @AllArgsConstructor
-public enum ChannelNameRemoval
+public enum ChatChannel
 {
 	// TODO: Cache booleans & indent mode config values
 	CLAN(
@@ -51,7 +51,7 @@ public enum ChannelNameRemoval
 		return getNames.apply(channelNameManager);
 	}
 
-	public boolean isEnabled(CleanChatChannelsConfig config)
+	public boolean isChannelNameRemovalEnabled(CleanChatChannelsConfig config)
 	{
 		return isEnabled.apply(config);
 	}
@@ -92,9 +92,9 @@ public enum ChannelNameRemoval
 	private final Function<ChannelNameManager, String> getShortName;
 	private final Function<CleanChatChannelsConfig, Boolean> isRemoveRank;
 
-	public static Pair<ChannelNameRemoval, String> findChannelMatch(String channel, ChannelNameManager channelNameManager)
+	public static Pair<ChatChannel, String> findChannelMatch(String channel, ChannelNameManager channelNameManager)
 	{
-		for (ChannelNameRemoval channelRemoval : ChannelNameRemoval.values())
+		for (ChatChannel channelRemoval : ChatChannel.values())
 		{
 			if (channel == null)
 			{

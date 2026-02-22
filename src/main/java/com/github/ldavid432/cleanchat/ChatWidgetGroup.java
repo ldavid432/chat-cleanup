@@ -4,7 +4,7 @@ import static com.github.ldavid432.cleanchat.CleanChatUtil.getTextLength;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.getTextLineCount;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.wrapWithBrackets;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.wrapWithChannelNameRegex;
-import com.github.ldavid432.cleanchat.data.ChannelNameRemoval;
+import com.github.ldavid432.cleanchat.data.ChatChannel;
 import static java.lang.Math.max;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -26,7 +26,7 @@ class ChatWidgetGroup
 	private final Widget clickBox;
 
 	@Setter
-	private ChannelNameRemoval channelType = null;
+	private ChatChannel channelType = null;
 
 	private int indentSpaces = 0;
 
@@ -88,9 +88,9 @@ class ChatWidgetGroup
 					prefixWidth = getTextLength(prefix);
 					indentWidth += prefixWidth;
 
-					if (getChannelType().isEnabled(config))
+					if (getChannelType().isChannelNameRemovalEnabled(config))
 					{
-						if (getChannelType() == ChannelNameRemoval.FRIENDS_CHAT)
+						if (getChannelType() == ChatChannel.FRIENDS_CHAT)
 						{
 							indentWidth += 1;
 						}
@@ -101,13 +101,13 @@ class ChatWidgetGroup
 
 					}
 				case CHANNEL:
-					if (!getChannelType().isEnabled(config))
+					if (!getChannelType().isChannelNameRemovalEnabled(config))
 					{
 						String channel = widgetChannelText.substring(startOfChannel, endOfChannel);
 						channelWidth = getTextLength(channel);
 						indentWidth += channelWidth;
 
-						if (getChannelType() != ChannelNameRemoval.FRIENDS_CHAT)
+						if (getChannelType() != ChatChannel.FRIENDS_CHAT)
 						{
 							indentWidth += 1;
 						}
@@ -120,7 +120,7 @@ class ChatWidgetGroup
 				case NAME:
 					int nameWidth = 0;
 					// FC puts name + channel into the channel widget
-					if (getChannelType() == ChannelNameRemoval.FRIENDS_CHAT)
+					if (getChannelType() == ChatChannel.FRIENDS_CHAT)
 					{
 						// TODO: Can we switch back to getTextLength here?
 						// For some reason the fc channel width is the entire length of the chatbox so we can't use getWidth
@@ -142,11 +142,11 @@ class ChatWidgetGroup
 
 					indentWidth += nameWidth;
 
-					if (indentWidth > 0 && getChannelType() != ChannelNameRemoval.FRIENDS_CHAT)
+					if (indentWidth > 0 && getChannelType() != ChatChannel.FRIENDS_CHAT)
 					{
 						indentWidth += 4;
 					}
-					else if (getChannelType() == ChannelNameRemoval.FRIENDS_CHAT)
+					else if (getChannelType() == ChatChannel.FRIENDS_CHAT)
 					{
 						indentWidth -= 4;
 					}

@@ -6,7 +6,7 @@ import static com.github.ldavid432.cleanchat.CleanChatUtil.SCRIPT_SCROLLBAR_MAX;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.SCRIPT_SCROLLBAR_MIN;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.sanitizeName;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.wrapWithBrackets;
-import com.github.ldavid432.cleanchat.data.ChannelNameRemoval;
+import com.github.ldavid432.cleanchat.data.ChatChannel;
 import com.github.ldavid432.cleanchat.data.ChatTab;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -220,25 +220,25 @@ public class ChatWidgetEditor
 				.peek(group -> {
 					if (!group.getChannel().getText().isEmpty())
 					{
-						Pair<ChannelNameRemoval, String> match = ChannelNameRemoval.findChannelMatch(group.getChannel().getText(), channelNameManager);
+						Pair<ChatChannel, String> match = ChatChannel.findChannelMatch(group.getChannel().getText(), channelNameManager);
 						if (match == null) {
 							return;
 						}
 
-						ChannelNameRemoval channelRemoval = match.getLeft();
+						ChatChannel channel = match.getLeft();
 						String matchedChannelName = match.getRight();
 						String widgetChannelText = sanitizeName(group.getChannel().getText());
-						String shortName = channelRemoval.getShortName(channelNameManager, matchedChannelName);
+						String shortName = channel.getShortName(channelNameManager, matchedChannelName);
 
-						group.setChannelType(channelRemoval);
+						group.setChannelType(channel);
 
-						if (channelRemoval.isEnabled(config))
+						if (channel.isChannelNameRemovalEnabled(config))
 						{
 							group.removeFromChannel(matchedChannelName);
 
 							matchedChannelName = wrapWithBrackets(matchedChannelName);
 						}
-						else if (!shortName.isBlank() && !channelRemoval.isShortNameDefault(channelNameManager))
+						else if (!shortName.isBlank() && !channel.isShortNameDefault(channelNameManager))
 						{
 							String updatedChannelText = group.replaceChannelName(matchedChannelName, shortName);
 
@@ -252,7 +252,7 @@ public class ChatWidgetEditor
 
 						group.indent(config, matchedChannelName, widgetChannelText);
 
-						if (channelRemoval.isRemoveRankEnabled(config)) {
+						if (channel.isRemoveRankEnabled(config)) {
 							group.removeRank();
 						}
 					}
