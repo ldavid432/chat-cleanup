@@ -218,16 +218,16 @@ public class ChatWidgetEditor
 				})
 				.filter(Objects::nonNull)
 				.peek(group -> {
-					if (!group.getChannel().getText().isEmpty())
+					if (!group.getChannelText().isEmpty())
 					{
-						Pair<ChatChannel, String> match = ChatChannel.findChannelMatch(group.getChannel().getText(), channelNameManager);
+						Pair<ChatChannel, String> match = ChatChannel.findChannelMatch(group.getChannelText(), channelNameManager);
 						if (match == null) {
 							return;
 						}
 
 						ChatChannel channel = match.getLeft();
 						String matchedChannelName = match.getRight();
-						String widgetChannelText = sanitizeName(group.getChannel().getText());
+						String widgetChannelText = sanitizeName(group.getChannelText());
 						String shortName = channel.getShortName(channelNameManager, matchedChannelName);
 
 						group.setChannelType(channel);
@@ -266,7 +266,7 @@ public class ChatWidgetEditor
 
 			// Calculate this after editing messages
 			int totalHeight = displayedChats.stream()
-				.map(group -> group.getMessage().getHeight())
+				.map(ChatWidgetGroup::getHeight)
 				.reduce(0, Integer::sum);
 
 			// If we only have a few messages we want to place them at the bottom (chatbox.getHeight()) instead of the top (0).
@@ -278,7 +278,7 @@ public class ChatWidgetEditor
 			{
 				group.place(y);
 
-				y += group.getMessage().getHeight();
+				y += group.getHeight();
 			}
 
 			// If placing at the top, add padding last
