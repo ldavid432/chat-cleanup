@@ -56,6 +56,18 @@ public interface CleanChatChannelsConfig extends Config
 		return false;
 	}
 
+	@ConfigItem(
+		keyName = "hideSpecs",
+		name = "Hide Special Attacks",
+		description = "Hide the special attack text of Dragon & Crystal equipment<br>" +
+			"This does not affect overhead text, only the chat message",
+		position = 3
+	)
+	default boolean hideSpecs()
+	{
+		return true;
+	}
+
 	@ConfigSection(
 		name = "Clan Chat",
 		description = "Configure clan chat",

@@ -42,6 +42,22 @@ public enum ChatBlock
 		CleanChatChannelsConfig::removeWelcome,
 		"Welcome to Old School RuneScape."
 	),
+	DRAGON_HARPOON(
+		CleanChatChannelsConfig::hideSpecs,
+		"Here fishy fishies!"
+	),
+	DRAGON_PICK(
+		CleanChatChannelsConfig::hideSpecs,
+		"Smashing!"
+	),
+	DRAGON_AXE(
+		CleanChatChannelsConfig::hideSpecs,
+		"Chop chop!"
+	),
+	DRAGON_BATTLEAXE(
+		CleanChatChannelsConfig::hideSpecs,
+		"Raarrrrrgggggghhhhhhh!"
+	),
 	;
 
 	public boolean isEnabled(CleanChatChannelsConfig config)
