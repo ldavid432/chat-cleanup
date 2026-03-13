@@ -16,6 +16,8 @@ All the below options are toggleable (_most_ are **off** by default)
     - When hidden you can still scroll with your mouse wheel
   - Set a custom name for each channel
     - Intended to help you reduce the channel name size instead of full removal, but can also be customized to anything you want
+    - See below for more details on customization
+  - Remove special attack messages
 - Clan
   - Remove 'To talk in your clan's channel...' message
   - Remove clan name from messages
@@ -38,8 +40,8 @@ All the below options are toggleable (_most_ are **off** by default)
 
 - To reference your current clan name use `$$`
   - Example: `~$$~` becomes `~My Clan~`
-- To add color wrap whatever you want to color with: `<col=123456>` and `</col>` where `123456` is a hex color code
-  - Example (blue): `[<col=0000ff>My Clan</col>]`
+- To add color, wrap whatever you want to color with: `<col=123456>` and `</col>` where `123456` is a hex color code
+  - Example (red): `[<col=ff0000>My Clan</col>]` = [<span style="color: #ff0000;">My Clan</span>]
 - Can also be used to remove the brackets around your clan name if you so desire
 - To disable either leave blank or reset to the default value (right-click the specific config name)
 
