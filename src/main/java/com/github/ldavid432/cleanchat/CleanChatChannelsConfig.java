@@ -58,8 +58,8 @@ public interface CleanChatChannelsConfig extends Config
 
 	@ConfigItem(
 		keyName = "hideSpecs",
-		name = "Hide Special Attacks",
-		description = "Hide the special attack text of Dragon & Crystal equipment<br>" +
+		name = "Remove Special Attacks",
+		description = "Remove the special attack text of Dragon & Crystal equipment<br>" +
 			"This does not affect overhead text, only the chat message",
 		position = 3
 	)
@@ -71,7 +71,8 @@ public interface CleanChatChannelsConfig extends Config
 	@ConfigSection(
 		name = "Clan Chat",
 		description = "Configure clan chat",
-		position = 10
+		position = 10,
+		closedByDefault = true
 	)
 	String clanSection = "clanSection";
 
@@ -129,7 +130,8 @@ public interface CleanChatChannelsConfig extends Config
 	@ConfigSection(
 		name = "Guest Clan Chat",
 		description = "Configure guest clan chat",
-		position = 15
+		position = 15,
+		closedByDefault = true
 	)
 	String guestClanSection = "guestClanSection";
 
@@ -189,7 +191,8 @@ public interface CleanChatChannelsConfig extends Config
 	@ConfigSection(
 		name = "Group Iron Chat",
 		description = "Configure group iron chat",
-		position = 20
+		position = 20,
+		closedByDefault = true
 	)
 	String ironSection = "ironSection";
 
@@ -249,7 +252,8 @@ public interface CleanChatChannelsConfig extends Config
 	@ConfigSection(
 		name = "Friends Chat",
 		description = "Configure friends chat",
-		position = 30
+		position = 30,
+		closedByDefault = true
 	)
 	String friendsSection = "friendsSection";
 
