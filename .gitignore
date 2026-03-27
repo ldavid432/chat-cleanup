@@ -9,4 +9,4 @@ nb-configuration.xml
 nbproject/
 
 # Local debugging test/classes
-src/test/java/com/github/ldavid432/ignore
+**/ignore
