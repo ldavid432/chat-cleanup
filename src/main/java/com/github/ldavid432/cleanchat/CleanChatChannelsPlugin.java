@@ -1,6 +1,7 @@
 package com.github.ldavid432.cleanchat;
 
 import static com.github.ldavid432.cleanchat.CleanChatChannelsConfig.HIDE_SCROLLBAR_KEY;
+import com.github.ldavid432.cleanchat.overlay.ChatColorBarOverlay;
 import com.google.inject.Provides;
 import java.util.Objects;
 import javax.inject.Inject;
@@ -11,13 +12,13 @@ import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
-import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.ui.overlay.OverlayManager;
 
 @Slf4j
 @PluginDescriptor(
@@ -50,7 +51,11 @@ public class CleanChatChannelsPlugin extends Plugin
 	private EventBus eventBus;
 
 	@Inject
-	private ChatMessageManager chatMessageManager;
+	private OverlayManager overlayManager;
+
+	@Inject
+	private ChatColorBarOverlay colorBarOverlay;
+
 
 	@Provides
 	CleanChatChannelsConfig provideConfig(ConfigManager configManager)
@@ -65,6 +70,7 @@ public class CleanChatChannelsPlugin extends Plugin
 		eventBus.register(chatWidgetEditor);
 		eventBus.register(channelNameManager);
 		channelNameManager.startup();
+		overlayManager.add(colorBarOverlay);
 
 		clientThread.invoke(() -> handleScrollbarVisibility());
 
@@ -82,6 +88,7 @@ public class CleanChatChannelsPlugin extends Plugin
 		eventBus.unregister(chatWidgetEditor);
 		eventBus.unregister(channelNameManager);
 		channelNameManager.shutdown();
+		overlayManager.remove(colorBarOverlay);
 
 		// Remove all our shenanigans
 		log.debug("Plugin disabled. Refreshing chat.");

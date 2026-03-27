@@ -6,6 +6,7 @@ import static com.github.ldavid432.cleanchat.CleanChatChannelsConfig.DEFAULT_CUS
 import com.github.ldavid432.cleanchat.CleanChatUtil;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.CURRENT_CLAN_REPLACER;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.sanitizeName;
+import java.awt.Color;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -22,28 +23,32 @@ public enum ChatChannel
 		ChannelNameManager::getClanNames,
 		(c, t) -> false,
 		ChannelNameManager::getShortClanName,
-		CleanChatChannelsConfig::removeClanRank
+		CleanChatChannelsConfig::removeClanRank,
+		CleanChatChannelsConfig::clanChannelColor
 	),
 	GUEST_CLAN(
 		CleanChatChannelsConfig::removeGuestClanName,
 		ChannelNameManager::getGuestClanNames,
 		(c, t) -> false,
 		ChannelNameManager::getShortGuestClanName,
-		c -> false
+		c -> false,
+		CleanChatChannelsConfig::guestClanChannelColor
 	),
 	FRIENDS_CHAT(
 		CleanChatChannelsConfig::removeFriendsChatName,
 		ChannelNameManager::getFriendsChatNames,
 		(c, t) -> false,
 		ChannelNameManager::getShortFriendsChatName,
-		c -> false
+		c -> false,
+		CleanChatChannelsConfig::friendsChannelColor
 	),
 	GROUP_IRON(
 		CleanChatChannelsConfig::removeGroupIronName,
 		ChannelNameManager::getGroupIronNames,
 		(config, tab) -> config.removeGroupIronFromClan() && tab == ChatTab.CLAN,
 		ChannelNameManager::getShortGroupIronName,
-		c -> false
+		c -> false,
+		CleanChatChannelsConfig::groupIronChannelColor
 	);
 
 	public List<String> getNames(ChannelNameManager channelNameManager)
@@ -86,11 +91,17 @@ public enum ChatChannel
 		return isRemoveRank.apply(config);
 	}
 
+	public Color getColor(CleanChatChannelsConfig config)
+	{
+		return getColor.apply(config);
+	}
+
 	private final Function<CleanChatChannelsConfig, Boolean> isEnabled;
 	private final Function<ChannelNameManager, List<String>> getNames;
 	private final BiFunction<CleanChatChannelsConfig, ChatTab, Boolean> isTabBlocked;
 	private final Function<ChannelNameManager, String> getShortName;
 	private final Function<CleanChatChannelsConfig, Boolean> isRemoveRank;
+	private final Function<CleanChatChannelsConfig, Color> getColor;
 
 	public static Pair<ChatChannel, String> findChannelMatch(String channel, ChannelNameManager channelNameManager)
 	{

@@ -5,10 +5,13 @@ import static com.github.ldavid432.cleanchat.CleanChatUtil.CURRENT_CLAN_REPLACER
 import static com.github.ldavid432.cleanchat.CleanChatUtil.wrapWithBrackets;
 import com.github.ldavid432.cleanchat.data.IndentMode;
 import java.awt.Color;
+import net.runelite.client.config.Alpha;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
+import net.runelite.client.config.Range;
+import net.runelite.client.config.Units;
 import static net.runelite.client.util.ColorUtil.wrapWithColorTag;
 
 @ConfigGroup(GROUP)
@@ -68,6 +71,120 @@ public interface CleanChatChannelsConfig extends Config
 		return true;
 	}
 
+
+	@ConfigSection(
+		name = "Color Bar",
+		description = "Configure color bar",
+		position = 9,
+		closedByDefault = true
+	)
+	String colorBarSection = "colorBarSection";
+
+	@ConfigItem(
+		keyName = "colorBar",
+		name = "Enable color bar",
+		description = "Show a color bar at the start of each chat message, colored based on the channel.<br>" +
+			"Useful for determining the channel even if you hide the channel name",
+		position = 0,
+		section = colorBarSection
+	)
+	default boolean isColorBarEnabled()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "colorBarOffset",
+		name = "Color Bar Offset",
+		description = "Adjust the horizontal offset from the start of the chatbox",
+		position = 1,
+		section = colorBarSection
+	)
+	@Units(Units.PIXELS)
+	@Range(min = Integer.MIN_VALUE)
+	default int colorBarOffset()
+	{
+		return 0;
+	}
+
+	@ConfigItem(
+		keyName = "colorBarWidth",
+		name = "Color Bar Width",
+		description = "Adjust the width of the color bar",
+		position = 2,
+		section = colorBarSection
+	)
+	@Units(Units.PIXELS)
+	@Range(min = 1)
+	default int colorBarWidth()
+	{
+		return 1;
+	}
+
+	@Alpha
+	@ConfigItem(
+		keyName = "noChannelColor",
+		name = "No channel color",
+		description = "Color bar color for messages not from a channel. To hide, pick any color and set the opacity to 0.",
+		position = 3,
+		section = colorBarSection
+	)
+	default Color noChannelColor()
+	{
+		return new Color(0, true);
+	}
+
+	@Alpha
+	@ConfigItem(
+		keyName = "clanColor",
+		name = "Clan color",
+		description = "Color bar color for clan messages",
+		position = 4,
+		section = colorBarSection
+	)
+	default Color clanChannelColor()
+	{
+		return new Color(0x0B3CC4);
+	}
+
+	@Alpha
+	@ConfigItem(
+		keyName = "friendColor",
+		name = "Friends chat color",
+		description = "Color bar color for friends chat messages",
+		position = 5,
+		section = colorBarSection
+	)
+	default Color friendsChannelColor()
+	{
+		return new Color(0xF8EC3B);
+	}
+
+	@Alpha
+	@ConfigItem(
+		keyName = "groupIronColor",
+		name = "Group iron color",
+		description = "Color bar color for group iron messages",
+		position = 6,
+		section = colorBarSection
+	)
+	default Color groupIronChannelColor()
+	{
+		return new Color(0x195985);
+	}
+
+	@Alpha
+	@ConfigItem(
+		keyName = "guestClanColor",
+		name = "Guest clan color",
+		description = "Color bar color for guest clan messages",
+		position = 7,
+		section = colorBarSection
+	)
+	default Color guestClanChannelColor()
+	{
+		return new Color(0x00855E);
+	}
 	@ConfigSection(
 		name = "Clan Chat",
 		description = "Configure clan chat",
