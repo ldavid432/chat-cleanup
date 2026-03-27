@@ -5,8 +5,9 @@ import static com.github.ldavid432.cleanchat.CleanChatUtil.getTextLineCount;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.wrapWithBrackets;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.wrapWithChannelNameRegex;
 import com.github.ldavid432.cleanchat.data.ChatChannel;
-import com.github.ldavid432.cleanchat.data.ChatTab;
 import static java.lang.Math.max;
+import javax.annotation.Nullable;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +15,7 @@ import net.runelite.api.widgets.Widget;
 
 @Slf4j
 @RequiredArgsConstructor
-class ChatWidgetGroup
+public class ChatWidgetGroup
 {
 	private final Widget channel;
 	private final Widget rank;
@@ -22,7 +23,9 @@ class ChatWidgetGroup
 	private final Widget message;
 	private final Widget clickBox;
 
+	@Getter
 	@Setter
+	@Nullable
 	private ChatChannel channelType = null;
 
 	private int indentSpaces = 0;
@@ -35,6 +38,24 @@ class ChatWidgetGroup
 	public int getHeight()
 	{
 		return message.getHeight();
+	}
+
+	public int getY()
+	{
+		if (channel.isHidden())
+		{
+			return message.getCanvasLocation().getY();
+		}
+		return channel.getCanvasLocation().getY();
+	}
+
+	public int getX()
+	{
+		if (channel.isHidden())
+		{
+			return message.getCanvasLocation().getX();
+		}
+		return channel.getCanvasLocation().getX();
 	}
 
 	public void place(final int y) {

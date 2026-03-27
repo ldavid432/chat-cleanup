@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
@@ -57,6 +58,9 @@ public class ChatWidgetEditor
 	private int lastScrollDiff = -1;
 	private int lastChatTab = ChatTab.CLOSED.getValue();
 	private boolean chatboxScrolled = false;
+
+	@Getter
+	public List<ChatWidgetGroup> chatWidgetGroups = List.of();
 
 	@Subscribe
 	public void onGameStateChanged(GameStateChanged event)
@@ -166,7 +170,7 @@ public class ChatWidgetEditor
 			// TODO: Make i = 0
 			// TODO: See if we can avoid looping through every single widget even if there is no text there
 			// for (int i = 2; i < chats.length; i += 4)
-			List<ChatWidgetGroup> displayedChats = Stream.iterate(
+			chatWidgetGroups = Stream.iterate(
 					2,
 					i -> i < chatWidgets.length,
 					i -> i + 4
@@ -262,10 +266,10 @@ public class ChatWidgetEditor
 				})
 				.collect(Collectors.toList());
 
-			Collections.reverse(displayedChats);
+			Collections.reverse(chatWidgetGroups);
 
 			// Calculate this after editing messages
-			int totalHeight = displayedChats.stream()
+			int totalHeight = chatWidgetGroups.stream()
 				.map(ChatWidgetGroup::getHeight)
 				.reduce(0, Integer::sum);
 
@@ -274,7 +278,7 @@ public class ChatWidgetEditor
 			int y = totalHeight >= chatbox.getHeight() ? 0 : chatbox.getHeight() - totalHeight - 2;
 
 			// Place widgets vertically
-			for (ChatWidgetGroup group : displayedChats)
+			for (ChatWidgetGroup group : chatWidgetGroups)
 			{
 				group.place(y);
 
