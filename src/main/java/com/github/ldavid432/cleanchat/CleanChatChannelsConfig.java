@@ -71,6 +71,18 @@ public interface CleanChatChannelsConfig extends Config
 		return true;
 	}
 
+	@ConfigItem(
+		keyName = "improvedTimestamps",
+		name = "Fixed-width timestamps",
+		description = "REQUIRES: Chat Timestamps plugin ON<br>" +
+			"Shows messages timestamps that are always the same size, regardless of the time<br>" +
+			"May shift messages one or two pixels to the right",
+		position = 4
+	)
+	default boolean isFixedWidthTimestampEnabled()
+	{
+		return false;
+	}
 
 	@ConfigSection(
 		name = "Color Bar",
@@ -185,6 +197,7 @@ public interface CleanChatChannelsConfig extends Config
 	{
 		return new Color(0x00855E);
 	}
+
 	@ConfigSection(
 		name = "Clan Chat",
 		description = "Configure clan chat",

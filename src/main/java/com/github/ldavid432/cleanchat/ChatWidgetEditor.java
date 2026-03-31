@@ -55,6 +55,9 @@ public class ChatWidgetEditor
 	@Inject
 	private Client client;
 
+	@Inject
+	private CleanChatChannelsPlugin plugin;
+
 	private int lastScrollDiff = -1;
 	private int lastChatTab = ChatTab.CLOSED.getValue();
 	private boolean chatboxScrolled = false;
@@ -225,41 +228,52 @@ public class ChatWidgetEditor
 					if (!group.getChannelText().isEmpty())
 					{
 						Pair<ChatChannel, String> match = ChatChannel.findChannelMatch(group.getChannelText(), channelNameManager);
-						if (match == null) {
-							return;
-						}
-
-						ChatChannel channel = match.getLeft();
-						String matchedChannelName = match.getRight();
-						String widgetChannelText = sanitizeName(group.getChannelText());
-						String shortName = channel.getShortName(channelNameManager, matchedChannelName);
-
-						group.setChannelType(channel);
-
-						if (channel.isChannelNameRemovalEnabled(config))
+						if (match != null)
 						{
-							group.removeFromChannel(matchedChannelName);
+							ChatChannel channel = match.getLeft();
+							String matchedChannelName = match.getRight();
+							String widgetChannelText = sanitizeName(group.getChannelText());
+							String shortName = channel.getShortName(channelNameManager, matchedChannelName);
 
-							matchedChannelName = wrapWithBrackets(matchedChannelName);
-						}
-						else if (!shortName.isBlank() && !channel.isShortNameDefault(channelNameManager))
-						{
-							String updatedChannelText = group.replaceChannelName(matchedChannelName, shortName);
+							group.setChannelType(channel);
 
-							matchedChannelName = sanitizeName(shortName);
-							widgetChannelText = sanitizeName(updatedChannelText);
-						}
-						else
-						{
-							matchedChannelName = wrapWithBrackets(matchedChannelName);
-						}
+							if (channel.isChannelNameRemovalEnabled(config))
+							{
+								group.removeFromChannel(matchedChannelName);
 
-						group.indent(config, matchedChannelName, widgetChannelText);
+								matchedChannelName = wrapWithBrackets(matchedChannelName);
+							}
+							else if (!shortName.isBlank() && !channel.isShortNameDefault(channelNameManager))
+							{
+								String updatedChannelText = group.replaceChannelName(matchedChannelName, shortName);
 
-						if (channel.isRemoveRankEnabled(config)) {
-							group.removeRank();
+								matchedChannelName = sanitizeName(shortName);
+								widgetChannelText = sanitizeName(updatedChannelText);
+							}
+							else
+							{
+								matchedChannelName = wrapWithBrackets(matchedChannelName);
+							}
+
+							if (channel.isRemoveRankEnabled(config))
+							{
+								group.removeRank();
+							}
+
+							if (channel != ChatChannel.FRIENDS_CHAT)
+							{
+								group.calculateChannelIndent(config, matchedChannelName, widgetChannelText,
+									plugin.getTimestampTemplateWidth(), plugin.isFixedWidthTimestampEnabled());
+							}
 						}
 					}
+
+					if (plugin.isFixedWidthTimestampEnabled())
+					{
+						group.extractTimestamp(plugin.getTimestampTemplate(), plugin.getTimestampTemplateWidth());
+					}
+
+					group.applyIndent();
 
 					// Calculate height last
 					group.calculateHeight();

@@ -5,6 +5,7 @@ import static com.github.ldavid432.cleanchat.CleanChatUtil.getTextLineCount;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.wrapWithBrackets;
 import static com.github.ldavid432.cleanchat.CleanChatUtil.wrapWithChannelNameRegex;
 import com.github.ldavid432.cleanchat.data.ChatChannel;
+import com.github.ldavid432.cleanchat.util.FormatterExtractor;
 import static java.lang.Math.max;
 import javax.annotation.Nullable;
 import lombok.Getter;
@@ -28,7 +29,11 @@ public class ChatWidgetGroup
 	@Nullable
 	private ChatChannel channelType = null;
 
-	private int indentSpaces = 0;
+	private int messageIndentSpaces = 0;
+	private int channelIndentSpaces = 0;
+
+	@Getter
+	private FormatterExtractor.ExtractionResult timestamp = null;
 
 	public String getChannelText()
 	{
@@ -58,7 +63,8 @@ public class ChatWidgetGroup
 		return channel.getCanvasLocation().getX();
 	}
 
-	public void place(final int y) {
+	public void place(final int y)
+	{
 		place(channel, y);
 		place(rank, y);
 		place(name, y);
@@ -73,7 +79,7 @@ public class ChatWidgetGroup
 	{
 		if (!message.getText().isEmpty() && message.getWidth() > 0)
 		{
-			int numLines = getTextLineCount(message.getText(), message.getWidth(), indentSpaces);
+			int numLines = getTextLineCount(message.getText(), message.getWidth(), messageIndentSpaces);
 			int height = numLines * 14; // Height of each line is always 14
 			message.setOriginalHeight(height);
 			message.revalidate();
@@ -83,8 +89,16 @@ public class ChatWidgetGroup
 		}
 	}
 
-	public void indent(CleanChatChannelsConfig config, String matchedChannelName, String widgetChannelText)
+	public void calculateChannelIndent(CleanChatChannelsConfig config, String matchedChannelName, String widgetChannelText,
+									   int timestampWidth, boolean isFixedWidthTimestampEnabled)
 	{
+		if (channelType == ChatChannel.FRIENDS_CHAT)
+		{
+			// For some reason the fc channel width is the entire length of the chatbox so to make things easier we adjust that here
+			channel.setOriginalWidth(message.getOriginalX() - channel.getOriginalX());
+			channel.revalidate();
+		}
+
 		int startOfChannel = widgetChannelText.indexOf(matchedChannelName);
 		int endOfChannel = startOfChannel + matchedChannelName.length();
 
@@ -94,29 +108,30 @@ public class ChatWidgetGroup
 		int prefixWidth = 0;
 
 		// TODO: See if there's something that we are missing when measuring so we can avoid adding all these hardcoded offsets
-		// Don't need to mess with indentation on messages we don't edit
-		// TODO: Potentially handle other message types indent?
 		if (channelType != null)
 		{
 			switch (config.indentationMode())
 			{
 				// Intentionally fallthrough
 				case START:
-					String prefix = widgetChannelText.substring(0, startOfChannel);
-					prefixWidth = getTextLength(prefix);
-					indentWidth += prefixWidth;
-
-					if (channelType.isChannelNameRemovalEnabled(config))
+					// extractTimestamp handles indents for start already
+					if (isFixedWidthTimestampEnabled)
 					{
-						if (channelType == ChatChannel.FRIENDS_CHAT)
-						{
-							indentWidth += 1;
-						}
-						else
-						{
-							indentWidth -= 2;
-						}
+						String prefix = widgetChannelText.substring(0, startOfChannel);
+						prefixWidth = getTextLength(prefix);
+						indentWidth += prefixWidth;
 
+						if (channelType.isChannelNameRemovalEnabled(config))
+						{
+							if (channelType == ChatChannel.FRIENDS_CHAT)
+							{
+								indentWidth += 1;
+							}
+							else
+							{
+								indentWidth -= 2;
+							}
+						}
 					}
 				case CHANNEL:
 					if (!channelType.isChannelNameRemovalEnabled(config))
@@ -133,17 +148,20 @@ public class ChatWidgetGroup
 						{
 							indentWidth += 4;
 						}
-
 					}
 				case NAME:
 					int nameWidth = 0;
 					// FC puts name + channel into the channel widget
 					if (channelType == ChatChannel.FRIENDS_CHAT)
 					{
-						// TODO: Can we switch back to getTextLength here?
-						// For some reason the fc channel width is the entire length of the chatbox so we can't use getWidth
-						int prefixChanelNameWidth = message.getOriginalX() - channel.getOriginalX();
-						nameWidth = prefixChanelNameWidth - prefixWidth - channelWidth;
+						if (isFixedWidthTimestampEnabled)
+						{
+							nameWidth = (channel.getWidth() - timestampWidth) - channelWidth;
+						}
+						else
+						{
+							nameWidth = channel.getWidth() - prefixWidth - channelWidth;
+						}
 					}
 					else
 					{
@@ -173,19 +191,37 @@ public class ChatWidgetGroup
 			}
 		}
 
-		if (indentWidth > 0) {
-			indentSpaces = max(0, indentWidth / 3);
-		} else {
-			indentSpaces = 0;
+		if (indentWidth > 0)
+		{
+			messageIndentSpaces += max(0, indentWidth / 3);
+
+			if (messageIndentSpaces > 0)
+			{
+				message.setOriginalX(message.getOriginalX() - indentWidth);
+				message.setOriginalWidth(message.getOriginalWidth() + indentWidth);
+				message.revalidate();
+			}
+		}
+	}
+
+	public void applyIndent()
+	{
+		if (channel.isHidden() && channelIndentSpaces > 0)
+		{
+			messageIndentSpaces += channelIndentSpaces;
 		}
 
-		if (indentSpaces > 0)
+		if (messageIndentSpaces > 0)
 		{
 			// Using spaces to keep the first line at the initial position (+/-2 pixels)
-			message.setText(" ".repeat(indentSpaces) + message.getText());
-			message.setOriginalX(message.getOriginalX() - indentWidth);
-			message.setOriginalWidth(message.getOriginalWidth() + indentWidth);
+			message.setText(" ".repeat(messageIndentSpaces) + message.getText());
 			message.revalidate();
+		}
+
+		if (channelIndentSpaces > 0 && !channel.isHidden())
+		{
+			channel.setText(" ".repeat(channelIndentSpaces) + channel.getText());
+			channel.revalidate();
 		}
 	}
 
@@ -238,7 +274,8 @@ public class ChatWidgetGroup
 
 	public void removeRank()
 	{
-		if (!rank.isHidden()) {
+		if (!rank.isHidden())
+		{
 			rank.setHidden(true);
 
 			int removedWidth = rank.getWidth();
@@ -269,4 +306,54 @@ public class ChatWidgetGroup
 		widget.revalidate();
 	}
 
+	public void extractTimestamp(FormatterExtractor.ExtractionResult template, int timestampWidth)
+	{
+		Widget widget;
+		Widget oppositeWidget;
+
+		if (!message.getText().isEmpty())
+		{
+			widget = message;
+			oppositeWidget = channel;
+		}
+		else
+		{
+			widget = channel;
+			oppositeWidget = message;
+		}
+
+		timestamp = FormatterExtractor.extractFromText(template, widget.getText());
+
+		if (timestamp == null)
+		{
+			timestamp = FormatterExtractor.extractFromText(template, oppositeWidget.getText());
+
+			if (timestamp == null)
+			{
+				log.debug("null timestamp in group `{}`, `{}`", template, widget.getText());
+				return;
+			}
+			else
+			{
+				widget = oppositeWidget;
+			}
+		}
+
+		widget.setText(timestamp.getRemainingText());
+
+		channelIndentSpaces += max(0, timestampWidth / 3);
+	}
+
+	@Override
+	public String toString()
+	{
+		return "ChatWidgetGroup{" + ",\n" +
+			"channel=" + channel.getText() + ",\n" +
+			"rank=" + rank.getSpriteId() + ",\n" +
+			"name=" + name.getText() + ",\n" +
+			"message=" + message.getText() + ",\n" +
+			"channelType=" + (channelType != null ? channel.getName() : null) + ",\n" +
+			"timestamp=" + (timestamp != null ? timestamp.getFormattedOutput() : null) + "\n" +
+			'}';
+	}
 }
