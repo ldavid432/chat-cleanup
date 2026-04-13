@@ -18,6 +18,11 @@ All the below options are toggleable (_most_ are **off** by default)
     - Intended to help you reduce the channel name size instead of full removal, but can also be customized to anything you want
     - See below for more details on customization
   - Remove special attack messages
+    - Dragon/Crystal/Infernal tools
+  - Chat color bar
+    - Colored bar to help identify the channel type if you remove the channel name
+  - Fixed-width timestamps
+    - Make all your chat messages start the same distance away from the start of the chatbox
 - Clan
   - Remove 'To talk in your clan's channel...' message
   - Remove clan name from messages
@@ -44,6 +49,15 @@ All the below options are toggleable (_most_ are **off** by default)
   - Example (red): `[<col=ff0000>My Clan</col>]` = [<span style="color: #ff0000;">My Clan</span>]
 - Can also be used to remove the brackets around your clan name if you so desire
 - To disable either leave blank or reset to the default value (right-click the specific config name)
+
+### Fixed-width timestamps
+
+Fixed-width timestamps adjusts your timestamps added by the chat timestamps plugin to all be the same width.
+This makes all your chat messages start the same distance away from the start of the chatbox.
+This works well in combination with the chat color bar.
+
+**Limitation**: Currently this assumes that all dynamic characters in your timestamp are numbers (and therefore sets the spacing to the max width of a number).
+I am not against adding support for other characters (i.e. letters) so if you use a particular formatting character that you want to be correctly fixed-width please let me know with a GitHub issue
 
 ## Known Issues
 
