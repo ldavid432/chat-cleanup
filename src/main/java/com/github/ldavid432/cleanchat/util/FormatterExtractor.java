@@ -124,13 +124,26 @@ public class FormatterExtractor {
 			int matchedLength = formattedOutput.length();
 
 			// Find where the match ends in the original text (accounting for tags)
-			String remainingText = text.substring(findOriginalPosition(text, matchedLength));
+			int originalEndPos = findOriginalPosition(text, matchedLength);
+
+			// Ensure we don't go past the end of the string
+			if (originalEndPos > text.length())
+			{
+				originalEndPos = text.length();
+			}
+
+			String remainingText = originalEndPos < text.length() ?
+				text.substring(originalEndPos) : "";
 
 			// Populate segment values from the actual output
 			List<FormatSegment> populatedSegments = new ArrayList<>();
 			for (FormatSegment seg : template.segments)
 			{
-				String value = formattedOutput.substring(seg.startIndex, seg.endIndex);
+				// Ensure segment indices are within bounds
+				int startIdx = Math.min(seg.startIndex, formattedOutput.length());
+				int endIdx = Math.min(seg.endIndex, formattedOutput.length());
+
+				String value = formattedOutput.substring(startIdx, endIdx);
 				populatedSegments.add(new FormatSegment(seg.token, seg.tokenChar, seg.tokenCount,
 					seg.startIndex, seg.endIndex, value));
 			}

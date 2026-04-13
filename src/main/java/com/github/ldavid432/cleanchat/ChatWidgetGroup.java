@@ -33,6 +33,7 @@ public class ChatWidgetGroup
 	private int channelIndentSpaces = 0;
 
 	@Getter
+	@Nullable
 	private FormatterExtractor.ExtractionResult timestamp = null;
 
 	public String getChannelText()
@@ -330,7 +331,7 @@ public class ChatWidgetGroup
 
 			if (timestamp == null)
 			{
-				log.debug("null timestamp in group `{}`, `{}`", template, widget.getText());
+				log.debug("Timestamp could not be extracted from template: `{}`, widget:`{}`, or opposite widget:`{}`", template, widget.getText(), oppositeWidget.getText());
 				return;
 			}
 			else

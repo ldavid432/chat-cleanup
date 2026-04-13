@@ -33,6 +33,7 @@ public class SimpleDateFormatUtil
 		switch (token)
 		{
 			case 'y': // Year
+			case 'Y': // Week-based year
 				if (count == 2)
 				{
 					return "\\d{2}";
@@ -57,12 +58,49 @@ public class SimpleDateFormatUtil
 				}
 				return "[A-Z][a-z]+";
 
+			case 'w': // Week of year
+				if (count == 1)
+				{
+					return "\\d{1,2}";
+				}
+				return "\\d{2}";
+
+			case 'W': // Week of month
+				return "\\d";
+
 			case 'd': // Day of month
 				if (count == 1)
 				{
 					return "\\d{1,2}";
 				}
 				return "\\d{2}";
+
+			case 'D': // Day of year
+				if (count == 1)
+				{
+					return "\\d{1,3}";
+				}
+				if (count == 2)
+				{
+					return "\\d{1,3}";
+				}
+				return "\\d{3}";
+
+			case 'F': // Day of week in month
+				return "\\d";
+
+			case 'E': // Day name
+				if (count < 4)
+				{
+					return "[A-Z][a-z]{2}";
+				}
+				return "[A-Z][a-z]+";
+
+			case 'u': // Day of week (1-7, Monday = 1)
+				return "\\d";
+
+			case 'a': // AM/PM
+				return "AM|PM";
 
 			case 'H': // Hour (0-23)
 				if (count == 1)
@@ -78,13 +116,15 @@ public class SimpleDateFormatUtil
 				}
 				return "\\d{2}";
 
-			case 'm': // Minute
+			case 'K': // Hour (0-11)
+			case 'k': // Hour (1-24)
 				if (count == 1)
 				{
 					return "\\d{1,2}";
 				}
 				return "\\d{2}";
 
+			case 'm': // Minute
 			case 's': // Second
 				if (count == 1)
 				{
@@ -92,27 +132,26 @@ public class SimpleDateFormatUtil
 				}
 				return "\\d{2}";
 
-			case 'S': // Millisecond
+
+			case 'S': // Millisecond/Nanosecond
 				return "\\d{" + count + "}";
 
-			case 'D': // Day of year
-				return "\\d{1,3}";
-
-			case 'E': // Day name
-				if (count < 4)
-				{
-					return "[A-Z][a-z]{2}";
-				}
-				return "[A-Z][a-z]+";
-
-			case 'z': // Time zone
+			case 'z': // Time zone abbreviation
 				return "[A-Z]{3,4}";
 
 			case 'Z': // Time zone offset
 				return "[+-]\\d{4}";
 
-			case 'a': // AM/PM
-				return "AM|PM";
+			case 'X': // ISO time zone (±HH:mm, ±HHMM, or Z)
+				if (count == 1)
+				{
+					return "[+-]\\d{2}|Z";
+				}
+				if (count == 2)
+				{
+					return "[+-]\\d{2}:\\d{2}|Z";
+				}
+				return "[+-]\\d{2}:\\d{2}:\\d{2}|Z";
 
 			default:
 				return ".{1," + count + "}";
