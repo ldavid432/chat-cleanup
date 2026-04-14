@@ -306,11 +306,22 @@ public class FormatterExtractorTest
 	}
 
 	@Test
-	public void testExtractFromTextInvalid()
+	public void testExtractFromTextLiteralInvalid()
 	{
 		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("HH:mmb");
 
 		assertNull(template);
+	}
+
+	@Test
+	public void testExtractFromTextLiteralValid()
+	{
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("HH:mm:ss'b'");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "12:34:56b Hello");
+
+		assertNotNull(result);
+		assertEquals("12:34:56b", result.getFormattedOutput());
+		assertTrue(result.getRemainingText().contains("Hello"));
 	}
 
 	// ============================================================================
