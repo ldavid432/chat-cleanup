@@ -44,6 +44,10 @@ public class FormatterExtractor {
 	 */
 	public static ExtractionResult createFromFormatString(String formatString)
 	{
+		if (!SimpleDateFormatUtil.isValidPattern(formatString)) {
+			return null;
+		}
+
 		List<FormatSegment> segments = new ArrayList<>();
 		StringBuilder templateOutput = new StringBuilder();
 		int currentPos = 0;

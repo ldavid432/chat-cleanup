@@ -1,5 +1,7 @@
 package com.github.ldavid432.cleanchat.util;
 
+import java.text.SimpleDateFormat;
+
 public class SimpleDateFormatUtil
 {
 
@@ -206,13 +208,31 @@ public class SimpleDateFormatUtil
 			case 'S': // Millisecond
 				return count;
 			case 'z': // Time zone
-				return 4; // "EST"
+				return 4; // "EST" TODO EST is 3 letters?
 			case 'Z': // Time zone offset
 				return 5; // "+0000"
 			case 'X': // ISO time zone
 				return 6; // "+00:00"
 			default:
 				return count;
+		}
+	}
+
+	public static boolean isValidPattern(String pattern)
+	{
+		if (pattern == null)
+		{
+			return false;
+		}
+
+		try
+		{
+			new SimpleDateFormat(pattern);
+			return true;
+		}
+		catch (IllegalArgumentException e)
+		{
+			return false;
 		}
 	}
 }

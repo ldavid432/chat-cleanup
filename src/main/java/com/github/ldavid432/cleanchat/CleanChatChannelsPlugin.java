@@ -6,6 +6,7 @@ import com.github.ldavid432.cleanchat.overlay.ChatTimestampOverlay;
 import com.github.ldavid432.cleanchat.util.FormatterExtractor;
 import com.google.inject.Provides;
 import java.util.Objects;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import lombok.Getter;
 import lombok.Setter;
@@ -75,6 +76,7 @@ public class CleanChatChannelsPlugin extends Plugin
 
 	@Getter
 	@Setter
+	@Nullable
 	private FormatterExtractor.ExtractionResult timestampTemplate = null;
 
 	@Getter

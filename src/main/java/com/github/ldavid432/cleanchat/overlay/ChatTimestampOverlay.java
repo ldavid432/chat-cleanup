@@ -91,23 +91,27 @@ public class ChatTimestampOverlay extends BaseCleanChatOverlay
 
 	private void updateTemplate()
 	{
+		FormatterExtractor.ExtractionResult newTemplate = FormatterExtractor.createFromFormatString(timestampConfig.timestampFormat());
+
 		plugin.setTimestampTemplateWidth(0);
-		plugin.setTimestampTemplate(FormatterExtractor.createFromFormatString(timestampConfig.timestampFormat()));
+		plugin.setTimestampTemplate(newTemplate);
 
-		FormatterExtractor.iterateOutputParts(plugin.getTimestampTemplate(), new FormatterExtractor.OutputPartConsumer()
-		{
-			@Override
-			public void consumeSegment(FormatterExtractor.FormatSegment segment)
+		if (newTemplate != null) {
+			FormatterExtractor.iterateOutputParts(newTemplate, new FormatterExtractor.OutputPartConsumer()
 			{
-				plugin.setTimestampTemplateWidth(plugin.getTimestampTemplateWidth() + ((6 + 2) * segment.tokenCount));
-			}
+				@Override
+				public void consumeSegment(FormatterExtractor.FormatSegment segment)
+				{
+					plugin.setTimestampTemplateWidth(plugin.getTimestampTemplateWidth() + ((6 + 2) * segment.tokenCount));
+				}
 
-			@Override
-			public void consumeText(String text, int startIndex, int endIndex)
-			{
-				plugin.setTimestampTemplateWidth(plugin.getTimestampTemplateWidth() + getTextLength(text));
-			}
-		});
+				@Override
+				public void consumeText(String text, int startIndex, int endIndex)
+				{
+					plugin.setTimestampTemplateWidth(plugin.getTimestampTemplateWidth() + getTextLength(text));
+				}
+			});
+		}
 
 		client.refreshChat();
 	}

@@ -309,6 +309,12 @@ public class ChatWidgetGroup
 
 	public void extractTimestamp(FormatterExtractor.ExtractionResult template, int timestampWidth)
 	{
+		if (template == null)
+		{
+			timestamp = null;
+			return;
+		}
+
 		Widget widget;
 		Widget oppositeWidget;
 
