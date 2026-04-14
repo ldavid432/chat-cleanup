@@ -25,8 +25,7 @@ public class FormatterExtractorTest
 	@Test
 	public void testCreateFromFormatStringSimpleFormat()
 	{
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.createFromFormatString("HH:mm:ss");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.createFromFormatString("HH:mm:ss");
 
 		assertNotNull(result);
 		assertEquals(8, result.getFormattedOutput().length());
@@ -36,8 +35,7 @@ public class FormatterExtractorTest
 	@Test
 	public void testCreateFromFormatStringWithQuotedLiterals()
 	{
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.createFromFormatString("HH'h'mm'm'ss's'");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.createFromFormatString("HH'h'mm'm'ss's'");
 
 		assertNotNull(result);
 		assertEquals("HH", result.getSegments().get(0).getToken());
@@ -49,8 +47,7 @@ public class FormatterExtractorTest
 	@Test
 	public void testCreateFromFormatStringWithSpaces()
 	{
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.createFromFormatString("HH:mm:ss a");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.createFromFormatString("HH:mm:ss a");
 
 		assertNotNull(result);
 		assertTrue(result.getFormattedOutput().contains(":"));
@@ -60,10 +57,8 @@ public class FormatterExtractorTest
 	@Test
 	public void testCreateFromFormatStringYearExpansion()
 	{
-		FormatterExtractor.ExtractionResult result2Digit =
-			FormatterExtractor.createFromFormatString("yy");
-		FormatterExtractor.ExtractionResult result4Digit =
-			FormatterExtractor.createFromFormatString("yyyy");
+		FormatterExtractor.ExtractionResult result2Digit = FormatterExtractor.createFromFormatString("yy");
+		FormatterExtractor.ExtractionResult result4Digit = FormatterExtractor.createFromFormatString("yyyy");
 
 		assertEquals(2, result2Digit.getFormattedOutput().length());
 		assertEquals(4, result4Digit.getFormattedOutput().length());
@@ -72,14 +67,10 @@ public class FormatterExtractorTest
 	@Test
 	public void testCreateFromFormatStringMonthFormats()
 	{
-		FormatterExtractor.ExtractionResult result1 =
-			FormatterExtractor.createFromFormatString("M");
-		FormatterExtractor.ExtractionResult result2 =
-			FormatterExtractor.createFromFormatString("MM");
-		FormatterExtractor.ExtractionResult result3 =
-			FormatterExtractor.createFromFormatString("MMM");
-		FormatterExtractor.ExtractionResult result4 =
-			FormatterExtractor.createFromFormatString("MMMM");
+		FormatterExtractor.ExtractionResult result1 = FormatterExtractor.createFromFormatString("M");
+		FormatterExtractor.ExtractionResult result2 = FormatterExtractor.createFromFormatString("MM");
+		FormatterExtractor.ExtractionResult result3 = FormatterExtractor.createFromFormatString("MMM");
+		FormatterExtractor.ExtractionResult result4 = FormatterExtractor.createFromFormatString("MMMM");
 
 		assertEquals(2, result1.getFormattedOutput().length());
 		assertEquals(2, result2.getFormattedOutput().length());
@@ -90,10 +81,8 @@ public class FormatterExtractorTest
 	@Test
 	public void testCreateFromFormatStringDayNameFormats()
 	{
-		FormatterExtractor.ExtractionResult result3 =
-			FormatterExtractor.createFromFormatString("EEE");
-		FormatterExtractor.ExtractionResult result4 =
-			FormatterExtractor.createFromFormatString("EEEE");
+		FormatterExtractor.ExtractionResult result3 = FormatterExtractor.createFromFormatString("EEE");
+		FormatterExtractor.ExtractionResult result4 = FormatterExtractor.createFromFormatString("EEEE");
 
 		assertEquals(3, result3.getFormattedOutput().length());
 		assertEquals(9, result4.getFormattedOutput().length());
@@ -102,8 +91,7 @@ public class FormatterExtractorTest
 	@Test
 	public void testCreateFromFormatStringEmptyFormat()
 	{
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.createFromFormatString("");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.createFromFormatString("");
 
 		assertNotNull(result);
 		assertEquals(0, result.getSegments().size());
@@ -113,8 +101,7 @@ public class FormatterExtractorTest
 	@Test
 	public void testCreateFromFormatStringOnlyLiterals()
 	{
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.createFromFormatString("'hello world'");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.createFromFormatString("'hello world'");
 
 		assertNotNull(result);
 		assertEquals(0, result.getSegments().size());
@@ -124,8 +111,7 @@ public class FormatterExtractorTest
 	@Test
 	public void testCreateFromFormatStringComplexFormat()
 	{
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.createFromFormatString("EEEE, MMMM d, yyyy 'at' h:mm a");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.createFromFormatString("EEEE, MMMM d, yyyy 'at' h:mm a");
 
 		assertNotNull(result);
 		assertTrue(result.getSegments().size() >= 6);
@@ -135,11 +121,21 @@ public class FormatterExtractorTest
 	@Test
 	public void testCreateFromFormatStringMilliseconds()
 	{
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.createFromFormatString("HH:mm:ss.SSS");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.createFromFormatString("HH:mm:ss.SSS");
 
 		assertNotNull(result);
 		assertTrue(result.getFormattedOutput().contains("."));
+	}
+
+	@Test
+	public void testCreateFromFormatStringWithInvalidFormat()
+	{
+		// 'b' is not a valid SimpleDateFormat token and is not quoted, nor a common separator,
+		// so the validator should treat this format as invalid.
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.createFromFormatString("HH:mm:ssb");
+
+		// If your implementation now throws, change this check to use @Test(expected=...) instead.
+		assertNull("Invalid format with illegal token should return null", result);
 	}
 
 	// ============================================================================
@@ -149,10 +145,8 @@ public class FormatterExtractorTest
 	@Test
 	public void testExtractFromTextSimpleTime()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("HH:mm:ss");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template, "12:34:56 Hello");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("HH:mm:ss");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "12:34:56 Hello");
 
 		assertNotNull(result);
 		assertEquals("12:34:56", result.getFormattedOutput());
@@ -162,10 +156,8 @@ public class FormatterExtractorTest
 	@Test
 	public void testExtractFromTextMiddleOfText()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("HH:mm");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template, "14:30 is meeting time");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("HH:mm");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "14:30 is meeting time");
 
 		assertNotNull(result);
 		assertEquals("14:30", result.getFormattedOutput());
@@ -174,10 +166,8 @@ public class FormatterExtractorTest
 	@Test
 	public void testExtractFromTextNotFound()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("HH:mm:ss");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template, "No timestamp here");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("HH:mm:ss");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "No timestamp here");
 
 		assertNull(result);
 	}
@@ -185,10 +175,8 @@ public class FormatterExtractorTest
 	@Test
 	public void testExtractFromTextSingleDigitTime()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("H:m:s");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template, "5:3:45 Message");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("H:m:s");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "5:3:45 Message");
 
 		assertNotNull(result);
 		assertEquals("5:3:45", result.getFormattedOutput());
@@ -197,10 +185,8 @@ public class FormatterExtractorTest
 	@Test
 	public void testExtractFromTextFullDateTime()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("yyyy-MM-dd HH:mm:ss");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template, "2025-04-13 14:30:25 User said hello");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("yyyy-MM-dd HH:mm:ss");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "2025-04-13 14:30:25 User said hello");
 
 		assertNotNull(result);
 		assertEquals("2025-04-13 14:30:25", result.getFormattedOutput());
@@ -210,10 +196,8 @@ public class FormatterExtractorTest
 	@Test
 	public void testExtractFromTextMonthAbbrv()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("MMM dd");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template, "Apr 13 Message");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("MMM dd");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "Apr 13 Message");
 
 		assertNotNull(result);
 		assertEquals("Apr 13", result.getFormattedOutput());
@@ -222,10 +206,8 @@ public class FormatterExtractorTest
 	@Test
 	public void testExtractFromTextDayName()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("EEEE");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template, "Monday is here");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("EEEE");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "Monday is here");
 
 		assertNotNull(result);
 		assertEquals("Monday", result.getFormattedOutput());
@@ -234,10 +216,8 @@ public class FormatterExtractorTest
 	@Test
 	public void testExtractFromTextShortDay()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("EEE");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template, "Mon 12:00");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("EEE");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "Mon 12:00");
 
 		assertNotNull(result);
 		assertEquals("Mon", result.getFormattedOutput());
@@ -246,10 +226,8 @@ public class FormatterExtractorTest
 	@Test
 	public void testExtractFromTextAMPM()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("hh:mm a");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template, "03:30 PM Message");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("hh:mm a");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "03:30 PM Message");
 
 		assertNotNull(result);
 		assertEquals("03:30 PM", result.getFormattedOutput());
@@ -258,10 +236,8 @@ public class FormatterExtractorTest
 	@Test
 	public void testExtractFromTextSegmentPopulation()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("HH:mm:ss");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template, "12:34:56 Message");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("HH:mm:ss");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "12:34:56 Message");
 
 		assertNotNull(result);
 		assertEquals(3, result.getSegments().size());
@@ -273,10 +249,8 @@ public class FormatterExtractorTest
 	@Test
 	public void testExtractFromTextLeadingZeros()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("MM-dd");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template, "04-01 Message");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("MM-dd");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "04-01 Message");
 
 		assertNotNull(result);
 		assertEquals("04-01", result.getFormattedOutput());
@@ -285,10 +259,8 @@ public class FormatterExtractorTest
 	@Test
 	public void testExtractFromTextNoPartialMatch()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("yyyy-MM-dd HH:mm:ss");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template, "2025-04-13");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("yyyy-MM-dd HH:mm:ss");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "2025-04-13");
 
 		assertNull(result);
 	}
@@ -296,10 +268,8 @@ public class FormatterExtractorTest
 	@Test
 	public void testExtractFromTextYearOnly()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("yyyy");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template, "2025 started");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("yyyy");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "2025 started");
 
 		assertNotNull(result);
 		assertEquals("2025", result.getFormattedOutput());
@@ -308,10 +278,8 @@ public class FormatterExtractorTest
 	@Test
 	public void testExtractFromTextMonthAsNumber()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("MM");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template, "04 is April");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("MM");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "04 is April");
 
 		assertNotNull(result);
 		assertEquals("04", result.getFormattedOutput());
@@ -320,10 +288,8 @@ public class FormatterExtractorTest
 	@Test
 	public void testExtractFromTextWithMilliseconds()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("HH:mm:ss.SSS");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template, "12:34:56.789 Event");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("HH:mm:ss.SSS");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "12:34:56.789 Event");
 
 		assertNotNull(result);
 		assertEquals("12:34:56.789", result.getFormattedOutput());
@@ -332,13 +298,19 @@ public class FormatterExtractorTest
 	@Test
 	public void testExtractFromTextTwoDigitYear()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("yy-MM-dd");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template, "25-04-13 happened");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("yy-MM-dd");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "25-04-13 happened");
 
 		assertNotNull(result);
 		assertEquals("25-04-13", result.getFormattedOutput());
+	}
+
+	@Test
+	public void testExtractFromTextInvalid()
+	{
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("HH:mmb");
+
+		assertNull(template);
 	}
 
 	// ============================================================================
@@ -348,11 +320,9 @@ public class FormatterExtractorTest
 	@Test
 	public void testExtractWithColorTags()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("HH:mm:ss");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template,
-				"<col=ff0000>12:34:56</col> Message");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("HH:mm:ss");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template,
+			"<col=ff0000>12:34:56</col> Message");
 
 		assertNotNull(result);
 		assertEquals("12:34:56", result.getFormattedOutput());
@@ -361,11 +331,9 @@ public class FormatterExtractorTest
 	@Test
 	public void testExtractMultipleColorTags()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("HH:mm");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template,
-				"<col=00ff00>14<col=0000ff>:30</col></col> text");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("HH:mm");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template,
+			"<col=00ff00>14<col=0000ff>:30</col></col> text");
 
 		assertNotNull(result);
 		assertEquals("14:30", result.getFormattedOutput());
@@ -374,11 +342,9 @@ public class FormatterExtractorTest
 	@Test
 	public void testExtractColorTagsWithAlpha()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("HH:mm:ss");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template,
-				"<col=ff0000ff>12:34:56</col> Message");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("HH:mm:ss");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template,
+			"<col=ff0000ff>12:34:56</col> Message");
 
 		assertNotNull(result);
 		assertEquals("12:34:56", result.getFormattedOutput());
@@ -391,10 +357,8 @@ public class FormatterExtractorTest
 	@Test
 	public void testIterateOutputPartsSimpleFormat()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("HH:mm:ss");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template, "12:34:56 Message");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("HH:mm:ss");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "12:34:56 Message");
 
 		final List<String> parts = new ArrayList<>();
 		assertNotNull(result);
@@ -424,8 +388,7 @@ public class FormatterExtractorTest
 	@Test
 	public void testIterateOutputPartsWithLiterals()
 	{
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.createFromFormatString("HH'h'mm'm'");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.createFromFormatString("HH'h'mm'm'");
 
 		final List<String> parts = new ArrayList<>();
 		FormatterExtractor.iterateOutputParts(result, new FormatterExtractor.OutputPartConsumer()
@@ -463,8 +426,7 @@ public class FormatterExtractorTest
 	@Test
 	public void testFormatSegmentProperties()
 	{
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.createFromFormatString("HH:mm:ss");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.createFromFormatString("HH:mm:ss");
 		FormatterExtractor.FormatSegment segment = result.getSegments().get(0);
 
 		assertEquals("HH", segment.getToken());
@@ -477,8 +439,7 @@ public class FormatterExtractorTest
 	@Test
 	public void testFormatSegmentIndices()
 	{
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.createFromFormatString("yyyy-MM-dd");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.createFromFormatString("yyyy-MM-dd");
 
 		assertEquals(4, result.getSegments().get(0).getEndIndex());
 		assertEquals(5, result.getSegments().get(1).getStartIndex());
@@ -492,10 +453,8 @@ public class FormatterExtractorTest
 	@Test
 	public void testExtractionResultComponents()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("HH:mm");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template, "12:34 Message");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("HH:mm");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "12:34 Message");
 
 		assertNotNull(result);
 		assertNotNull(result.getFormattedOutput());
@@ -506,10 +465,8 @@ public class FormatterExtractorTest
 	@Test
 	public void testExtractionResultRemainingText()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("HH:mm:ss");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template, "12:34:56 User: Hello");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("HH:mm:ss");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "12:34:56 User: Hello");
 
 		assertNotNull(result);
 		assertEquals(" User: Hello", result.getRemainingText());
@@ -522,8 +479,7 @@ public class FormatterExtractorTest
 	@Test
 	public void testComplexDateTimeFormat()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("EEEE, MMMM d, yyyy 'at' hh:mm a");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("EEEE, MMMM d, yyyy 'at' hh:mm a");
 		FormatterExtractor.ExtractionResult result =
 			FormatterExtractor.extractFromText(template,
 				"Monday, April 13, 2025 at 03:30 PM - Meeting scheduled");
@@ -538,10 +494,8 @@ public class FormatterExtractorTest
 	@Test
 	public void testISODateFormat()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("yyyy-MM-dd'T'HH:mm:ss");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template, "2025-04-13T14:30:25 UTC");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("yyyy-MM-dd'T'HH:mm:ss");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "2025-04-13T14:30:25 UTC");
 
 		assertNotNull(result);
 		assertEquals("2025-04-13T14:30:25", result.getFormattedOutput());
@@ -550,10 +504,8 @@ public class FormatterExtractorTest
 	@Test
 	public void testAlternateTimeFormat()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("h:mm a");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template, "3:30 PM is afternoon");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("h:mm a");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "3:30 PM is afternoon");
 
 		assertNotNull(result);
 		assertEquals("3:30 PM", result.getFormattedOutput());
@@ -562,10 +514,8 @@ public class FormatterExtractorTest
 	@Test
 	public void testNumericMonthFormat()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("MM/dd/yyyy");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template, "04/13/2025 is today");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("MM/dd/yyyy");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "04/13/2025 is today");
 
 		assertNotNull(result);
 		assertEquals("04/13/2025", result.getFormattedOutput());
@@ -574,10 +524,8 @@ public class FormatterExtractorTest
 	@Test
 	public void testDayOfYearFormat()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("yyyy-DDD");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template, "2025-103 is day 103");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("yyyy-DDD");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "2025-103 is day 103");
 
 		assertNotNull(result);
 		assertEquals("2025-103", result.getFormattedOutput());
@@ -586,10 +534,8 @@ public class FormatterExtractorTest
 	@Test
 	public void testSingleDigitMonthDay()
 	{
-		FormatterExtractor.ExtractionResult template =
-			FormatterExtractor.createFromFormatString("M/d/yyyy");
-		FormatterExtractor.ExtractionResult result =
-			FormatterExtractor.extractFromText(template, "4/3/2025 is April third");
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("M/d/yyyy");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "4/3/2025 is April third");
 
 		assertNotNull(result);
 		assertEquals("4/3/2025", result.getFormattedOutput());
