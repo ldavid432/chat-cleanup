@@ -1,9 +1,9 @@
 package com.github.ldavid432.cleanchat;
 
-import static com.github.ldavid432.cleanchat.CleanChatUtil.getTextLength;
-import static com.github.ldavid432.cleanchat.CleanChatUtil.getTextLineCount;
-import static com.github.ldavid432.cleanchat.CleanChatUtil.wrapWithBrackets;
-import static com.github.ldavid432.cleanchat.CleanChatUtil.wrapWithChannelNameRegex;
+import static com.github.ldavid432.cleanchat.util.CleanChatUtil.getTextLength;
+import static com.github.ldavid432.cleanchat.util.CleanChatUtil.getTextLineCount;
+import static com.github.ldavid432.cleanchat.util.CleanChatUtil.wrapWithBrackets;
+import static com.github.ldavid432.cleanchat.util.CleanChatUtil.wrapWithChannelNameRegex;
 import com.github.ldavid432.cleanchat.data.ChatChannel;
 import com.github.ldavid432.cleanchat.util.FormatterExtractor;
 import static java.lang.Math.max;

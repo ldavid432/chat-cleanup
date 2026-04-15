@@ -1,4 +1,4 @@
-package com.github.ldavid432.cleanchat;
+package com.github.ldavid432.cleanchat.util;
 
 import java.util.Iterator;
 import java.util.List;

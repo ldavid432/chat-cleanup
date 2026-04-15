@@ -1,11 +1,11 @@
 package com.github.ldavid432.cleanchat;
 
-import static com.github.ldavid432.cleanchat.CleanChatUtil.CLAN_INSTRUCTION_MESSAGE;
-import static com.github.ldavid432.cleanchat.CleanChatUtil.SCRIPT_REBUILD_CHATBOX;
-import static com.github.ldavid432.cleanchat.CleanChatUtil.SCRIPT_SCROLLBAR_MAX;
-import static com.github.ldavid432.cleanchat.CleanChatUtil.SCRIPT_SCROLLBAR_MIN;
-import static com.github.ldavid432.cleanchat.CleanChatUtil.sanitizeName;
-import static com.github.ldavid432.cleanchat.CleanChatUtil.wrapWithBrackets;
+import static com.github.ldavid432.cleanchat.util.CleanChatUtil.CLAN_INSTRUCTION_MESSAGE;
+import static com.github.ldavid432.cleanchat.util.CleanChatUtil.SCRIPT_REBUILD_CHATBOX;
+import static com.github.ldavid432.cleanchat.util.CleanChatUtil.SCRIPT_SCROLLBAR_MAX;
+import static com.github.ldavid432.cleanchat.util.CleanChatUtil.SCRIPT_SCROLLBAR_MIN;
+import static com.github.ldavid432.cleanchat.util.CleanChatUtil.sanitizeName;
+import static com.github.ldavid432.cleanchat.util.CleanChatUtil.wrapWithBrackets;
 import com.github.ldavid432.cleanchat.data.ChatChannel;
 import com.github.ldavid432.cleanchat.data.ChatTab;
 import static java.lang.Math.max;

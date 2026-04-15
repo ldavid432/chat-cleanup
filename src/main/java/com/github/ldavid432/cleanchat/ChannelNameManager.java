@@ -1,7 +1,8 @@
 package com.github.ldavid432.cleanchat;
 
 import static com.github.ldavid432.cleanchat.CleanChatChannelsConfig.DEFAULT_CUSTOM_CHANNEL_NAME;
-import static com.github.ldavid432.cleanchat.CleanChatUtil.MAX_CHANNEL_LIST_SIZE;
+import com.github.ldavid432.cleanchat.util.CleanChatUtil;
+import static com.github.ldavid432.cleanchat.util.CleanChatUtil.MAX_CHANNEL_LIST_SIZE;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;

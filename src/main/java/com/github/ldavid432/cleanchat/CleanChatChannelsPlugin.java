@@ -3,6 +3,7 @@ package com.github.ldavid432.cleanchat;
 import static com.github.ldavid432.cleanchat.CleanChatChannelsConfig.HIDE_SCROLLBAR_KEY;
 import com.github.ldavid432.cleanchat.overlay.ChatColorBarOverlay;
 import com.github.ldavid432.cleanchat.overlay.ChatTimestampOverlay;
+import com.github.ldavid432.cleanchat.util.ChangeLogUtil;
 import com.github.ldavid432.cleanchat.util.FormatterExtractor;
 import com.google.inject.Provides;
 import java.util.Objects;
@@ -17,6 +18,7 @@ import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
+import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
@@ -64,6 +66,9 @@ public class CleanChatChannelsPlugin extends Plugin
 
 	@Inject
 	private PluginManager pluginManager;
+
+	@Inject
+	private ChatMessageManager chatMessageManager;
 
 	@Inject
 	private TimestampPlugin timestampPlugin;
@@ -117,6 +122,8 @@ public class CleanChatChannelsPlugin extends Plugin
 			log.debug("Plugin enabled. Refreshing chat.");
 			client.refreshChat();
 		}
+
+		ChangeLogUtil.handleChangelog(config, chatMessageManager, client);
 	}
 
 	@Override

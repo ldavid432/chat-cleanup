@@ -2,7 +2,7 @@ package com.github.ldavid432.cleanchat.overlay;
 
 import com.github.ldavid432.cleanchat.ChatWidgetGroup;
 import com.github.ldavid432.cleanchat.CleanChatChannelsPlugin;
-import static com.github.ldavid432.cleanchat.CleanChatUtil.getTextLength;
+import static com.github.ldavid432.cleanchat.util.CleanChatUtil.getTextLength;
 import com.github.ldavid432.cleanchat.util.FormatterExtractor;
 import java.awt.Color;
 import java.awt.Graphics2D;

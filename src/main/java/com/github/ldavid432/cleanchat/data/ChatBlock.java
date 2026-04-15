@@ -1,7 +1,7 @@
 package com.github.ldavid432.cleanchat.data;
 
 import com.github.ldavid432.cleanchat.CleanChatChannelsConfig;
-import static com.github.ldavid432.cleanchat.CleanChatUtil.CLAN_INSTRUCTION_MESSAGE;
+import static com.github.ldavid432.cleanchat.util.CleanChatUtil.CLAN_INSTRUCTION_MESSAGE;
 import java.util.function.Function;
 import lombok.AllArgsConstructor;
 import net.runelite.client.util.Text;
