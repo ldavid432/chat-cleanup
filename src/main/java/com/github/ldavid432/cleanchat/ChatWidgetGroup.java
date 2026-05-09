@@ -6,9 +6,11 @@ import static com.github.ldavid432.cleanchat.util.CleanChatUtil.wrapWithBrackets
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.wrapWithChannelNameRegex;
 import com.github.ldavid432.cleanchat.data.ChatChannel;
 import com.github.ldavid432.cleanchat.util.FormatterExtractor;
+import java.awt.Color;
 import static java.lang.Math.max;
 import javax.annotation.Nullable;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -18,13 +20,17 @@ import net.runelite.api.widgets.Widget;
 @RequiredArgsConstructor
 public class ChatWidgetGroup
 {
+	@NonNull
 	private final Widget channel;
+	@NonNull
 	private final Widget rank;
+	@NonNull
 	private final Widget name;
+	@NonNull
 	private final Widget message;
+	@NonNull
 	private final Widget clickBox;
 
-	@Getter
 	@Setter
 	@Nullable
 	private ChatChannel channelType = null;
@@ -62,6 +68,11 @@ public class ChatWidgetGroup
 			return message.getCanvasLocation().getX();
 		}
 		return channel.getCanvasLocation().getX();
+	}
+
+	public Color getColor(CleanChatChannelsConfig config)
+	{
+		return channelType != null ? channelType.getColor(config) : config.noChannelColor();
 	}
 
 	public void place(final int y)

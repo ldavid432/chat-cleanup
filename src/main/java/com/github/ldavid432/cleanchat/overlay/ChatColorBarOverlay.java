@@ -25,8 +25,8 @@ public class ChatColorBarOverlay extends BaseCleanChatOverlay
 			chatbox != null ? chatbox.getCanvasLocation().getX() + chatbox.getWidth() - 1 : 0
 		);
 
-		graphics.setColor(group.getChannelType() != null ? group.getChannelType().getColor(config) : config.noChannelColor());
-		graphics.fillRect(x, y, config.colorBarWidth(), group.getHeight());
+		graphics.setColor(group.getColor(config));
+		graphics.fillRect(x, y, config.colorBarWidth(), 16);
 	}
 
 	@Override

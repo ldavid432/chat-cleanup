@@ -62,6 +62,11 @@ public abstract class BaseCleanChatOverlay extends Overlay
 		graphics.setClip(chatbox.getCanvasLocation().getX(), chatbox.getCanvasLocation().getY(), chatbox.getWidth(), chatbox.getHeight());
 
 		List<ChatWidgetGroup> allChats = List.copyOf(chatWidgetEditor.getChatWidgetGroups());
+		if (allChats.isEmpty())
+		{
+			return null;
+		}
+
 		List<ChatWidgetGroup> visibleChats = new ArrayList<>();
 		ChatWidgetGroup previousGroup = null;
 		boolean foundStart = false;
