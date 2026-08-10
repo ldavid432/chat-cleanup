@@ -45,11 +45,14 @@ public class ChatTimestampOverlay extends BaseCleanChatOverlay
 
 		int timestampY = y + 14;
 
-		graphics.setColor(getTimestampColour());
+		Color timestampColor = getTimestampColour();
+		graphics.setColor(timestampColor);
 
 		graphics.setFont(FontManager.getRunescapeFont());
 
 		AtomicInteger timestampX = new AtomicInteger(x);
+
+		boolean isChatboxTransparent = client.isResized() && client.getVarbitValue(VarbitID.CHATBOX_TRANSPARENCY) == 1;
 
 		FormatterExtractor.iterateOutputParts(timestamp, new FormatterExtractor.OutputPartConsumer()
 		{
@@ -58,7 +61,16 @@ public class ChatTimestampOverlay extends BaseCleanChatOverlay
 			{
 				for (int i = 0; i < segment.value.length(); i++)
 				{
-					graphics.drawString(String.valueOf(segment.value.charAt(i)), timestampX.get(), timestampY);
+					String str = String.valueOf(segment.value.charAt(i));
+
+					if (isChatboxTransparent)
+					{
+						// Draw shadow
+						graphics.setColor(Color.BLACK);
+						graphics.drawString(str, timestampX.get() + 1, timestampY + 1);
+						graphics.setColor(timestampColor);
+					}
+					graphics.drawString(str, timestampX.get(), timestampY);
 					// Largest numbers are 6 pixels + 2 character spacing
 					//  Currently does not account for letter size (Monday, January etc.)
 					timestampX.addAndGet(6 + 2);
