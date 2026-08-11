@@ -81,6 +81,13 @@ public class ChatTimestampOverlay extends BaseCleanChatOverlay
 			@Override
 			public void consumeText(String text, int startIndex, int endIndex)
 			{
+				if (isChatboxTransparent)
+				{
+					// Draw shadow
+					graphics.setColor(Color.BLACK);
+					graphics.drawString(text, timestampX.get() + 1, timestampY + 1);
+					graphics.setColor(timestampColor);
+				}
 				graphics.drawString(text, timestampX.get(), timestampY);
 				timestampX.addAndGet(graphics.getFontMetrics().stringWidth(text));
 			}
