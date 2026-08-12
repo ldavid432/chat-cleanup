@@ -40,8 +40,7 @@ public class CleanChatUtil
 
 	public static int getTextLength(String text)
 	{
-		// TODO: Use Text.unescapeJagex
-		return Text.removeFormattingTags(text).replace("<lt>", "<").replace("<gt>", ">")
+		return Text.unescapeJagex(text)
 			.chars()
 			.mapToObj(ch -> (char) ch)
 			.map(key -> {
