@@ -170,45 +170,44 @@ public class ChatWidgetEditor
 			Widget[] chatWidgets = chatbox.getDynamicChildren().clone();
 			Widget[] clickboxWidgets = chatbox.getStaticChildren().clone();
 
-			// TODO: Make i = 0
 			// TODO: See if we can avoid looping through every single widget even if there is no text there
-			// for (int i = 2; i < chats.length; i += 4)
+			// for (int i = 0; i < chats.length; i += 4)
 			chatWidgetGroups = Stream.iterate(
-					2,
+					0,
 					i -> i < chatWidgets.length,
 					i -> i + 4
 				)
 				.map(i -> {
-					int rankWidgetIndex = i + 1; //    [3]
-					int messageWidgetIndex = i - 1; // [1]
-					int nameWidgetIndex = i - 2; //    [0]
+					int rankWidgetIndex = i + 3;
+					int messageWidgetIndex = i + 1;
+					int nameWidgetIndex = i;
 
-					Widget channelWidget = chatWidgets[i];
+					Widget channelWidget = chatWidgets[i + 2];
 					if (channelWidget.getText().isEmpty())
 					{
 						// Channel is not at [2]. This is either a message with channel at [0] or a message without a channel
 
-						if (!chatWidgets[i - 2].getText().isEmpty())
+						if (!chatWidgets[i].getText().isEmpty())
 						{
 							// Channel is at [0], this is a special message, adjust indices accordingly
 
-							Widget messageWidget = chatWidgets[i - 1];
+							Widget messageWidget = chatWidgets[i + 1];
 							// For some reason the fc now talking message specifically, has the CLAN chat join message here...
 							if (messageWidget.getText().isEmpty() || Text.removeTags(messageWidget.getText()).equals(CLAN_INSTRUCTION_MESSAGE))
 							{
 								// Friends chat message
 
-								messageWidgetIndex = i - 2; // [0]
+								messageWidgetIndex = i;
 								// Empty widget in this case, but still good to handle it
-								nameWidgetIndex = i - 1; //    [1]
+								nameWidgetIndex = i + 1;
 							}
 							else
 							{
 								// Other special message
 
-								channelWidget = chatWidgets[i - 2]; // [0]
+								channelWidget = chatWidgets[i];
 								// Empty widget in this case, but still good to handle it
-								nameWidgetIndex = i; //                [2]
+								nameWidgetIndex = i + 2;
 							}
 						}
 						else if (chatWidgets[messageWidgetIndex].getText().isEmpty())
@@ -221,7 +220,7 @@ public class ChatWidgetEditor
 						}
 					}
 
-					return new ChatWidgetGroup(channelWidget, chatWidgets[rankWidgetIndex], chatWidgets[nameWidgetIndex], chatWidgets[messageWidgetIndex], clickboxWidgets[(i - 2) / 4]);
+					return new ChatWidgetGroup(channelWidget, chatWidgets[rankWidgetIndex], chatWidgets[nameWidgetIndex], chatWidgets[messageWidgetIndex], clickboxWidgets[i / 4]);
 				})
 				.filter(Objects::nonNull)
 				.peek(group -> {
