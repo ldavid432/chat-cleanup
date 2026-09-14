@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Client;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
@@ -26,6 +27,9 @@ public class ChatTimestampOverlay extends BaseCleanChatOverlay
 
 	@Inject
 	private CleanChatChannelsPlugin plugin;
+
+	@Inject
+	private Client client;
 
 	@Override
 	boolean isEnabled()
@@ -127,7 +131,7 @@ public class ChatTimestampOverlay extends BaseCleanChatOverlay
 				@Override
 				public void consumeText(String text, int startIndex, int endIndex)
 				{
-					plugin.setTimestampTemplateWidth(plugin.getTimestampTemplateWidth() + getTextLength(text));
+					plugin.setTimestampTemplateWidth(plugin.getTimestampTemplateWidth() + getTextLength(text, client));
 				}
 			});
 		}

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Client;
 import net.runelite.client.util.Text;
 
 @Slf4j
@@ -38,9 +39,9 @@ public class CleanChatUtil
 		// NBSP
 		Map.entry('\u00A0', 1));
 
-	public static int getTextLength(String text)
+	public static int getTextLength(String text, Client client)
 	{
-		return Text.unescapeJagex(text)
+		return cleanString(text, client)
 			.chars()
 			.mapToObj(ch -> (char) ch)
 			.map(key -> {
@@ -53,6 +54,11 @@ public class CleanChatUtil
 			.reduce(0, Integer::sum) + getChatIconsWidth(text);
 	}
 
+	private static String cleanString(String s, Client client)
+	{
+		return Text.unescapeJagex(client.macroExpand(s));
+	}
+
 	private static int getChatIconsWidth(String text)
 	{
 		int imgCount = Math.toIntExact(IMG_TAG_REGEXP.matcher(text).results().count());
@@ -60,10 +66,10 @@ public class CleanChatUtil
 	}
 
 	// Mimics 'paraheight' cs2 instruction
-	public static int getTextLineCount(String text, int width, int indentSpaces)
+	public static int getTextLineCount(String text, int width, int indentSpaces, Client client)
 	{
 		// Positive lookahead ?= makes it so that the delimiter is included in the split strings
-		Iterator<String> iterator = List.of(text.split("(?=(<br>)|([ \u00A0]))")).iterator();
+		Iterator<String> iterator = List.of(text.split("(?=<br>|[ \u00A0\n]|<n>)")).iterator();
 
 		int numLines = 0;
 		StringBuilder currentLine = new StringBuilder();
@@ -72,7 +78,7 @@ public class CleanChatUtil
 		{
 			String next = iterator.next();
 
-			int currentWidth = getTextLength(currentLine.toString());
+			int currentWidth = getTextLength(currentLine.toString(), client);
 
 			if (currentWidth < width)
 			{
@@ -81,14 +87,14 @@ public class CleanChatUtil
 				{
 					currentLine.append(next);
 				}
-				// Adding a line break (from game messages) - player messages get escaped as <lt>br<gt>
-				else if (next.startsWith("<br>"))
+				// Adding a line break
+				else if (next.startsWith("<br>") || next.startsWith("<n>") || next.charAt(0) == '\n')
 				{
 					numLines++;
 					currentLine = new StringBuilder(next);
 				}
 				// Adding the next chunk
-				else if (currentWidth + getTextLength(next) <= width)
+				else if (currentWidth + getTextLength(next, client) <= width)
 				{
 					currentLine.append(next);
 				}

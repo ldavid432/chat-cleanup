@@ -14,6 +14,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Client;
 import net.runelite.api.widgets.Widget;
 
 @Slf4j
@@ -87,11 +88,11 @@ public class ChatWidgetGroup
 		clickBox.revalidate();
 	}
 
-	public void calculateHeight()
+	public void calculateHeight(Client client)
 	{
 		if (!message.getText().isEmpty() && message.getWidth() > 0)
 		{
-			int numLines = getTextLineCount(message.getText(), message.getWidth(), messageIndentSpaces);
+			int numLines = getTextLineCount(message.getText(), message.getWidth(), messageIndentSpaces, client);
 			int height = numLines * 14; // Height of each line is always 14
 			message.setOriginalHeight(height);
 			message.revalidate();
@@ -102,7 +103,7 @@ public class ChatWidgetGroup
 	}
 
 	public void calculateChannelIndent(CleanChatChannelsConfig config, String matchedChannelName, String widgetChannelText,
-									   int timestampWidth, boolean isFixedWidthTimestampEnabled)
+									   int timestampWidth, boolean isFixedWidthTimestampEnabled, Client client)
 	{
 		if (channelType == ChatChannel.FRIENDS_CHAT)
 		{
@@ -130,7 +131,7 @@ public class ChatWidgetGroup
 					if (isFixedWidthTimestampEnabled)
 					{
 						String prefix = widgetChannelText.substring(0, startOfChannel);
-						prefixWidth = getTextLength(prefix);
+						prefixWidth = getTextLength(prefix, client);
 						indentWidth += prefixWidth;
 
 						if (channelType.isChannelNameRemovalEnabled(config))
@@ -149,7 +150,7 @@ public class ChatWidgetGroup
 					if (!channelType.isChannelNameRemovalEnabled(config))
 					{
 						String channel = widgetChannelText.substring(startOfChannel, endOfChannel);
-						channelWidth = getTextLength(channel);
+						channelWidth = getTextLength(channel, client);
 						indentWidth += channelWidth;
 
 						if (channelType != ChatChannel.FRIENDS_CHAT)
@@ -237,15 +238,15 @@ public class ChatWidgetGroup
 		}
 	}
 
-	public void removeFromChannel(String text)
+	public void removeFromChannel(String text, Client client)
 	{
-		replaceChannelName(text, "");
+		replaceChannelName(text, "", client);
 	}
 
-	public String replaceChannelName(String text, String newChannelName)
+	public String replaceChannelName(String text, String newChannelName, Client client)
 	{
-		int currentWidth = getTextLength(wrapWithBrackets(text));
-		int newWidth = getTextLength(newChannelName);
+		int currentWidth = getTextLength(wrapWithBrackets(text), client);
+		int newWidth = getTextLength(newChannelName, client);
 		int removedWidth = currentWidth - newWidth;
 
 		String newText = channel.getText()
@@ -256,14 +257,14 @@ public class ChatWidgetGroup
 		if (newText.endsWith(" "))
 		{
 			newText = newText.substring(0, newText.length() - 1);
-			removedWidth += getTextLength(" ");
+			removedWidth += getTextLength(" ", client);
 		}
 
 		// Remove double spaces - mainly found in friends chat since it has sender + username
 		if (newText.contains("  "))
 		{
 			newText = newText.replaceFirst(" {2}", " ");
-			removedWidth += getTextLength(" ");
+			removedWidth += getTextLength(" ", client);
 		}
 
 		channel.setText(newText);

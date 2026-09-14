@@ -238,13 +238,13 @@ public class ChatWidgetEditor
 
 							if (channel.isChannelNameRemovalEnabled(config))
 							{
-								group.removeFromChannel(matchedChannelName);
+								group.removeFromChannel(matchedChannelName, client);
 
 								matchedChannelName = wrapWithBrackets(matchedChannelName);
 							}
 							else if (!shortName.isBlank() && !channel.isShortNameDefault(channelNameManager))
 							{
-								String updatedChannelText = group.replaceChannelName(matchedChannelName, shortName);
+								String updatedChannelText = group.replaceChannelName(matchedChannelName, shortName, client);
 
 								matchedChannelName = sanitizeName(shortName);
 								widgetChannelText = sanitizeName(updatedChannelText);
@@ -262,7 +262,7 @@ public class ChatWidgetEditor
 							if (channel != ChatChannel.FRIENDS_CHAT)
 							{
 								group.calculateChannelIndent(config, matchedChannelName, widgetChannelText,
-									plugin.getTimestampTemplateWidth(), plugin.isFixedWidthTimestampEnabled());
+									plugin.getTimestampTemplateWidth(), plugin.isFixedWidthTimestampEnabled(), client);
 							}
 						}
 					}
@@ -275,7 +275,7 @@ public class ChatWidgetEditor
 					group.applyIndent();
 
 					// Calculate height last
-					group.calculateHeight();
+					group.calculateHeight(client);
 				})
 				.collect(Collectors.toList());
 
