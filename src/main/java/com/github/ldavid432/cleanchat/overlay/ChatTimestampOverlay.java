@@ -1,7 +1,8 @@
 package com.github.ldavid432.cleanchat.overlay;
 
 import com.github.ldavid432.cleanchat.ChatWidgetGroup;
-import com.github.ldavid432.cleanchat.CleanChatChannelsPlugin;
+import com.github.ldavid432.cleanchat.TimestampPluginIntegration;
+import static com.github.ldavid432.cleanchat.TimestampPluginIntegration.TIMESTAMP_FORMAT_KEY;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.getTextLength;
 import com.github.ldavid432.cleanchat.util.FormatterExtractor;
 import java.awt.Color;
@@ -23,18 +24,15 @@ public class ChatTimestampOverlay extends BaseCleanChatOverlay
 {
 
 	@Inject
-	private TimestampConfig timestampConfig;
-
-	@Inject
-	private CleanChatChannelsPlugin plugin;
-
-	@Inject
 	private Client client;
+
+	@Inject
+	private TimestampPluginIntegration timestampIntegration;
 
 	@Override
 	boolean isEnabled()
 	{
-		return plugin.isFixedWidthTimestampEnabled();
+		return timestampIntegration.isFixedWidthTimestampEnabled();
 	}
 
 	@Override
@@ -98,10 +96,10 @@ public class ChatTimestampOverlay extends BaseCleanChatOverlay
 		});
 	}
 
-	@Subscribe
+	@Subscribe(priority = -0.1f) // run after TimestampPluginIntegration
 	public void onConfigChanged(ConfigChanged event)
 	{
-		if (event.getGroup().equals(TimestampConfig.GROUP) && event.getKey().equals("format"))
+		if (event.getGroup().equals(TimestampConfig.GROUP) && event.getKey().equals(TIMESTAMP_FORMAT_KEY))
 		{
 			updateTemplate();
 		}
@@ -114,10 +112,10 @@ public class ChatTimestampOverlay extends BaseCleanChatOverlay
 
 	private void updateTemplate()
 	{
-		FormatterExtractor.ExtractionResult newTemplate = FormatterExtractor.createFromFormatString(timestampConfig.timestampFormat());
+		FormatterExtractor.ExtractionResult newTemplate = FormatterExtractor.createFromFormatString(timestampIntegration.getTimestampFormat());
 
-		plugin.setTimestampTemplateWidth(0);
-		plugin.setTimestampTemplate(newTemplate);
+		timestampIntegration.setTimestampTemplateWidth(0);
+		timestampIntegration.setTimestampTemplate(newTemplate);
 
 		if (newTemplate != null) {
 			FormatterExtractor.iterateOutputParts(newTemplate, new FormatterExtractor.OutputPartConsumer()
@@ -125,13 +123,13 @@ public class ChatTimestampOverlay extends BaseCleanChatOverlay
 				@Override
 				public void consumeSegment(FormatterExtractor.FormatSegment segment)
 				{
-					plugin.setTimestampTemplateWidth(plugin.getTimestampTemplateWidth() + ((6 + 2) * segment.tokenCount));
+					timestampIntegration.setTimestampTemplateWidth(timestampIntegration.getTimestampTemplateWidth() + ((6 + 2) * segment.tokenCount));
 				}
 
 				@Override
 				public void consumeText(String text, int startIndex, int endIndex)
 				{
-					plugin.setTimestampTemplateWidth(plugin.getTimestampTemplateWidth() + getTextLength(text, client));
+					timestampIntegration.setTimestampTemplateWidth(timestampIntegration.getTimestampTemplateWidth() + getTextLength(text, client));
 				}
 			});
 		}
@@ -143,7 +141,7 @@ public class ChatTimestampOverlay extends BaseCleanChatOverlay
 	{
 		boolean isChatboxTransparent = client.isResized() && client.getVarbitValue(VarbitID.CHATBOX_TRANSPARENCY) == 1;
 
-		Color color = isChatboxTransparent ? timestampConfig.transparentTimestamp() : timestampConfig.opaqueTimestamp();
+		Color color = isChatboxTransparent ? timestampIntegration.getTransparentTimestampColor() : timestampIntegration.getOpaqueTimestampColor();
 
 		if (color == null)
 		{

@@ -56,7 +56,7 @@ public class ChatWidgetEditor
 	private Client client;
 
 	@Inject
-	private CleanChatChannelsPlugin plugin;
+	private TimestampPluginIntegration timestampIntegration;
 
 	private int lastScrollDiff = -1;
 	private int lastChatTab = ChatTab.CLOSED.getValue();
@@ -262,14 +262,14 @@ public class ChatWidgetEditor
 							if (channel != ChatChannel.FRIENDS_CHAT)
 							{
 								group.calculateChannelIndent(config, matchedChannelName, widgetChannelText,
-									plugin.getTimestampTemplateWidth(), plugin.isFixedWidthTimestampEnabled(), client);
+									timestampIntegration.getTimestampTemplateWidth(), timestampIntegration.isFixedWidthTimestampEnabled(), client);
 							}
 						}
 					}
 
-					if (plugin.isFixedWidthTimestampEnabled())
+					if (timestampIntegration.isFixedWidthTimestampEnabled())
 					{
-						group.extractTimestamp(plugin.getTimestampTemplate(), plugin.getTimestampTemplateWidth());
+						group.extractTimestamp(timestampIntegration.getTimestampTemplate(), timestampIntegration.getTimestampTemplateWidth());
 					}
 
 					group.applyIndent();

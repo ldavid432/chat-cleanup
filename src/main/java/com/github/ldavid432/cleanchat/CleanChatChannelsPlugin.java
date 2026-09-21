@@ -4,13 +4,9 @@ import static com.github.ldavid432.cleanchat.CleanChatChannelsConfig.HIDE_SCROLL
 import com.github.ldavid432.cleanchat.overlay.ChatColorBarOverlay;
 import com.github.ldavid432.cleanchat.overlay.ChatTimestampOverlay;
 import com.github.ldavid432.cleanchat.util.ChangeLogUtil;
-import com.github.ldavid432.cleanchat.util.FormatterExtractor;
 import com.google.inject.Provides;
 import java.util.Objects;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
@@ -24,14 +20,10 @@ import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
-import net.runelite.client.plugins.PluginDependency;
 import net.runelite.client.plugins.PluginDescriptor;
-import net.runelite.client.plugins.PluginManager;
-import net.runelite.client.plugins.timestamp.TimestampPlugin;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 @Slf4j
-@PluginDependency(TimestampPlugin.class)
 @PluginDescriptor(
 	name = "Clean Chat",
 	description = "Hide clan name and more to clean your chat channels, includes GIM, friends, and clan chats",
@@ -65,13 +57,7 @@ public class CleanChatChannelsPlugin extends Plugin
 	private OverlayManager overlayManager;
 
 	@Inject
-	private PluginManager pluginManager;
-
-	@Inject
 	private ChatMessageManager chatMessageManager;
-
-	@Inject
-	private TimestampPlugin timestampPlugin;
 
 	@Inject
 	private ChatColorBarOverlay colorBarOverlay;
@@ -79,21 +65,8 @@ public class CleanChatChannelsPlugin extends Plugin
 	@Inject
 	private ChatTimestampOverlay timestampOverlay;
 
-	@Getter
-	@Setter
-	@Nullable
-	private FormatterExtractor.ExtractionResult timestampTemplate = null;
-
-	@Getter
-	@Setter
-	private int timestampTemplateWidth = 0;
-
-	private boolean timestampPluginEnabled = false;
-
-	public boolean isFixedWidthTimestampEnabled()
-	{
-		return config.isFixedWidthTimestampEnabled() && timestampPluginEnabled;
-	}
+	@Inject
+	private TimestampPluginIntegration timestampIntegration;
 
 	@Provides
 	CleanChatChannelsConfig provideConfig(ConfigManager configManager)
@@ -104,11 +77,12 @@ public class CleanChatChannelsPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
-		timestampPluginEnabled = pluginManager.isPluginEnabled(timestampPlugin);
+		timestampIntegration.onStartup();
 
 		eventBus.register(chatBlocker);
 		eventBus.register(chatWidgetEditor);
 		eventBus.register(channelNameManager);
+		eventBus.register(timestampIntegration);
 		channelNameManager.startup();
 		eventBus.register(timestampOverlay);
 		overlayManager.add(timestampOverlay);
@@ -132,6 +106,7 @@ public class CleanChatChannelsPlugin extends Plugin
 		eventBus.unregister(chatBlocker);
 		eventBus.unregister(chatWidgetEditor);
 		eventBus.unregister(channelNameManager);
+		eventBus.unregister(timestampIntegration);
 		channelNameManager.shutdown();
 		overlayManager.remove(timestampOverlay);
 		eventBus.unregister(timestampOverlay);
@@ -155,12 +130,6 @@ public class CleanChatChannelsPlugin extends Plugin
 			{
 				clientThread.invoke(() -> handleScrollbarVisibility());
 			}
-		}
-		else if ("runelite".equals(event.getGroup()) && "timestampplugin".equals(event.getKey()))
-		{
-			timestampPluginEnabled = pluginManager.isPluginEnabled(timestampPlugin);
-			log.debug("Timestamp plugin toggled. Refreshing chat.");
-			client.refreshChat();
 		}
 	}
 
