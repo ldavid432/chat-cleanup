@@ -58,7 +58,7 @@ public class TimestampPluginIntegration
 
 	public void onStartup()
 	{
-		isEnabled = configManager.getConfiguration(RUNELITE_CONFIG_GROUP, TIMESTAMP_PLUGIN_KEY, Boolean.class);
+		isEnabled = configManager.getConfiguration(RUNELITE_CONFIG_GROUP, TIMESTAMP_PLUGIN_KEY, Boolean.class) == Boolean.TRUE;
 		opaqueTimestampColor = configManager.getConfiguration(TimestampConfig.GROUP, OPAQUE_TIMESTAMP_COLOR_KEY, Color.class);
 		transparentTimestampColor = configManager.getConfiguration(TimestampConfig.GROUP, TRANSPARENT_TIMESTAMP_COLOR_KEY, Color.class);
 		timestampFormat = configManager.getConfiguration(TimestampConfig.GROUP, TIMESTAMP_FORMAT_KEY);
