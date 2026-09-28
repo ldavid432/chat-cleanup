@@ -68,7 +68,7 @@ public class TimestampPluginIntegration
 
 	public boolean isFixedWidthTimestampEnabled()
 	{
-		return config.isFixedWidthTimestampEnabled() && isEnabled();
+		return isEnabled() && config.isFixedWidthTimestampEnabled();
 	}
 
 	@Subscribe
