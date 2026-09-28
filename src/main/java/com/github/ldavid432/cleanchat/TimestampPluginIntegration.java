@@ -84,10 +84,10 @@ public class TimestampPluginIntegration
 					client.refreshChat();
 					break;
 				case OPAQUE_TIMESTAMP_COLOR_KEY:
-					opaqueTimestampColor = ColorUtil.fromString(event.getNewValue());
+					opaqueTimestampColor = event.getNewValue() != null ? ColorUtil.fromString(event.getNewValue()) : null;
 					break;
 				case TRANSPARENT_TIMESTAMP_COLOR_KEY:
-					transparentTimestampColor = ColorUtil.fromString(event.getNewValue());
+					transparentTimestampColor = event.getNewValue() != null ? ColorUtil.fromString(event.getNewValue()) : null;
 					break;
 			}
 		}
