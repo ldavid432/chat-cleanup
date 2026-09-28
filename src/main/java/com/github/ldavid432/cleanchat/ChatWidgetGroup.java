@@ -1,10 +1,10 @@
 package com.github.ldavid432.cleanchat;
 
+import com.github.ldavid432.cleanchat.data.ChatChannel;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.getTextLength;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.getTextLineCount;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.wrapWithBrackets;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.wrapWithChannelNameRegex;
-import com.github.ldavid432.cleanchat.data.ChatChannel;
 import com.github.ldavid432.cleanchat.util.FormatterExtractor;
 import java.awt.Color;
 import static java.lang.Math.max;
@@ -210,8 +210,8 @@ public class ChatWidgetGroup
 
 			if (messageIndentSpaces > 0)
 			{
-				message.setOriginalX(message.getOriginalX() - indentWidth);
-				message.setOriginalWidth(message.getOriginalWidth() + indentWidth);
+				shiftLeft(message, indentWidth);
+				expand(message, indentWidth);
 				message.revalidate();
 			}
 		}
