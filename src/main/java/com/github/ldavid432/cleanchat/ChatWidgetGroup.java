@@ -249,9 +249,7 @@ public class ChatWidgetGroup
 		int newWidth = getTextLength(newChannelName, client);
 		int removedWidth = currentWidth - newWidth;
 
-		String newText = channel.getText()
-			// TODO: Target the channel name more precisely, this should do for now to avoid targeting timestamps in brackets
-			.replaceFirst(wrapWithChannelNameRegex(text), newChannelName);
+		String newText = channel.getText().replaceAll(wrapWithChannelNameRegex(text), newChannelName);
 
 		// Remove trailing spaces - probably only happens with timestamps turned on
 		if (newText.endsWith(" "))

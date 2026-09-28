@@ -6,11 +6,13 @@ import static com.github.ldavid432.cleanchat.CleanChatChannelsConfig.DEFAULT_CUS
 import com.github.ldavid432.cleanchat.util.CleanChatUtil;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.CURRENT_CLAN_REPLACER;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.sanitizeName;
+import static com.github.ldavid432.cleanchat.util.CleanChatUtil.wrapWithChannelNameRegex;
 import java.awt.Color;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -51,6 +53,7 @@ public enum ChatChannel
 		CleanChatChannelsConfig::groupIronChannelColor
 	);
 
+	// TODO: Cache the compiled regex for each name
 	public List<String> getNames(ChannelNameManager channelNameManager)
 	{
 		return getNames.apply(channelNameManager);
@@ -114,7 +117,7 @@ public enum ChatChannel
 			String widgetChannelName = sanitizeName(channel);
 			String matchedChannelName = channelRemoval.getNames(channelNameManager).stream()
 				.map(CleanChatUtil::sanitizeName)
-				.filter(widgetChannelName::contains)
+				.filter(name -> Pattern.compile(wrapWithChannelNameRegex(name)).matcher(widgetChannelName).find())
 				.findFirst()
 				.orElse(null);
 
