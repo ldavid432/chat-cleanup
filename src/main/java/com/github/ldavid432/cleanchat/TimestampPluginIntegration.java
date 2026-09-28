@@ -4,6 +4,7 @@ import com.github.ldavid432.cleanchat.util.FormatterExtractor;
 import java.awt.Color;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +16,7 @@ import net.runelite.client.plugins.timestamp.TimestampConfig;
 import net.runelite.client.util.ColorUtil;
 
 @Slf4j
+@Singleton
 public class TimestampPluginIntegration
 {
 	private static final String RUNELITE_CONFIG_GROUP = "runelite";
