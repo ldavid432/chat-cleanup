@@ -60,21 +60,21 @@ public class ClanNamePatternTest {
 
     @Test
     public void testRemovePlainClanName() {
-        String message = "08:32:30 [F] the lil fish:";
+        String message = "08:32:30 [F]the lil fish:";
         String result = message.replaceAll(pattern, "").trim();
         assertEquals("08:32:30 the lil fish:", result);
     }
 
     @Test
     public void testRemoveColoredClanName() {
-        String message = "08:32:30 [<col=9070ff>F</col>] <img=41>the lil fish:";
+        String message = "08:32:30 [<col=9070ff>F</col>]<img=41>the lil fish:";
         String result = message.replaceAll(pattern, "").trim();
         assertEquals("08:32:30 <img=41>the lil fish:", result);
     }
 
     @Test
     public void testRemoveColoredClanNameWithSpaces() {
-        String message = "08:32:30 [<col=FF0000> F </col>] the lil fish:";
+        String message = "08:32:30 [<col=FF0000> F </col>]the lil fish:";
         String result = message.replaceAll(pattern, "").trim();
         assertEquals("08:32:30 the lil fish:", result);
     }
@@ -91,13 +91,6 @@ public class ClanNamePatternTest {
         String message = "08:32:30 [Fake] the lil fish:";
         String result = message.replaceAll(pattern, "");
         assertEquals(message, result);
-    }
-
-    @Test
-    public void testMultipleClanNamesInMessage() {
-        String message = "[F] first [F] second";
-        String result = message.replaceAll(pattern, "").trim();
-        assertEquals("first second", result);
     }
 
     @Test

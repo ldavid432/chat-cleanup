@@ -249,7 +249,7 @@ public class ChatWidgetGroup
 		int newWidth = getTextLength(newChannelName, client);
 		int removedWidth = currentWidth - newWidth;
 
-		String newText = channel.getText().replaceAll(wrapWithChannelNameRegex(text), newChannelName);
+		String newText = channel.getText().replaceFirst(wrapWithChannelNameRegex(text), newChannelName);
 
 		// Remove trailing spaces - probably only happens with timestamps turned on
 		if (newText.endsWith(" "))
