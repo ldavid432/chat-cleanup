@@ -81,8 +81,8 @@ public class FormatterExtractor {
 					count++;
 				}
 
-				String token = String.valueOf(c).repeat(count);
 				int expandedSize = getExpandedSize(c, count);
+				String token = String.valueOf(c).repeat(expandedSize);
 
 				// Create placeholder in template (spaces for now)
 				String placeholder = " ".repeat(expandedSize);
@@ -90,7 +90,7 @@ public class FormatterExtractor {
 				int endIndex = currentPos + expandedSize;
 
 				templateOutput.append(placeholder);
-				segments.add(new FormatSegment(token, c, count, startIndex, endIndex, null));
+				segments.add(new FormatSegment(token, c, expandedSize, startIndex, endIndex, null));
 
 				currentPos = endIndex;
 				i += count;
