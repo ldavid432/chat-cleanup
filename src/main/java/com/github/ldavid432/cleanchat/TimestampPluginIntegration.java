@@ -13,7 +13,6 @@ import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.timestamp.TimestampConfig;
-import net.runelite.client.util.ColorUtil;
 
 @Slf4j
 @Singleton
@@ -35,8 +34,10 @@ public class TimestampPluginIntegration
 	@Inject
 	private CleanChatChannelsConfig config;
 
-	@Getter
-	private boolean isEnabled;
+	@Inject
+	private TimestampConfig timestampConfig;
+
+	private boolean isTimestampPluginEnabled;
 
 	@Getter
 	@Nullable
@@ -60,15 +61,15 @@ public class TimestampPluginIntegration
 
 	public void onStartup()
 	{
-		isEnabled = configManager.getConfiguration(RUNELITE_CONFIG_GROUP, TIMESTAMP_PLUGIN_KEY, Boolean.class) == Boolean.TRUE;
-		opaqueTimestampColor = configManager.getConfiguration(TimestampConfig.GROUP, OPAQUE_TIMESTAMP_COLOR_KEY, Color.class);
-		transparentTimestampColor = configManager.getConfiguration(TimestampConfig.GROUP, TRANSPARENT_TIMESTAMP_COLOR_KEY, Color.class);
-		timestampFormat = configManager.getConfiguration(TimestampConfig.GROUP, TIMESTAMP_FORMAT_KEY);
+		isTimestampPluginEnabled = configManager.getConfiguration(RUNELITE_CONFIG_GROUP, TIMESTAMP_PLUGIN_KEY, Boolean.class) == Boolean.TRUE;
+		opaqueTimestampColor = timestampConfig.opaqueTimestamp();
+		transparentTimestampColor = timestampConfig.transparentTimestamp();
+		timestampFormat = timestampConfig.timestampFormat();
 	}
 
 	public boolean isFixedWidthTimestampEnabled()
 	{
-		return isEnabled() && config.isFixedWidthTimestampEnabled();
+		return isTimestampPluginEnabled && config.isFixedWidthTimestampEnabled();
 	}
 
 	@Subscribe
@@ -79,21 +80,21 @@ public class TimestampPluginIntegration
 			switch (event.getKey())
 			{
 				case TIMESTAMP_FORMAT_KEY:
-					timestampFormat = event.getNewValue();
+					timestampFormat = timestampConfig.timestampFormat();
 					log.debug("Timestamp format changed. Refreshing chat.");
 					client.refreshChat();
 					break;
 				case OPAQUE_TIMESTAMP_COLOR_KEY:
-					opaqueTimestampColor = event.getNewValue() != null ? ColorUtil.fromString(event.getNewValue()) : null;
+					opaqueTimestampColor = timestampConfig.opaqueTimestamp();
 					break;
 				case TRANSPARENT_TIMESTAMP_COLOR_KEY:
-					transparentTimestampColor = event.getNewValue() != null ? ColorUtil.fromString(event.getNewValue()) : null;
+					transparentTimestampColor = timestampConfig.transparentTimestamp();
 					break;
 			}
 		}
 		else if (RUNELITE_CONFIG_GROUP.equals(event.getGroup()) && TIMESTAMP_PLUGIN_KEY.equals(event.getKey()))
 		{
-			isEnabled = Boolean.parseBoolean(event.getNewValue());
+			isTimestampPluginEnabled = Boolean.parseBoolean(event.getNewValue());
 			log.debug("Timestamp plugin toggled. Refreshing chat.");
 			client.refreshChat();
 		}

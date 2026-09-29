@@ -21,6 +21,7 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.timestamp.TimestampConfig;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 @Slf4j
@@ -72,6 +73,12 @@ public class CleanChatChannelsPlugin extends Plugin
 	CleanChatChannelsConfig provideConfig(ConfigManager configManager)
 	{
 		return configManager.getConfig(CleanChatChannelsConfig.class);
+	}
+
+	@Provides
+	TimestampConfig provideTimestampConfig(ConfigManager configManager)
+	{
+		return configManager.getConfig(TimestampConfig.class);
 	}
 
 	@Override
