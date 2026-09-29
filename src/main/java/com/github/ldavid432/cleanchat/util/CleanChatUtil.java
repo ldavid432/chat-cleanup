@@ -131,7 +131,7 @@ public class CleanChatUtil
 
 	public static String wrapWithChannelNameRegex(String channelName)
 	{
-		return "\\[<col=[0-9a-fA-F]+>\\s*" + Pattern.quote(channelName) + "\\s*</col>\\]|\\[" + Pattern.quote(channelName) + "\\]";
+		return "\\[(?:<col=[0-9a-fA-F]+>)*\\s*" + Pattern.quote(channelName) + "\\s*(?:</col>)*\\]";
 	}
 
 }
