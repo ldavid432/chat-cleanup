@@ -83,7 +83,7 @@ public class ChatBlocker
 
 		if (!blockChat && !message.isEmpty())
 		{
-			Pair<ChatChannel, String> match = ChatChannel.findChannelMatch(channelText, channelNameManager);
+			Pair<ChatChannel, String> match = ChatChannel.findChannelMatch("[" + channelText + "]", channelNameManager);
 			if (match == null) {
 				return;
 			}
