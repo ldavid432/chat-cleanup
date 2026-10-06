@@ -34,7 +34,6 @@ public class TimestampPluginIntegration
 	@Inject
 	private CleanChatChannelsConfig config;
 
-	@Inject
 	private TimestampConfig timestampConfig;
 
 	private boolean isTimestampPluginEnabled;
@@ -61,6 +60,7 @@ public class TimestampPluginIntegration
 
 	public void onStartup()
 	{
+		timestampConfig = configManager.getConfig(TimestampConfig.class);
 		isTimestampPluginEnabled = configManager.getConfiguration(RUNELITE_CONFIG_GROUP, TIMESTAMP_PLUGIN_KEY, Boolean.class) == Boolean.TRUE;
 		opaqueTimestampColor = timestampConfig.opaqueTimestamp();
 		transparentTimestampColor = timestampConfig.transparentTimestamp();
