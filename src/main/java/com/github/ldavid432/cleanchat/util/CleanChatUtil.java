@@ -37,7 +37,9 @@ public class CleanChatUtil
 		// Symbols
 		Map.entry(' ', 1), Map.entry(':', 1), Map.entry(';', 2), Map.entry('"', 3), Map.entry('@', 11), Map.entry('!', 1), Map.entry('.', 1), Map.entry('\'', 2), Map.entry(',', 2), Map.entry('(', 2), Map.entry(')', 2), Map.entry('+', 5), Map.entry('-', 4), Map.entry('=', 6), Map.entry('?', 6), Map.entry('*', 7), Map.entry('/', 4), Map.entry('\\', 4), Map.entry('$', 6), Map.entry('£', 8), Map.entry('^', 6), Map.entry('{', 3), Map.entry('}', 3), Map.entry('[', 3), Map.entry(']', 3), Map.entry('&', 9), Map.entry('#', 11), Map.entry('°', 4), Map.entry('<', 5), Map.entry('>', 5), Map.entry('%', 9), Map.entry('_', 7), Map.entry('|', 1),
 		// NBSP
-		Map.entry('\u00A0', 1));
+		Map.entry('\u00A0', 1),
+		// Newline
+		Map.entry('\n', 0));
 
 	public static int getTextLength(String text, Client client)
 	{
