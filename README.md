@@ -46,6 +46,13 @@ All the below options are toggleable (_most_ are **off** by default)
   - Remove group name from messages
   - Remove group broadcasts from the clan chat tab (only display them in group tab)
 
+### Screenshots
+
+Name removal before:
+
+<img src="docs/name_removal_before.png">
+<img src="docs/name_removal_after.png">
+
 ### Custom channel name
 
 - To reference your current clan name use `$$`
