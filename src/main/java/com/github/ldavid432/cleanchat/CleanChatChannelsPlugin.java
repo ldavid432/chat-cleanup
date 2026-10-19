@@ -28,9 +28,6 @@ public class CleanChatChannelsPlugin extends Plugin
 	private Client client;
 
 	@Inject
-	private CleanChatChannelsConfig config;
-
-	@Inject
 	private ChannelNameManager channelNameManager;
 
 	@Inject
@@ -59,6 +56,9 @@ public class CleanChatChannelsPlugin extends Plugin
 
 	@Inject
 	private ChatWidgetHider hider;
+
+	@Inject
+	private ConfigManager configManager;
 
 	@Provides
 	CleanChatChannelsConfig provideConfig(ConfigManager configManager)
@@ -89,7 +89,7 @@ public class CleanChatChannelsPlugin extends Plugin
 			client.refreshChat();
 		}
 
-		ChangeLogUtil.handleChangelog(config, chatMessageManager, client);
+		ChangeLogUtil.handleChangelog(configManager, chatMessageManager, client);
 	}
 
 	@Override

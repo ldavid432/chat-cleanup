@@ -25,24 +25,6 @@ public interface CleanChatChannelsConfig extends Config
 	String DEFAULT_CUSTOM_CHANNEL_NAME = wrapWithBrackets(wrapWithColorTag(CURRENT_CLAN_REPLACER, Color.BLUE));
 
 	@ConfigItem(
-		keyName = "lastSeenVersion",
-		name = "",
-		description = "",
-		hidden = true
-	)
-	default int getLastSeenVersion()
-	{
-		return -1;
-	}
-
-	@ConfigItem(
-		keyName = "lastSeenVersion",
-		name = "",
-		description = ""
-	)
-	void setLstSeenVersion(int lastSeenVersion);
-
-	@ConfigItem(
 		keyName = "removeWelcome",
 		name = "Remove welcome message",
 		description = "Remove 'Welcome to RuneScape' message",
