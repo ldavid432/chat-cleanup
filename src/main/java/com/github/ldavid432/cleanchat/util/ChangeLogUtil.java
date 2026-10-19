@@ -37,6 +37,18 @@ public class ChangeLogUtil
 			}
 		}
 
+		// 2.9.0
+		if (config.getLastSeenVersion() < 4)
+		{
+			if (client.getGameState() != GameState.LOGGED_IN)
+			{
+				// Existing install (theoretically)
+				builder
+					.append(changelogLine("Added option to hide the separator above the text input"))
+					.append(changelogLine("As well as hide the top separator (in transparent mode only)"));
+			}
+		}
+
 		if (builder.length() != 0) {
 			builder.insert(0, changelogLine("Clean chat has been updated!", true, false));
 			int lastNewlineIndex = builder.lastIndexOf("<br>");

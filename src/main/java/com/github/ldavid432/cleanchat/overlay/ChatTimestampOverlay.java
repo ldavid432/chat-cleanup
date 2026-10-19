@@ -4,6 +4,7 @@ import com.github.ldavid432.cleanchat.ChatWidgetGroup;
 import com.github.ldavid432.cleanchat.TimestampPluginIntegration;
 import static com.github.ldavid432.cleanchat.TimestampPluginIntegration.TIMESTAMP_FORMAT_KEY;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.getTextLength;
+import static com.github.ldavid432.cleanchat.util.CleanChatUtil.isChatboxTransparent;
 import com.github.ldavid432.cleanchat.util.FormatterExtractor;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -54,7 +55,7 @@ public class ChatTimestampOverlay extends BaseCleanChatOverlay
 
 		AtomicInteger timestampX = new AtomicInteger(x);
 
-		boolean isChatboxTransparent = client.isResized() && client.getVarbitValue(VarbitID.CHATBOX_TRANSPARENCY) == 1;
+		boolean isChatboxTransparent = isChatboxTransparent(client);
 
 		FormatterExtractor.iterateOutputParts(timestamp, new FormatterExtractor.OutputPartConsumer()
 		{

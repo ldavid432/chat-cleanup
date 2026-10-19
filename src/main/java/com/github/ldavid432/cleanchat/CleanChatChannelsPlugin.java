@@ -1,24 +1,16 @@
 package com.github.ldavid432.cleanchat;
 
-import static com.github.ldavid432.cleanchat.CleanChatChannelsConfig.HIDE_SCROLLBAR_KEY;
 import com.github.ldavid432.cleanchat.overlay.ChatColorBarOverlay;
 import com.github.ldavid432.cleanchat.overlay.ChatTimestampOverlay;
 import com.github.ldavid432.cleanchat.util.ChangeLogUtil;
 import com.google.inject.Provides;
-import java.util.Objects;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
-import net.runelite.api.events.WidgetLoaded;
-import net.runelite.api.gameval.InterfaceID;
-import net.runelite.api.widgets.Widget;
-import net.runelite.client.callback.ClientThread;
 import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.EventBus;
-import net.runelite.client.eventbus.Subscribe;
-import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
@@ -34,9 +26,6 @@ public class CleanChatChannelsPlugin extends Plugin
 
 	@Inject
 	private Client client;
-
-	@Inject
-	private ClientThread clientThread;
 
 	@Inject
 	private CleanChatChannelsConfig config;
@@ -68,6 +57,9 @@ public class CleanChatChannelsPlugin extends Plugin
 	@Inject
 	private TimestampPluginIntegration timestampIntegration;
 
+	@Inject
+	private ChatWidgetHider hider;
+
 	@Provides
 	CleanChatChannelsConfig provideConfig(ConfigManager configManager)
 	{
@@ -83,13 +75,13 @@ public class CleanChatChannelsPlugin extends Plugin
 		eventBus.register(chatWidgetEditor);
 		eventBus.register(channelNameManager);
 		eventBus.register(timestampIntegration);
+		eventBus.register(hider);
 		channelNameManager.startup();
 		eventBus.register(timestampOverlay);
 		overlayManager.add(timestampOverlay);
 		timestampOverlay.startUp();
 		overlayManager.add(colorBarOverlay);
-
-		clientThread.invoke(() -> handleScrollbarVisibility());
+		hider.onStartup();
 
 		if (client.getGameState() == GameState.LOGGED_IN)
 		{
@@ -107,6 +99,7 @@ public class CleanChatChannelsPlugin extends Plugin
 		eventBus.unregister(chatWidgetEditor);
 		eventBus.unregister(channelNameManager);
 		eventBus.unregister(timestampIntegration);
+		eventBus.unregister(hider);
 		channelNameManager.shutdown();
 		overlayManager.remove(timestampOverlay);
 		eventBus.unregister(timestampOverlay);
@@ -114,56 +107,8 @@ public class CleanChatChannelsPlugin extends Plugin
 
 		// Remove all our shenanigans
 		log.debug("Plugin disabled. Refreshing chat.");
-		clientThread.invoke(() -> handleScrollbarVisibility(false));
+		hider.onShutdown();
 		client.refreshChat();
-	}
-
-	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
-	{
-		if (Objects.equals(event.getGroup(), CleanChatChannelsConfig.GROUP))
-		{
-			log.debug("Config changed. Refreshing chat.");
-			client.refreshChat();
-
-			if (Objects.equals(event.getKey(), HIDE_SCROLLBAR_KEY))
-			{
-				clientThread.invoke(() -> handleScrollbarVisibility());
-			}
-		}
-	}
-
-	@Subscribe
-	public void onWidgetLoaded(WidgetLoaded event)
-	{
-		if (event.getGroupId() == InterfaceID.CHATBOX)
-		{
-			handleScrollbarVisibility();
-		}
-	}
-
-	private void handleScrollbarVisibility()
-	{
-		handleScrollbarVisibility(config.hideScrollbar());
-	}
-
-	private void handleScrollbarVisibility(boolean hideScrollbar)
-	{
-		Widget chatbox = client.getWidget(InterfaceID.Chatbox.SCROLLAREA);
-		Widget scrollBarContainer = client.getWidget(InterfaceID.Chatbox.CHATSCROLLBAR);
-		if (chatbox != null && scrollBarContainer != null) {
-			scrollBarContainer.setHidden(hideScrollbar);
-
-			// width mode is MINUS, so we if we want to match the parent width we use 0
-			if (hideScrollbar) {
-				chatbox.setOriginalWidth(0);
-			} else {
-				chatbox.setOriginalWidth(scrollBarContainer.getWidth());
-			}
-			chatbox.revalidate();
-
-			client.refreshChat();
-		}
 	}
 
 }

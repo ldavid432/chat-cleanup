@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.util.Text;
 
 @Slf4j
@@ -134,6 +135,11 @@ public class CleanChatUtil
 	public static String wrapWithChannelNameRegex(String channelName)
 	{
 		return "\\[(?:<col=[0-9a-fA-F]+>)*\\s*" + Pattern.quote(channelName) + "\\s*(?:</col>)*\\]";
+	}
+
+	public static boolean isChatboxTransparent(Client client)
+	{
+		return client.isResized() && client.getVarbitValue(VarbitID.CHATBOX_TRANSPARENCY) == 1;
 	}
 
 }

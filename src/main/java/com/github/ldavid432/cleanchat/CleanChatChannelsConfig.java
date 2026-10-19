@@ -19,7 +19,9 @@ public interface CleanChatChannelsConfig extends Config
 {
 	String GROUP = "cleanchat";
 	String HIDE_SCROLLBAR_KEY = "hideScrollbar";
-	int CURRENT_VERSION = 3;
+	String HIDE_TOP_SEPARATOR_KEY = "hideTopSeparator";
+	String HIDE_BOT_SEPARATOR_KEY = "hideBotSeparator";
+	int CURRENT_VERSION = 4;
 	String DEFAULT_CUSTOM_CHANNEL_NAME = wrapWithBrackets(wrapWithColorTag(CURRENT_CLAN_REPLACER, Color.BLUE));
 
 	@ConfigItem(
@@ -68,17 +70,6 @@ public interface CleanChatChannelsConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = HIDE_SCROLLBAR_KEY,
-		name = "Hide Scrollbar",
-		description = "Hide the chatbox scrollbar. You can still scroll with the mouse wheel like normal.",
-		position = 2
-	)
-	default boolean hideScrollbar()
-	{
-		return false;
-	}
-
-	@ConfigItem(
 		keyName = "hideSpecs",
 		name = "Remove Special Attacks",
 		description = "Remove the special attack text of Dragon & Crystal equipment<br>" +
@@ -99,6 +90,49 @@ public interface CleanChatChannelsConfig extends Config
 		position = 4
 	)
 	default boolean isFixedWidthTimestampEnabled()
+	{
+		return false;
+	}
+
+	@ConfigSection(
+		name = "Hide Widgets",
+		description = "Hide various non-message chat-related widgets",
+		position = 8
+	)
+	String hideWidgetsSection = "hideWidgetsSection";
+
+	@ConfigItem(
+		keyName = HIDE_SCROLLBAR_KEY,
+		name = "Hide Scrollbar",
+		description = "Hide the chatbox scrollbar. You can still scroll with the mouse wheel like normal.",
+		position = 0,
+		section = hideWidgetsSection
+	)
+	default boolean hideScrollbar()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = HIDE_BOT_SEPARATOR_KEY,
+		name = "Hide Bottom Separator",
+		description = "Hide the separator between the chat input and chat messages.",
+		position = 1,
+		section = hideWidgetsSection
+	)
+	default boolean isHideBottomSeparator()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = HIDE_TOP_SEPARATOR_KEY,
+		name = "Hide Top Separator (transparent)",
+		description = "Hide the top separator of the chat box. <b>Only applies in transparent mode</b>",
+		position = 2,
+		section = hideWidgetsSection
+	)
+	default boolean isHideTopSeparator()
 	{
 		return false;
 	}
