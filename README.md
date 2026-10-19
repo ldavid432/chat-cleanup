@@ -51,7 +51,7 @@ All the below options are toggleable (_most_ are **off** by default)
 - To reference your current clan name use `$$`
   - Example: `~$$~` becomes `~My Clan~`
 - To add color, wrap whatever you want to color with: `<col=123456>` and `</col>` where `123456` is a hex color code
-  - Example (red): `[<col=ff0000>My Clan</col>]` = [<span style="color: #ff0000;">My Clan</span>]
+  - Example (red): `[<col=ff0000>My Clan</col>]`
 - Can also be used to remove the brackets around your clan name if you so desire
 - To disable either leave blank or reset to the default value (right-click the specific config name)
 

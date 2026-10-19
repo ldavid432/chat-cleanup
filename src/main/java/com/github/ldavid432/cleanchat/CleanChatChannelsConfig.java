@@ -485,6 +485,4 @@ public interface CleanChatChannelsConfig extends Config
 		return DEFAULT_CUSTOM_CHANNEL_NAME;
 	}
 
-	// TODO: Friends chat rank? Can you even see those?
-
 }
