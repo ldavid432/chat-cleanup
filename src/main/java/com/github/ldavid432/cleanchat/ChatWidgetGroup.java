@@ -119,47 +119,41 @@ public class ChatWidgetGroup
 
 		int channelWidth = 0;
 		int prefixWidth = 0;
+		int nameWidth = 0;
+		int rankWidth = 0;
 
-		// TODO: See if there's something that we are missing when measuring so we can avoid adding all these hardcoded offsets
 		if (channelType != null)
 		{
+			String prefix = widgetChannelText.substring(0, startOfChannel);
+			prefixWidth = getTextLength(prefix, client);
+
+			String channelText = widgetChannelText.substring(startOfChannel, endOfChannel);
+			channelWidth = getTextLength(channelText, client);
+
 			switch (config.indentationMode())
 			{
 				// Intentionally fallthrough
 				case START:
-					String prefix = widgetChannelText.substring(0, startOfChannel);
-					prefixWidth = getTextLength(prefix, client);
 					indentWidth += prefixWidth;
 
 					if (channelType.isChannelNameRemovalEnabled(config))
 					{
-						if (channelType == ChatChannel.FRIENDS_CHAT)
+						if (channelType != ChatChannel.FRIENDS_CHAT)
 						{
 							indentWidth += 1;
-						}
-						else
-						{
-							indentWidth -= 2;
 						}
 					}
 				case CHANNEL:
 					if (!channelType.isChannelNameRemovalEnabled(config))
 					{
-						String channel = widgetChannelText.substring(startOfChannel, endOfChannel);
-						channelWidth = getTextLength(channel, client);
 						indentWidth += channelWidth;
 
 						if (channelType != ChatChannel.FRIENDS_CHAT)
 						{
 							indentWidth += 1;
 						}
-						else
-						{
-							indentWidth += 4;
-						}
 					}
 				case NAME:
-					int nameWidth = 0;
 					// FC puts name + channel into the channel widget
 					if (channelType == ChatChannel.FRIENDS_CHAT)
 					{
@@ -182,18 +176,14 @@ public class ChatWidgetGroup
 
 					if (!rank.isHidden())
 					{
-						nameWidth += rank.getWidth();
+						rankWidth = rank.getWidth();
 					}
-
+					indentWidth += rankWidth;
 					indentWidth += nameWidth;
 
 					if (indentWidth > 0 && channelType != ChatChannel.FRIENDS_CHAT)
 					{
-						indentWidth += 4;
-					}
-					else if (channelType == ChatChannel.FRIENDS_CHAT)
-					{
-						indentWidth -= 4;
+						indentWidth += 3;
 					}
 				case MESSAGE:
 					// Already set by default

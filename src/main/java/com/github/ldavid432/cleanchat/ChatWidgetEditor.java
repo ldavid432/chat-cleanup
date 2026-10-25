@@ -259,11 +259,8 @@ public class ChatWidgetEditor
 								group.removeRank();
 							}
 
-							if (channel != ChatChannel.FRIENDS_CHAT)
-							{
-								group.calculateChannelIndent(config, matchedChannelName, widgetChannelText,
-									timestampIntegration.getTimestampTemplateWidth(), timestampIntegration.isFixedWidthTimestampEnabled(), client);
-							}
+							group.calculateChannelIndent(config, matchedChannelName, widgetChannelText,
+								timestampIntegration.getTimestampTemplateWidth(), timestampIntegration.isFixedWidthTimestampEnabled(), client);
 						}
 					}
 
