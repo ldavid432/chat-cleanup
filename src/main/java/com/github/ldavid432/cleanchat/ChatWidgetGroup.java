@@ -127,23 +127,19 @@ public class ChatWidgetGroup
 			{
 				// Intentionally fallthrough
 				case START:
-					// extractTimestamp handles indents for start already
-					if (isFixedWidthTimestampEnabled)
-					{
-						String prefix = widgetChannelText.substring(0, startOfChannel);
-						prefixWidth = getTextLength(prefix, client);
-						indentWidth += prefixWidth;
+					String prefix = widgetChannelText.substring(0, startOfChannel);
+					prefixWidth = getTextLength(prefix, client);
+					indentWidth += prefixWidth;
 
-						if (channelType.isChannelNameRemovalEnabled(config))
+					if (channelType.isChannelNameRemovalEnabled(config))
+					{
+						if (channelType == ChatChannel.FRIENDS_CHAT)
 						{
-							if (channelType == ChatChannel.FRIENDS_CHAT)
-							{
-								indentWidth += 1;
-							}
-							else
-							{
-								indentWidth -= 2;
-							}
+							indentWidth += 1;
+						}
+						else
+						{
+							indentWidth -= 2;
 						}
 					}
 				case CHANNEL:
