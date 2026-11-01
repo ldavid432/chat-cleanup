@@ -51,6 +51,9 @@ All the below options are toggleable (_most_ are **off** by default)
 Name removal before:
 
 <img src="docs/name_removal_before.png">
+
+After:
+
 <img src="docs/name_removal_after.png">
 
 ### Custom channel name
