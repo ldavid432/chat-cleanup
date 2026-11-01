@@ -16,7 +16,7 @@ import net.runelite.api.GameState;
 import net.runelite.api.clan.ClanChannel;
 import net.runelite.api.clan.ClanID;
 import net.runelite.api.events.ClanChannelChanged;
-import net.runelite.api.events.FriendsChatChanged;
+import net.runelite.api.events.FriendsChatSync;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
@@ -120,9 +120,9 @@ public class ChannelNameManager
 	}
 
 	@Subscribe
-	public void onFriendsChatChanged(FriendsChatChanged event)
+	public void onFriendsChatSync(FriendsChatSync event)
 	{
-		if (event.isJoined())
+		if (event.isSync())
 		{
 			updateFriendsChatName();
 		}
