@@ -3,16 +3,13 @@ package com.github.ldavid432.cleanchat;
 import static com.github.ldavid432.cleanchat.CleanChatChannelsConfig.HIDE_BOT_SEPARATOR_KEY;
 import static com.github.ldavid432.cleanchat.CleanChatChannelsConfig.HIDE_SCROLLBAR_KEY;
 import static com.github.ldavid432.cleanchat.CleanChatChannelsConfig.HIDE_TOP_SEPARATOR_KEY;
-import static com.github.ldavid432.cleanchat.util.CleanChatUtil.SCRIPT_REBUILD_CHATBOX;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.isChatboxTransparent;
-import java.util.Arrays;
 import java.util.Objects;
-import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
-import net.runelite.api.events.ScriptPostFired;
+import net.runelite.api.events.ClientTick;
 import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.Widget;
@@ -36,12 +33,15 @@ public class ChatWidgetHider
 	@Inject
 	private CleanChatChannelsConfig config;
 
+	private boolean hideTopSeparator;
+	private boolean hideBottomSeparator;
+
 	public void onStartup()
 	{
-		clientThread.invoke(() -> {
-			handleScrollbarVisibility();
-			handleSeparatorVisibility();
-		});
+		hideTopSeparator = config.isHideTopSeparator();
+		hideBottomSeparator = config.isHideBottomSeparator();
+
+		clientThread.invoke(() -> handleScrollbarVisibility());
 	}
 
 	public void onShutdown()
@@ -67,6 +67,9 @@ public class ChatWidgetHider
 					break;
 				case HIDE_BOT_SEPARATOR_KEY:
 				case HIDE_TOP_SEPARATOR_KEY:
+					hideTopSeparator = config.isHideTopSeparator();
+					hideBottomSeparator = config.isHideBottomSeparator();
+					// run handleSeparatorVisibility in case both get disabled since onClientTick requires one to be true
 					clientThread.invoke(() -> handleSeparatorVisibility());
 					break;
 			}
@@ -79,16 +82,6 @@ public class ChatWidgetHider
 		if (event.getGroupId() == InterfaceID.CHATBOX)
 		{
 			handleScrollbarVisibility();
-			handleSeparatorVisibility();
-		}
-	}
-
-	@Subscribe
-	public void onScriptPostFired(ScriptPostFired event)
-	{
-		if (event.getScriptId() == SCRIPT_REBUILD_CHATBOX)
-		{
-			clientThread.invokeLater(() -> handleSeparatorVisibility());
 		}
 	}
 
@@ -122,7 +115,7 @@ public class ChatWidgetHider
 
 	private void handleSeparatorVisibility()
 	{
-		handleSeparatorVisibility(config.isHideTopSeparator(), config.isHideBottomSeparator());
+		handleSeparatorVisibility(hideTopSeparator, hideBottomSeparator);
 	}
 
 	private void handleSeparatorVisibility(boolean hideTop, boolean hideBottom)
@@ -130,10 +123,10 @@ public class ChatWidgetHider
 		Widget chatDisplay = client.getWidget(InterfaceID.Chatbox.CHATDISPLAY);
 		if (chatDisplay != null)
 		{
+			Widget[] dynamicChildren = chatDisplay.getDynamicChildren();
 			if (isChatboxTransparent(client))
 			{
-				// In transparent chat mode there are 2 separators, and they are each made up of many smaller widgets
-				Widget[] dynamicChildren = chatDisplay.getDynamicChildren();
+				// In transparent chat mode there are 2 separators, and they are each made up of many smaller, alternating widgets
 				for (int i = 0; i < dynamicChildren.length; i++)
 				{
 					boolean isTop = i % 2 == 0;
@@ -141,12 +134,19 @@ public class ChatWidgetHider
 					widget.setHidden(isTop ? hideTop : hideBottom);
 				}
 			}
-			else
+			// Only the bottom separator exists in non-transparent chat mode
+			else if (dynamicChildren.length >= 1)
 			{
-				// Only the bottom separator exists in non-transparent chat mode
-				Optional<Widget> separator = Arrays.stream(chatDisplay.getDynamicChildren()).findFirst();
-				separator.ifPresent(sep -> sep.setHidden(hideBottom));
+				dynamicChildren[0].setHidden(hideBottom);
 			}
 		}
+	}
+
+	@Subscribe
+	public void onClientTick(ClientTick event)
+	{
+		// This seems trivial enough that it can be run every tick to ensure that the divider is always hidden
+		//  even if a script brings it back. However, we should be mindful of placing anything else here for performance.
+		if (hideTopSeparator || hideBottomSeparator) handleSeparatorVisibility();
 	}
 }
