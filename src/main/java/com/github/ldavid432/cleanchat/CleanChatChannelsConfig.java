@@ -14,6 +14,8 @@ import net.runelite.client.config.Range;
 import net.runelite.client.config.Units;
 import static net.runelite.client.util.ColorUtil.wrapWithColorTag;
 
+// TODO: Add option to trim trailing space
+
 @ConfigGroup(GROUP)
 public interface CleanChatChannelsConfig extends Config
 {

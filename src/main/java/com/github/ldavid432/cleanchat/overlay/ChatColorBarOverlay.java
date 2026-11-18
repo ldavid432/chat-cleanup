@@ -13,7 +13,7 @@ public class ChatColorBarOverlay extends BaseCleanChatOverlay
 {
 
 	@Override
-	void render(Graphics2D graphics, int x, int y, ChatWidgetGroup group)
+	protected void render(Graphics2D graphics, int x, int y, ChatWidgetGroup group)
 	{
 		Widget chatbox = client.getWidget(InterfaceID.Chatbox.SCROLLAREA);
 
@@ -30,7 +30,7 @@ public class ChatColorBarOverlay extends BaseCleanChatOverlay
 	}
 
 	@Override
-	boolean isEnabled()
+	protected boolean isEnabled()
 	{
 		return config.isColorBarEnabled();
 	}

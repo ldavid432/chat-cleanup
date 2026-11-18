@@ -6,8 +6,10 @@ import static com.github.ldavid432.cleanchat.util.CleanChatUtil.getTextLineCount
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.wrapWithBrackets;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.wrapWithChannelNameRegex;
 import com.github.ldavid432.cleanchat.util.FormatterExtractor;
+import com.google.common.annotations.VisibleForTesting;
 import java.awt.Color;
 import static java.lang.Math.max;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.NonNull;
@@ -22,26 +24,41 @@ import net.runelite.api.widgets.Widget;
 public class ChatWidgetGroup
 {
 	@NonNull
-	private final Widget channel;
+	@VisibleForTesting
+	public final Widget channel;
 	@NonNull
-	private final Widget rank;
+	@VisibleForTesting
+	public final Widget rank;
 	@NonNull
-	private final Widget name;
+	@VisibleForTesting
+	public final Widget name;
 	@NonNull
-	private final Widget message;
+	@VisibleForTesting
+	public final Widget message;
 	@NonNull
-	private final Widget clickBox;
+	@VisibleForTesting
+	public final Widget clickBox;
 
 	@Setter
 	@Nullable
-	private ChatChannel channelType = null;
+	public  ChatChannel channelType = null;
 
-	private int messageIndentSpaces = 0;
-	private int channelIndentSpaces = 0;
+	public int messageIndent = 0;
+	public int channelIndent = 0;
+
+	// Actual widths of text, not necessarily widths of the Widgets since sometimes widgets are combined and/or not really what the parameter is named
+	@VisibleForTesting
+	public int channelWidth = 0;
+	@VisibleForTesting
+	public int prefixWidth = 0;
+	@VisibleForTesting
+	public int nameWidth = 0;
+	@VisibleForTesting
+	public int rankWidth = 0;
 
 	@Getter
 	@Nullable
-	private FormatterExtractor.ExtractionResult timestamp = null;
+	public  FormatterExtractor.ExtractionResult timestamp = null;
 
 	public String getChannelText()
 	{
@@ -64,11 +81,28 @@ public class ChatWidgetGroup
 
 	public int getX()
 	{
-		if (channel.isHidden())
-		{
-			return message.getCanvasLocation().getX();
-		}
-		return channel.getCanvasLocation().getX();
+		// Find left-most widget
+		return Stream.of(channel, message, name, rank)
+			.filter(widget -> !widget.isHidden())
+			.reduce((widget1, widget2) -> {
+				if (widget1.getOriginalX() < widget2.getOriginalX())
+				{
+					return widget1;
+				}
+				else
+				{
+					return widget2;
+				}
+			}).orElseGet(() -> {
+				if (channel.isHidden())
+				{
+					return message;
+				}
+				else
+				{
+					return channel;
+				}
+			}).getCanvasLocation().getX();
 	}
 
 	public Color getColor(CleanChatChannelsConfig config)
@@ -92,7 +126,7 @@ public class ChatWidgetGroup
 	{
 		if (!message.getText().isEmpty() && message.getWidth() > 0)
 		{
-			int numLines = getTextLineCount(message.getText(), message.getWidth(), messageIndentSpaces, client);
+			int numLines = getTextLineCount(message.getText(), message.getWidth(), messageIndent / 3, client);
 			int height = numLines * 14; // Height of each line is always 14
 			message.setOriginalHeight(height);
 			message.revalidate();
@@ -100,27 +134,39 @@ public class ChatWidgetGroup
 			clickBox.setOriginalHeight(height);
 			clickBox.revalidate();
 		}
+
+		if ( channelType == null) return;
+
+		if (channelType == ChatChannel.CLAN || channelType == ChatChannel.GUEST_CLAN)
+		{
+			log.debug("c -> r = {},", rank.getOriginalX() - (channel.getOriginalX() + channel.getWidth()));
+			log.debug("r -> n = {},", name.getOriginalX() - (rank.getOriginalX() + rank.getWidth()));
+			log.debug("n -> m = {},", message.getOriginalX() - (name.getOriginalX() + name.getWidth()));
+		}
+		else if (channelType == ChatChannel.FRIENDS_CHAT)
+		{
+
+		}
+		else if (channelType == ChatChannel.GROUP_IRON)
+		{
+			log.debug("c -> n = {},", name.getOriginalX() - (channel.getOriginalX() + channel.getWidth()));
+			log.debug("n -> m = {},", message.getOriginalX() - (name.getOriginalX() + name.getWidth()));
+		}
 	}
 
 	public void calculateChannelIndent(CleanChatChannelsConfig config, String matchedChannelName, String widgetChannelText,
-									   int timestampWidth, boolean isFixedWidthTimestampEnabled, Client client)
+	                                   Client client)
 	{
 		if (channelType == ChatChannel.FRIENDS_CHAT)
 		{
 			// For some reason the fc channel width is the entire length of the chatbox so to make things easier we adjust that here
-			channel.setOriginalWidth(message.getOriginalX() - channel.getOriginalX());
-			channel.revalidate();
+			shrink(channel, message.getOriginalX() - channel.getOriginalX());
 		}
 
 		int startOfChannel = widgetChannelText.indexOf(matchedChannelName);
 		int endOfChannel = startOfChannel + matchedChannelName.length();
 
 		int indentWidth = 0;
-
-		int channelWidth = 0;
-		int prefixWidth = 0;
-		int nameWidth = 0;
-		int rankWidth = 0;
 
 		if (channelType != null)
 		{
@@ -135,53 +181,35 @@ public class ChatWidgetGroup
 				// Intentionally fallthrough
 				case START:
 					indentWidth += prefixWidth;
-
-					if (channelType.isChannelNameRemovalEnabled(config))
-					{
-						if (channelType != ChatChannel.FRIENDS_CHAT)
-						{
-							indentWidth += 1;
-						}
-					}
 				case CHANNEL:
 					if (!channelType.isChannelNameRemovalEnabled(config))
 					{
 						indentWidth += channelWidth;
-
-						if (channelType != ChatChannel.FRIENDS_CHAT)
-						{
-							indentWidth += 1;
-						}
+					}
+					else
+					{
+						indentWidth -= getTextLength(" ", client);
 					}
 				case NAME:
 					// FC puts name + channel into the channel widget
 					if (channelType == ChatChannel.FRIENDS_CHAT)
 					{
-						if (isFixedWidthTimestampEnabled)
-						{
-							nameWidth = (channel.getWidth() - timestampWidth) - channelWidth;
-						}
-						else
-						{
-							nameWidth = channel.getWidth() - prefixWidth - channelWidth;
-						}
+						String nameText = widgetChannelText.substring(endOfChannel);
+						nameWidth = getTextLength(nameText, client);
 					}
-					else
+					else if (!name.getText().isEmpty() && !name.isHidden())
 					{
-						if (!name.getText().isEmpty() && !name.isHidden())
-						{
-							nameWidth = name.getWidth();
-						}
+						nameWidth = name.getWidth();
 					}
 
 					if (!rank.isHidden())
 					{
-						rankWidth = rank.getWidth();
+						rankWidth = rank.getWidth() + 3;
 					}
 					indentWidth += rankWidth;
 					indentWidth += nameWidth;
 
-					if (indentWidth > 0 && channelType != ChatChannel.FRIENDS_CHAT)
+					if (indentWidth > 0) //  && channelType != ChatChannel.FRIENDS_CHAT ?
 					{
 						indentWidth += 3;
 					}
@@ -192,35 +220,36 @@ public class ChatWidgetGroup
 
 		if (indentWidth > 0)
 		{
-			messageIndentSpaces += max(0, indentWidth / 3);
+			messageIndent += indentWidth;
 
-			if (messageIndentSpaces > 0)
+			// TODO: Should this be exact instead of rounded (/ 3 * 3)
+			// TODO: Should this move to applyIndent?
+			if (messageIndent > 0)
 			{
-				shiftLeft(message, indentWidth);
+				shiftLeft(message, indentWidth / 3 * 3);
 				expand(message, indentWidth);
-				message.revalidate();
 			}
 		}
 	}
 
 	public void applyIndent()
 	{
-		if (channel.isHidden() && channelIndentSpaces > 0)
+		if (channel.isHidden() && channelIndent > 0)
 		{
-			messageIndentSpaces += channelIndentSpaces;
+			messageIndent += channelIndent;
 		}
 
-		if (messageIndentSpaces > 0)
+		if (messageIndent > 0)
 		{
 			// Using spaces to keep the first line at the initial position (+/-2 pixels)
-			message.setText(" ".repeat(messageIndentSpaces) + message.getText());
+			message.setText(" ".repeat(messageIndent / 3) + message.getText());
 			message.revalidate();
 		}
 
-		if (channelIndentSpaces > 0 && !channel.isHidden())
+		if (channelIndent > 0 && !channel.isHidden())
 		{
-			channel.setText(" ".repeat(channelIndentSpaces) + channel.getText());
-			channel.revalidate();
+			channel.setText(" ".repeat(Math.max(1, channelIndent / 3)) + channel.getText());
+			expand(channel, channelIndent);
 		}
 	}
 
@@ -259,12 +288,10 @@ public class ChatWidgetGroup
 		shiftLeft(message, removedWidth);
 
 		// Expand the width of messages if channel was removed
-		message.setOriginalWidth(message.getOriginalWidth() + removedWidth);
-		message.revalidate();
+		expand(message, removedWidth);
 
 		// Reduce channel width if it was removed
-		channel.setOriginalWidth(channel.getOriginalWidth() - removedWidth);
-		channel.revalidate();
+		shrink(channel, removedWidth);
 
 		return newText;
 	}
@@ -291,9 +318,21 @@ public class ChatWidgetGroup
 		widget.revalidate();
 	}
 
+	private void shiftRight(Widget widget, int width)
+	{
+		widget.setOriginalX(widget.getOriginalX() + width);
+		widget.revalidate();
+	}
+
 	private void expand(Widget widget, int width)
 	{
 		widget.setOriginalWidth(widget.getOriginalWidth() + width);
+		widget.revalidate();
+	}
+
+	private void shrink(Widget widget, int width)
+	{
+		widget.setOriginalWidth(widget.getOriginalWidth() - width);
 		widget.revalidate();
 	}
 
@@ -303,7 +342,7 @@ public class ChatWidgetGroup
 		widget.revalidate();
 	}
 
-	public void extractTimestamp(FormatterExtractor.ExtractionResult template, int timestampWidth)
+	public void extractTimestamp(FormatterExtractor.ExtractionResult template, int timestampWidth, Client client)
 	{
 		if (template == null)
 		{
@@ -342,9 +381,31 @@ public class ChatWidgetGroup
 			}
 		}
 
+		int originalTimestampWidth = getTextLength(widget.getText(), client) - getTextLength(timestamp.getRemainingText(), client);
+		int timestampWidthAdded = max(0, timestampWidth - originalTimestampWidth);
 		widget.setText(timestamp.getRemainingText());
 
-		channelIndentSpaces += max(0, timestampWidth / 3);
+		channelIndent += max(0, timestampWidth);
+
+		shiftRight(rank, timestampWidthAdded);
+		shiftRight(name, timestampWidthAdded);
+		if (channelType != null)
+		{
+			messageIndent += timestampWidthAdded;
+		}
+		else
+		{
+			if (!name.isHidden() || !channel.isHidden())
+			{
+				shiftRight(message, timestampWidthAdded);
+				shrink(message, timestampWidthAdded);
+			}
+			else
+			{
+				// Messages with just one widget don't need anything shifted, just message indented
+				messageIndent += timestampWidthAdded;
+			}
+		}
 	}
 
 	@Override

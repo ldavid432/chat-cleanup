@@ -20,11 +20,17 @@ public class CleanChatUtil
 	public static final int SCRIPT_SCROLLBAR_MAX = 36;
 	public static final int MAX_CHANNEL_LIST_SIZE = 128;
 	private static final Pattern IMG_TAG_REGEXP = Pattern.compile("<img=[^>]*>");
+	private static final Pattern TAG_REGEXP = Pattern.compile("<(?!img=\\d+>)([^>]*)>");
 	public static final String CURRENT_CLAN_REPLACER = "$$";
 
-	public static String sanitizeName(String string)
+	/**
+	 * Remove all formatting tags. img tags are kept.
+	 * <p>
+	 * TODO: If chat channel name/channel widgets start using macros, support removing those
+	 */
+	public static String sanitizeChannelName(String string)
 	{
-		return Text.removeTags(string).replace('\u00A0', ' ');
+		return TAG_REGEXP.matcher(string).replaceAll("").replace('\u00A0', ' ');
 	}
 
 	// Sizes sourced from: https://github.com/JamesShelton140/aqp-finder

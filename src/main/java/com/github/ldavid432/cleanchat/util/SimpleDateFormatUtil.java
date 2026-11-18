@@ -9,7 +9,7 @@ public class SimpleDateFormatUtil
 	/**
 	 * Determine if a character is a valid SimpleDateFormat format character
 	 */
-	static boolean isFormatChar(char c)
+	public static boolean isFormatChar(char c)
 	{
 		return c == 'y' || c == 'Y' ||
 			c == 'M' ||
@@ -163,7 +163,7 @@ public class SimpleDateFormatUtil
 	/**
 	 * Get the maximum expanded size for a format token
 	 */
-	static int getExpandedSize(char token, int count)
+	public static int getExpandedSize(char token, int count)
 	{
 		switch (token)
 		{

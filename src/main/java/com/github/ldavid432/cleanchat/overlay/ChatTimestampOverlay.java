@@ -6,6 +6,7 @@ import static com.github.ldavid432.cleanchat.TimestampPluginIntegration.TIMESTAM
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.getTextLength;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.isChatboxTransparent;
 import com.github.ldavid432.cleanchat.util.FormatterExtractor;
+import com.github.ldavid432.cleanchat.util.SimpleDateFormatUtil;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -18,6 +19,7 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.timestamp.TimestampConfig;
 import net.runelite.client.ui.FontManager;
+import org.apache.commons.lang3.StringUtils;
 
 @Slf4j
 @Singleton
@@ -31,13 +33,13 @@ public class ChatTimestampOverlay extends BaseCleanChatOverlay
 	private TimestampPluginIntegration timestampIntegration;
 
 	@Override
-	boolean isEnabled()
+	protected boolean isEnabled()
 	{
 		return timestampIntegration.isFixedWidthTimestampEnabled();
 	}
 
 	@Override
-	void render(Graphics2D graphics, int x, int y, ChatWidgetGroup group)
+	protected void render(Graphics2D graphics, int x, int y, ChatWidgetGroup group)
 	{
 		FormatterExtractor.ExtractionResult timestamp = group.getTimestamp();
 
@@ -62,9 +64,11 @@ public class ChatTimestampOverlay extends BaseCleanChatOverlay
 			@Override
 			public void consumeSegment(FormatterExtractor.FormatSegment segment)
 			{
-				for (int i = 0; i < segment.value.length(); i++)
+				String paddedValue = StringUtils.leftPad(segment.value, segment.getEndIndex() - segment.getStartIndex(), "0");
+
+				for (int i = 0; i < paddedValue.length(); i++)
 				{
-					String str = String.valueOf(segment.value.charAt(i));
+					String str = String.valueOf(paddedValue.charAt(i));
 
 					if (isChatboxTransparent)
 					{
@@ -77,7 +81,6 @@ public class ChatTimestampOverlay extends BaseCleanChatOverlay
 					// Largest numbers are 6 pixels + 2 character spacing
 					//  Currently does not account for letter size (Monday, January etc.)
 					timestampX.addAndGet(6 + 2);
-
 				}
 			}
 
@@ -113,26 +116,63 @@ public class ChatTimestampOverlay extends BaseCleanChatOverlay
 
 	private void updateTemplate()
 	{
-		FormatterExtractor.ExtractionResult newTemplate = FormatterExtractor.createFromFormatString(timestampIntegration.getTimestampFormat());
+		FormatterExtractor.ExtractionResult newTemplate =
+			FormatterExtractor.createFromFormatString(timestampIntegration.getTimestampFormat());
 
 		timestampIntegration.setTimestampTemplateWidth(0);
 		timestampIntegration.setTimestampTemplate(newTemplate);
 
-		if (newTemplate != null) {
-			FormatterExtractor.iterateOutputParts(newTemplate, new FormatterExtractor.OutputPartConsumer()
+		if (newTemplate != null)
+		{
+			String format = timestampIntegration.getTimestampFormat();
+
+			int i = 0;
+			while (i < format.length())
 			{
-				@Override
-				public void consumeSegment(FormatterExtractor.FormatSegment segment)
+				char c = format.charAt(i);
+
+				if (c == '\'')
 				{
-					timestampIntegration.setTimestampTemplateWidth(timestampIntegration.getTimestampTemplateWidth() + ((6 + 2) * segment.tokenCount));
+					i++;
+					StringBuilder literal = new StringBuilder();
+					while (i < format.length() && format.charAt(i) != '\'')
+					{
+						literal.append(format.charAt(i));
+						i++;
+					}
+					if (i < format.length())
+					{
+						i++; // skip closing quote
+					}
+					timestampIntegration.setTimestampTemplateWidth(
+						timestampIntegration.getTimestampTemplateWidth() + getTextLength(literal.toString(), client)
+					);
+					continue;
 				}
 
-				@Override
-				public void consumeText(String text, int startIndex, int endIndex)
+				if (SimpleDateFormatUtil.isFormatChar(c))
 				{
-					timestampIntegration.setTimestampTemplateWidth(timestampIntegration.getTimestampTemplateWidth() + getTextLength(text, client));
+					int count = 1;
+					while (i + count < format.length() && format.charAt(i + count) == c)
+					{
+						count++;
+					}
+
+					int displayWidth = SimpleDateFormatUtil.getExpandedSize(c, count);
+					timestampIntegration.setTimestampTemplateWidth(
+						timestampIntegration.getTimestampTemplateWidth() + ((6 + 2) * displayWidth)
+					);
+
+					i += count;
+					continue;
 				}
-			});
+
+				// actual literal char, not a placeholder
+				timestampIntegration.setTimestampTemplateWidth(
+					timestampIntegration.getTimestampTemplateWidth() + getTextLength(String.valueOf(c), client)
+				);
+				i++;
+			}
 		}
 
 		client.refreshChat();

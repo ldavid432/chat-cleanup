@@ -4,7 +4,7 @@ import static com.github.ldavid432.cleanchat.util.CleanChatUtil.CLAN_INSTRUCTION
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.SCRIPT_REBUILD_CHATBOX;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.SCRIPT_SCROLLBAR_MAX;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.SCRIPT_SCROLLBAR_MIN;
-import static com.github.ldavid432.cleanchat.util.CleanChatUtil.sanitizeName;
+import static com.github.ldavid432.cleanchat.util.CleanChatUtil.sanitizeChannelName;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.wrapWithBrackets;
 import com.github.ldavid432.cleanchat.data.ChatChannel;
 import com.github.ldavid432.cleanchat.data.ChatTab;
@@ -182,6 +182,8 @@ public class ChatWidgetEditor
 					int messageWidgetIndex = i + 1;
 					int nameWidgetIndex = i;
 
+					// TODO: Improve widget type association by matching against known channels? Maybe fallback to the current method
+
 					Widget channelWidget = chatWidgets[i + 2];
 					if (channelWidget.getText().isEmpty())
 					{
@@ -231,7 +233,7 @@ public class ChatWidgetEditor
 						{
 							ChatChannel channel = match.getLeft();
 							String matchedChannelName = match.getRight();
-							String widgetChannelText = sanitizeName(group.getChannelText());
+							String widgetChannelText = sanitizeChannelName(group.getChannelText());
 							String shortName = channel.getShortName(channelNameManager, matchedChannelName);
 
 							group.setChannelType(channel);
@@ -246,8 +248,8 @@ public class ChatWidgetEditor
 							{
 								String updatedChannelText = group.replaceChannelName(matchedChannelName, shortName, client);
 
-								matchedChannelName = sanitizeName(shortName);
-								widgetChannelText = sanitizeName(updatedChannelText);
+								matchedChannelName = sanitizeChannelName(shortName);
+								widgetChannelText = sanitizeChannelName(updatedChannelText);
 							}
 							else
 							{
@@ -259,14 +261,13 @@ public class ChatWidgetEditor
 								group.removeRank();
 							}
 
-							group.calculateChannelIndent(config, matchedChannelName, widgetChannelText,
-								timestampIntegration.getTimestampTemplateWidth(), timestampIntegration.isFixedWidthTimestampEnabled(), client);
+							group.calculateChannelIndent(config, matchedChannelName, widgetChannelText, client);
 						}
 					}
 
 					if (timestampIntegration.isFixedWidthTimestampEnabled())
 					{
-						group.extractTimestamp(timestampIntegration.getTimestampTemplate(), timestampIntegration.getTimestampTemplateWidth());
+						group.extractTimestamp(timestampIntegration.getTimestampTemplate(), timestampIntegration.getTimestampTemplateWidth(), client);
 					}
 
 					group.applyIndent();

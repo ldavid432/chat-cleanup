@@ -139,15 +139,19 @@ public class FormatterExtractor {
 			String remainingText = originalEndPos < text.length() ?
 				text.substring(originalEndPos) : "";
 
-			// Populate segment values from the actual output
+			// Populate segment values from the actual captured regex groups.
+			// This is important because template positions are fixed-width placeholders;
+			// the real captured value can be shorter than the placeholder width.
 			List<FormatSegment> populatedSegments = new ArrayList<>();
-			for (FormatSegment seg : template.segments)
+			for (int i = 0; i < template.segments.size(); i++)
 			{
-				// Ensure segment indices are within bounds
-				int startIdx = Math.min(seg.startIndex, formattedOutput.length());
-				int endIdx = Math.min(seg.endIndex, formattedOutput.length());
+				FormatSegment seg = template.segments.get(i);
+				String value = matcher.group(i + 1);
+				if (value == null)
+				{
+					value = "";
+				}
 
-				String value = formattedOutput.substring(startIdx, endIdx);
 				populatedSegments.add(new FormatSegment(seg.token, seg.tokenChar, seg.tokenCount,
 					seg.startIndex, seg.endIndex, value));
 			}
@@ -254,32 +258,43 @@ public class FormatterExtractor {
 	 */
 	public static void iterateOutputParts(ExtractionResult result, OutputPartConsumer consumer)
 	{
-		List<FormatSegment> segments = result.segments;
-		String output = result.formattedOutput;
-
-		int currentPos = 0;
-
-		for (FormatSegment segment : segments)
+		if (result == null || result.getSegments() == null || result.getSegments().isEmpty())
 		{
-
-			// If there's text before this segment, process it as literal text
-			if (currentPos < segment.startIndex)
+			if (result != null && result.getFormattedOutput() != null && !result.getFormattedOutput().isEmpty())
 			{
-				String literalText = output.substring(currentPos, segment.startIndex);
-				consumer.consumeText(literalText, 0, literalText.length());
-				currentPos = segment.startIndex;
+				consumer.consumeText(result.getFormattedOutput(), 0, result.getFormattedOutput().length());
 			}
-
-			// Process the segment
-			consumer.consumeSegment(segment);
-			currentPos = segment.endIndex;
+			return;
 		}
 
-		// Process any remaining text after the last segment
-		if (currentPos < output.length())
+		String output = result.getFormattedOutput();
+		int cursor = 0;
+
+		for (FormatSegment segment : result.getSegments())
 		{
-			String remainingText = output.substring(currentPos);
-			consumer.consumeText(remainingText, 0, remainingText.length());
+			String value = segment.getValue();
+			if (value == null)
+			{
+				value = "";
+			}
+
+			int index = output.indexOf(value, cursor);
+			if (index >= 0 && index > cursor)
+			{
+				String literal = output.substring(cursor, index);
+				if (!literal.isEmpty())
+				{
+					consumer.consumeText(literal, cursor, index);
+				}
+			}
+
+			consumer.consumeSegment(segment);
+			cursor += output.substring(cursor).indexOf(value) + value.length();
+		}
+
+		if (cursor < output.length())
+		{
+			consumer.consumeText(output.substring(cursor), cursor, output.length());
 		}
 	}
 }

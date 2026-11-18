@@ -551,4 +551,57 @@ public class FormatterExtractorTest
 		assertNotNull(result);
 		assertEquals("4/3/2025", result.getFormattedOutput());
 	}
+
+	@Test
+	public void testExtractFromTextSingleDigitHourSegmentValues()
+	{
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("h:mm");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "9:20 is meeting time");
+
+		assertNotNull(result);
+		assertEquals("9:20", result.getFormattedOutput());
+		assertEquals(2, result.getSegments().size());
+
+		assertEquals("9", result.getSegments().get(0).getValue());
+		assertEquals("20", result.getSegments().get(1).getValue());
+	}
+
+	@Test
+	public void testExtractFromTextSingleDigitMinuteSegmentValues()
+	{
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("h:m");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "9:2 is meeting time");
+
+		assertNotNull(result);
+		assertEquals("9:2", result.getFormattedOutput());
+		assertEquals(2, result.getSegments().size());
+
+		assertEquals("9", result.getSegments().get(0).getValue());
+		assertEquals("2", result.getSegments().get(1).getValue());
+	}
+
+	@Test
+	public void testExtractFromTextSingleDigitHourWithMeridiem()
+	{
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("h:mm a");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "9:20 PM Message");
+
+		assertNotNull(result);
+		assertEquals("9:20 PM", result.getFormattedOutput());
+		assertEquals("9", result.getSegments().get(0).getValue());
+		assertEquals("20", result.getSegments().get(1).getValue());
+		assertEquals("PM", result.getSegments().get(2).getValue());
+	}
+
+	@Test
+	public void testExtractFromTextFixedWidthTemplateDoesNotLeakPlaceholderWidth()
+	{
+		FormatterExtractor.ExtractionResult template = FormatterExtractor.createFromFormatString("h:mm");
+		FormatterExtractor.ExtractionResult result = FormatterExtractor.extractFromText(template, "9:20 Hello");
+
+		assertNotNull(result);
+		assertEquals("9:20", result.getFormattedOutput());
+		assertEquals("9", result.getSegments().get(0).getValue());
+		assertEquals("20", result.getSegments().get(1).getValue());
+	}
 }

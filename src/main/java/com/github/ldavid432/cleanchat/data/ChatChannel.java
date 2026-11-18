@@ -5,7 +5,7 @@ import com.github.ldavid432.cleanchat.CleanChatChannelsConfig;
 import static com.github.ldavid432.cleanchat.CleanChatChannelsConfig.DEFAULT_CUSTOM_CHANNEL_NAME;
 import com.github.ldavid432.cleanchat.util.CleanChatUtil;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.CURRENT_CLAN_REPLACER;
-import static com.github.ldavid432.cleanchat.util.CleanChatUtil.sanitizeName;
+import static com.github.ldavid432.cleanchat.util.CleanChatUtil.sanitizeChannelName;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.wrapWithChannelNameRegex;
 import java.awt.Color;
 import java.util.List;
@@ -114,9 +114,9 @@ public enum ChatChannel
 			{
 				break;
 			}
-			String widgetChannelName = sanitizeName(channel);
+			String widgetChannelName = sanitizeChannelName(channel);
 			String matchedChannelName = channelRemoval.getNames(channelNameManager).stream()
-				.map(CleanChatUtil::sanitizeName)
+				.map(CleanChatUtil::sanitizeChannelName)
 				.filter(name -> Pattern.compile(wrapWithChannelNameRegex(name)).matcher(widgetChannelName).find())
 				.findFirst()
 				.orElse(null);

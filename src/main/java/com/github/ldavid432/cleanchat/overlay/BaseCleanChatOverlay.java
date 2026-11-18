@@ -33,9 +33,9 @@ public abstract class BaseCleanChatOverlay extends Overlay
 	@Inject
 	protected CleanChatChannelsConfig config;
 
-	abstract boolean isEnabled();
+	protected abstract boolean isEnabled();
 
-	BaseCleanChatOverlay()
+	protected BaseCleanChatOverlay()
 	{
 		setPosition(OverlayPosition.DYNAMIC);
 		setLayer(OverlayLayer.MANUAL);
@@ -113,5 +113,5 @@ public abstract class BaseCleanChatOverlay extends Overlay
 	/**
 	 * Called on each visible chat message
 	 */
-	abstract void render(Graphics2D graphics, int x, int y, ChatWidgetGroup group);
+	protected abstract void render(Graphics2D graphics, int x, int y, ChatWidgetGroup group);
 }
