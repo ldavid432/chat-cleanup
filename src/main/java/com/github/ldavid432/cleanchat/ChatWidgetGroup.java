@@ -1,8 +1,10 @@
 package com.github.ldavid432.cleanchat;
 
 import com.github.ldavid432.cleanchat.data.ChatChannel;
+import com.github.ldavid432.cleanchat.data.GameModeIcon;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.getTextLength;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.getTextLineCount;
+import static com.github.ldavid432.cleanchat.util.CleanChatUtil.imgTagRegex;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.wrapWithBrackets;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.wrapWithChannelNameRegex;
 import com.github.ldavid432.cleanchat.util.FormatterExtractor;
@@ -12,7 +14,11 @@ import static java.lang.Math.max;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import lombok.AccessLevel;
@@ -255,11 +261,18 @@ public class ChatWidgetGroup
 
 	public String replaceChannelName(String text, String newChannelName, Client client, @NonNull Widget channel)
 	{
-		int currentWidth = getTextLength(wrapWithBrackets(text), client);
-		int newWidth = getTextLength(newChannelName, client);
+		return replaceText(wrapWithBrackets(text), newChannelName, wrapWithChannelNameRegex(text), client, channel,
+			rank, name, message);
+	}
+
+	public String replaceText(String originalText, String replacementText, String originalTextRegex, Client client,
+							  @NonNull Widget widget, Widget... widgetsToShift)
+	{
+		int currentWidth = getTextLength(originalText, client);
+		int newWidth = getTextLength(replacementText, client);
 		int removedWidth = currentWidth - newWidth;
 
-		String newText = channel.getText().replaceFirst(wrapWithChannelNameRegex(text), newChannelName);
+		String newText = widget.getText().replaceFirst(originalTextRegex, replacementText);
 
 		// Remove trailing spaces - probably only happens with timestamps turned on
 		if (newText.endsWith(" "))
@@ -275,17 +288,19 @@ public class ChatWidgetGroup
 			removedWidth += getTextLength(" ", client);
 		}
 
-		channel.setText(newText);
+		widget.setText(newText);
 
-		// Shift widgets X left if channel was removed
-		int finalRemovedWidth = removedWidth;
-		onNonNullWidgets(widget -> shiftLeft(widget, finalRemovedWidth), rank, name, message);
+		// Shift widgets X left if text was removed
+		for (Widget widget1 : widgetsToShift)
+		{
+			shiftLeft(widget1, removedWidth);
+		}
 
-		// Expand the width of messages if channel was removed
+		// Expand the width of messages if text was removed
 		expand(message, removedWidth);
 
-		// Reduce channel width if it was removed
-		shrink(channel, removedWidth);
+		// Reduce widget width if text was removed
+		shrink(widget, removedWidth);
 
 		return newText;
 	}
@@ -312,24 +327,28 @@ public class ChatWidgetGroup
 
 	private void shiftLeft(Widget widget, int width)
 	{
+		if (widget == null) return;
 		widget.setOriginalX(widget.getOriginalX() - width);
 		widget.revalidate();
 	}
 
 	private void shiftRight(Widget widget, int width)
 	{
+		if (widget == null) return;
 		widget.setOriginalX(widget.getOriginalX() + width);
 		widget.revalidate();
 	}
 
 	private void expand(Widget widget, int width)
 	{
+		if (widget == null) return;
 		widget.setOriginalWidth(widget.getOriginalWidth() + width);
 		widget.revalidate();
 	}
 
 	private void shrink(Widget widget, int width)
 	{
+		if (widget == null) return;
 		widget.setOriginalWidth(widget.getOriginalWidth() - width);
 		widget.revalidate();
 	}
@@ -414,6 +433,27 @@ public class ChatWidgetGroup
 			{
 				// Messages with just one widget don't need anything shifted, just message indented
 				messageIndent += timestampWidthAdded;
+			}
+		}
+	}
+
+	public void hideGameModeIcons(Set<GameModeIcon> hiddenIcons, Client client)
+	{
+		if (name != null || (channelType == ChatChannel.FRIENDS_CHAT && channel != null))
+		{
+			String icons = hiddenIcons.stream().flatMap(i -> i.getIconIds().stream().map(Object::toString)).collect(Collectors.joining("|"));
+			Widget widget = channelType == ChatChannel.FRIENDS_CHAT && channel != null ? channel : name;
+			Matcher matcher = Pattern.compile(".*" + imgTagRegex(icons) + ".*").matcher(widget.getText());
+			if (matcher.matches() && matcher.groupCount() >= 1)
+			{
+				replaceText(
+					"<img=" + matcher.group(1) + ">",
+					"",
+					imgTagRegex(icons),
+					client,
+					widget,
+					message
+				);
 			}
 		}
 	}

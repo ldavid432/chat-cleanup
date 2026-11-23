@@ -220,6 +220,11 @@ public class ChatWidgetEditor
 						group.calculateWidgetSizes(client);
 					}
 
+					if (!config.hiddenGameModeIcons().isEmpty())
+					{
+						group.hideGameModeIcons(config.hiddenGameModeIcons(), client);
+					}
+
 					group.calculateMessageIndent(config, client);
 
 					if (timestampIntegration.isFixedWidthTimestampEnabled())

@@ -143,6 +143,11 @@ public class CleanChatUtil
 		return "\\[(?:<col=[0-9a-fA-F]+>)*\\s*" + Pattern.quote(channelName) + "\\s*(?:</col>)*\\]";
 	}
 
+	public static String imgTagRegex(String ids)
+	{
+		return "<img=(" + ids + ")>";
+	}
+
 	public static boolean isChatboxTransparent(Client client)
 	{
 		return client.isResized() && client.getVarbitValue(VarbitID.CHATBOX_TRANSPARENCY) == 1;

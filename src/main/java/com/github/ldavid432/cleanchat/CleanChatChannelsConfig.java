@@ -1,10 +1,12 @@
 package com.github.ldavid432.cleanchat;
 
 import static com.github.ldavid432.cleanchat.CleanChatChannelsConfig.GROUP;
+import com.github.ldavid432.cleanchat.data.GameModeIcon;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.CURRENT_CLAN_REPLACER;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.wrapWithBrackets;
 import com.github.ldavid432.cleanchat.data.IndentMode;
 import java.awt.Color;
+import java.util.Set;
 import net.runelite.client.config.Alpha;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
@@ -119,6 +121,20 @@ public interface CleanChatChannelsConfig extends Config
 	default boolean isHideTopSeparator()
 	{
 		return false;
+	}
+
+	@ConfigItem(
+		keyName = "hideGameModeIcons",
+		name = "Hide Name Icons",
+		description = "Hide game mode icons on usernames in chat<br>" +
+			"<b>Shift-Click</b> to select multiple<br>" +
+			"<b>Ctrl-Click</b> to deselect",
+		position = 3,
+		section = hideWidgetsSection
+	)
+	default Set<GameModeIcon> hiddenGameModeIcons()
+	{
+		return Set.of();
 	}
 
 	@ConfigSection(
