@@ -9,27 +9,31 @@ import com.github.ldavid432.cleanchat.util.FormatterExtractor;
 import com.google.common.annotations.VisibleForTesting;
 import java.awt.Color;
 import static java.lang.Math.max;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.widgets.Widget;
 
 @Slf4j
-@RequiredArgsConstructor
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class ChatWidgetGroup
 {
-	@NonNull
+	@Nullable
 	@VisibleForTesting
 	public final Widget channel;
-	@NonNull
+	@Nullable
 	@VisibleForTesting
-	public final Widget rank;
-	@NonNull
+	public Widget rank;
+	@Nullable
 	@VisibleForTesting
 	public final Widget name;
 	@NonNull
@@ -38,10 +42,16 @@ public class ChatWidgetGroup
 	@NonNull
 	@VisibleForTesting
 	public final Widget clickBox;
+	@NonNull
+	@VisibleForTesting
+	public final List<Widget> unused;
 
-	@Setter
 	@Nullable
-	public  ChatChannel channelType = null;
+	public final ChatChannel.ChannelMatch channelMatch;
+
+	// TODO: Remove and replace with channelMatch
+	@Nullable
+	public final ChatChannel channelType;
 
 	public int messageIndent = 0;
 	public int channelIndent = 0;
@@ -58,11 +68,20 @@ public class ChatWidgetGroup
 
 	@Getter
 	@Nullable
-	public  FormatterExtractor.ExtractionResult timestamp = null;
+	public FormatterExtractor.ExtractionResult timestamp = null;
 
-	public String getChannelText()
+	private ChatWidgetGroup(@Nullable Widget channel, @Nullable Widget rank, @Nullable Widget name,
+	                        @NonNull Widget message, @NonNull Widget clickBox, @NonNull List<Widget> unused, @Nullable ChatChannel.ChannelMatch channelMatch)
 	{
-		return channel.getText();
+		this(channel, name, message, clickBox, unused, channelMatch, channelMatch != null ? channelMatch.getChannel() : null);
+		this.rank = rank;
+	}
+
+	private void onNonNullWidgets(Consumer<Widget> action, Widget... widgets)
+	{
+		Stream.of(widgets)
+			.filter(Objects::nonNull)
+			.forEach(action);
 	}
 
 	public int getHeight()
@@ -72,17 +91,14 @@ public class ChatWidgetGroup
 
 	public int getY()
 	{
-		if (channel.isHidden())
-		{
-			return message.getCanvasLocation().getY();
-		}
-		return channel.getCanvasLocation().getY();
+		return Objects.requireNonNullElse(channel, message).getCanvasLocation().getY();
 	}
 
 	public int getX()
 	{
 		// Find left-most widget
 		return Stream.of(channel, message, name, rank)
+			.filter(Objects::nonNull)
 			.filter(widget -> !widget.isHidden())
 			.reduce((widget1, widget2) -> {
 				if (widget1.getOriginalX() < widget2.getOriginalX())
@@ -93,16 +109,9 @@ public class ChatWidgetGroup
 				{
 					return widget2;
 				}
-			}).orElseGet(() -> {
-				if (channel.isHidden())
-				{
-					return message;
-				}
-				else
-				{
-					return channel;
-				}
-			}).getCanvasLocation().getX();
+			})
+			.orElseGet(() -> Objects.requireNonNullElse(channel, message))
+			.getCanvasLocation().getX();
 	}
 
 	public Color getColor(CleanChatChannelsConfig config)
@@ -112,10 +121,9 @@ public class ChatWidgetGroup
 
 	public void place(final int y)
 	{
-		place(channel, y);
-		place(rank, y);
-		place(name, y);
-		place(message, y);
+		// TODO: Do we really need to place unused?
+		unused.forEach(widget -> place(widget, y));
+		onNonNullWidgets(widget -> place(widget, y), channel, rank, name, message);
 
 		clickBox.setOriginalY(y);
 		clickBox.setHidden(false);
@@ -134,30 +142,20 @@ public class ChatWidgetGroup
 			clickBox.setOriginalHeight(height);
 			clickBox.revalidate();
 		}
+	}
 
-		if ( channelType == null) return;
-
-		if (channelType == ChatChannel.CLAN || channelType == ChatChannel.GUEST_CLAN)
+	public void calculateWidgetSizes(Client client)
+	{
+		if (name != null)
 		{
-			log.debug("c -> r = {},", rank.getOriginalX() - (channel.getOriginalX() + channel.getWidth()));
-			log.debug("r -> n = {},", name.getOriginalX() - (rank.getOriginalX() + rank.getWidth()));
-			log.debug("n -> m = {},", message.getOriginalX() - (name.getOriginalX() + name.getWidth()));
-		}
-		else if (channelType == ChatChannel.FRIENDS_CHAT)
-		{
-
-		}
-		else if (channelType == ChatChannel.GROUP_IRON)
-		{
-			log.debug("c -> n = {},", name.getOriginalX() - (channel.getOriginalX() + channel.getWidth()));
-			log.debug("n -> m = {},", message.getOriginalX() - (name.getOriginalX() + name.getWidth()));
+			nameWidth = getTextLength(name.getText(), client);
 		}
 	}
 
-	public void calculateChannelIndent(CleanChatChannelsConfig config, String matchedChannelName, String widgetChannelText,
-	                                   Client client)
+	public void calculateChannelWidgetSizes(String matchedChannelName, String widgetChannelText,
+	                                        Client client)
 	{
-		if (channelType == ChatChannel.FRIENDS_CHAT)
+		if (channelType == ChatChannel.FRIENDS_CHAT && channel != null)
 		{
 			// For some reason the fc channel width is the entire length of the chatbox so to make things easier we adjust that here
 			shrink(channel, message.getOriginalX() - channel.getOriginalX());
@@ -166,56 +164,52 @@ public class ChatWidgetGroup
 		int startOfChannel = widgetChannelText.indexOf(matchedChannelName);
 		int endOfChannel = startOfChannel + matchedChannelName.length();
 
-		int indentWidth = 0;
+		String prefix = widgetChannelText.substring(0, startOfChannel);
+		prefixWidth = getTextLength(prefix, client);
 
-		if (channelType != null)
+		String channelText = widgetChannelText.substring(startOfChannel, endOfChannel);
+		channelWidth = getTextLength(channelText, client);
+
+		// FC puts name + channel into the channel widget
+		if (channelType == ChatChannel.FRIENDS_CHAT)
 		{
-			String prefix = widgetChannelText.substring(0, startOfChannel);
-			prefixWidth = getTextLength(prefix, client);
+			String nameText = widgetChannelText.substring(endOfChannel);
+			nameWidth = getTextLength(nameText, client);
+		}
+		else if (name != null)
+		{
+			nameWidth = name.getWidth();
+		}
+		nameWidth += 3;
+		if (rank != null)
+		{
+			rankWidth = rank.getWidth() + 3;
+		}
+	}
 
-			String channelText = widgetChannelText.substring(startOfChannel, endOfChannel);
-			channelWidth = getTextLength(channelText, client);
-
-			switch (config.indentationMode())
-			{
-				// Intentionally fallthrough
-				case START:
-					indentWidth += prefixWidth;
-				case CHANNEL:
-					if (!channelType.isChannelNameRemovalEnabled(config))
-					{
-						indentWidth += channelWidth;
-					}
-					else
-					{
-						indentWidth -= getTextLength(" ", client);
-					}
-				case NAME:
-					// FC puts name + channel into the channel widget
-					if (channelType == ChatChannel.FRIENDS_CHAT)
-					{
-						String nameText = widgetChannelText.substring(endOfChannel);
-						nameWidth = getTextLength(nameText, client);
-					}
-					else if (!name.getText().isEmpty() && !name.isHidden())
-					{
-						nameWidth = name.getWidth();
-					}
-
-					if (!rank.isHidden())
-					{
-						rankWidth = rank.getWidth() + 3;
-					}
-					indentWidth += rankWidth;
-					indentWidth += nameWidth;
-
-					if (indentWidth > 0) //  && channelType != ChatChannel.FRIENDS_CHAT ?
-					{
-						indentWidth += 3;
-					}
-				case MESSAGE:
-					// Already set by default
-			}
+	public void calculateMessageIndent(CleanChatChannelsConfig config, Client client)
+	{
+		int indentWidth = 0;
+		switch (config.indentationMode())
+		{
+			// Intentionally fallthrough
+			case START:
+				indentWidth += prefixWidth;
+			case CHANNEL:
+				if (channelType != null && !channelType.isChannelNameRemovalEnabled(config))
+				{
+					indentWidth += channelWidth;
+				}
+				else
+				{
+					// TODO: is this needed
+					indentWidth -= getTextLength(" ", client);
+				}
+			case NAME:
+				indentWidth += rankWidth;
+				indentWidth += nameWidth;
+			case MESSAGE:
+				// Already set by default
 		}
 
 		if (indentWidth > 0)
@@ -223,18 +217,18 @@ public class ChatWidgetGroup
 			messageIndent += indentWidth;
 
 			// TODO: Should this be exact instead of rounded (/ 3 * 3)
-			// TODO: Should this move to applyIndent?
+			// TODO: Should this be combined with applyIndent?
 			if (messageIndent > 0)
 			{
 				shiftLeft(message, indentWidth / 3 * 3);
-				expand(message, indentWidth);
+				expand(message, indentWidth / 3 * 3);
 			}
 		}
 	}
 
 	public void applyIndent()
 	{
-		if (channel.isHidden() && channelIndent > 0)
+		if (channel == null && channelIndent > 0)
 		{
 			messageIndent += channelIndent;
 		}
@@ -246,19 +240,20 @@ public class ChatWidgetGroup
 			message.revalidate();
 		}
 
-		if (channelIndent > 0 && !channel.isHidden())
+		if (channelIndent > 0 && channel != null)
 		{
-			channel.setText(" ".repeat(Math.max(1, channelIndent / 3)) + channel.getText());
+			channel.setText(" ".repeat( channelIndent / 3) + channel.getText());
+			// TODO: shiftRight(channel, channelIndent);
 			expand(channel, channelIndent);
 		}
 	}
 
-	public void removeFromChannel(String text, Client client)
+	public void removeFromChannel(String text, Client client, @NonNull Widget channel)
 	{
-		replaceChannelName(text, "", client);
+		replaceChannelName(text, "", client, channel);
 	}
 
-	public String replaceChannelName(String text, String newChannelName, Client client)
+	public String replaceChannelName(String text, String newChannelName, Client client, @NonNull Widget channel)
 	{
 		int currentWidth = getTextLength(wrapWithBrackets(text), client);
 		int newWidth = getTextLength(newChannelName, client);
@@ -283,9 +278,8 @@ public class ChatWidgetGroup
 		channel.setText(newText);
 
 		// Shift widgets X left if channel was removed
-		shiftLeft(rank, removedWidth);
-		shiftLeft(name, removedWidth);
-		shiftLeft(message, removedWidth);
+		int finalRemovedWidth = removedWidth;
+		onNonNullWidgets(widget -> shiftLeft(widget, finalRemovedWidth), rank, name, message);
 
 		// Expand the width of messages if channel was removed
 		expand(message, removedWidth);
@@ -298,17 +292,21 @@ public class ChatWidgetGroup
 
 	public void removeRank()
 	{
-		if (!rank.isHidden())
+		if (rank != null)
 		{
 			rank.setHidden(true);
 
 			int removedWidth = rank.getWidth();
 
-			shiftLeft(name, removedWidth);
+			if (name != null)
+			{
+				shiftLeft(name, removedWidth);
+			}
 			shiftLeft(message, removedWidth);
 
 			// Expand the width of messages if rank was removed
 			expand(message, removedWidth);
+			rank = null;
 		}
 	}
 
@@ -353,20 +351,20 @@ public class ChatWidgetGroup
 		Widget widget;
 		Widget oppositeWidget;
 
-		if (!message.getText().isEmpty())
-		{
-			widget = message;
-			oppositeWidget = channel;
-		}
-		else
+		if (channel != null)
 		{
 			widget = channel;
 			oppositeWidget = message;
 		}
+		else
+		{
+			widget = message;
+			oppositeWidget = null;
+		}
 
 		timestamp = FormatterExtractor.extractFromText(template, widget.getText());
 
-		if (timestamp == null)
+		if (timestamp == null && oppositeWidget != null)
 		{
 			timestamp = FormatterExtractor.extractFromText(template, oppositeWidget.getText());
 
@@ -380,6 +378,11 @@ public class ChatWidgetGroup
 				widget = oppositeWidget;
 			}
 		}
+		else if (timestamp == null)
+		{
+			log.debug("Timestamp could not be extracted from template: `{}`, widget:`{}`. opposite widget was null", template, widget.getText());
+			return;
+		}
 
 		int originalTimestampWidth = getTextLength(widget.getText(), client) - getTextLength(timestamp.getRemainingText(), client);
 		int timestampWidthAdded = max(0, timestampWidth - originalTimestampWidth);
@@ -387,15 +390,22 @@ public class ChatWidgetGroup
 
 		channelIndent += max(0, timestampWidth);
 
-		shiftRight(rank, timestampWidthAdded);
-		shiftRight(name, timestampWidthAdded);
+		if (rank != null)
+		{
+			shiftRight(rank, timestampWidthAdded);
+		}
+		if (name != null)
+		{
+			shiftRight(name, timestampWidthAdded);
+		}
+
 		if (channelType != null)
 		{
 			messageIndent += timestampWidthAdded;
 		}
 		else
 		{
-			if (!name.isHidden() || !channel.isHidden())
+			if (name != null || channel != null)
 			{
 				shiftRight(message, timestampWidthAdded);
 				shrink(message, timestampWidthAdded);
@@ -411,13 +421,104 @@ public class ChatWidgetGroup
 	@Override
 	public String toString()
 	{
-		return "ChatWidgetGroup{" + ",\n" +
-			"channel=" + channel.getText() + ",\n" +
-			"rank=" + rank.getSpriteId() + ",\n" +
-			"name=" + name.getText() + ",\n" +
-			"message=" + message.getText() + ",\n" +
-			"channelType=" + (channelType != null ? channel.getName() : null) + ",\n" +
+		return "ChatWidgetGroup{\n" +
+			(channel != null ? "channel=" + channel.getText() + "\n" : "") +
+			(rank != null ? "rank=" + rank.getSpriteId() + "\n" : "") +
+			(name != null ? "name=" + name.getText() + "\n" : "") +
+			"message=" + message.getText() + "\n" +
+			"channelType=" + (channelType != null ? channelType.name() : null) + ",\n" +
+			"channelWidth=" + channelWidth + "\n" +
+			"prefixWidth=" + prefixWidth + "\n" +
+			"nameWidth=" + nameWidth + "\n" +
+			"rankWidth=" + rankWidth + "\n" +
 			"timestamp=" + (timestamp != null ? timestamp.getFormattedOutput() : null) + "\n" +
 			'}';
 	}
+
+	/* TODO: clean up this comment
+	If 2 is present match channel against it - > message is at 1, name is at 0 if present, 3 is rank if present
+	else
+		if 1 is hidden then 0 is message, everything else is empty
+		else
+			match channel against 0, 1 is message,
+				if match channel is 0
+				else name is 0
+
+			fallback message is 0
+	 */
+	public static ChatWidgetGroup of(Widget widget0, Widget widget1, Widget widget2, Widget widget3, Widget clickBox,
+	                                 ChannelNameManager channelNameManager)
+	{
+		Widget rank = null;
+		Widget channel = null;
+		Widget name = null;
+		Widget message;
+		ChatChannel.ChannelMatch match = null;
+		List<Widget> unused = new ArrayList<>();
+
+		if (!widget2.isHidden())
+		{
+			channel = widget2;
+			message = widget1;
+
+			match = ChatChannel.findChannelMatch(widget2.getText(), channelNameManager);
+			if (match == null)
+			{
+				// TODO: Do we need to error here?
+			}
+
+			if (!widget3.isHidden())
+			{
+				rank = widget3;
+			}
+			else
+			{
+				unused.add(widget3);
+			}
+			if (!widget0.isHidden())
+			{
+				name = widget0;
+			}
+			else
+			{
+				unused.add(widget0);
+			}
+		}
+		else
+		{
+			unused.add(widget2);
+			unused.add(widget3);
+
+			if (widget1.isHidden())
+			{
+				message = widget0;
+				unused.add(widget1);
+			}
+			else
+			{
+				message = widget1;
+
+				match = ChatChannel.findChannelMatch(widget0.getText(), channelNameManager);
+				if (match != null)
+				{
+					channel = widget0;
+				}
+				else
+				{
+					name = widget0;
+				}
+			}
+		}
+
+		return new ChatWidgetGroup(
+			channel,
+			rank,
+			name,
+			message,
+			clickBox,
+			unused,
+			match
+		);
+	}
+
 }

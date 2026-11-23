@@ -40,7 +40,7 @@ public interface CleanChatChannelsConfig extends Config
 	@ConfigItem(
 		keyName = "lineBreakIndentationMode",
 		name = "Indent Mode",
-		description = "Adjust the starting indent for the 2nd (and further) lines in multi-line messages (only in chat channels)<br>" +
+		description = "Adjust the starting indent for the 2nd (and further) lines in multi-line messages<br>" +
 			"Message - Default, start directly under the first line<br>" +
 			"Name - Start under the username<br>" +
 			"Channel - Start under the channel name and after the timestamp. If channel removal is on, acts like Name<br>" +

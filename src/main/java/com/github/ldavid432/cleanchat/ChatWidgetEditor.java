@@ -1,18 +1,16 @@
 package com.github.ldavid432.cleanchat;
 
-import static com.github.ldavid432.cleanchat.util.CleanChatUtil.CLAN_INSTRUCTION_MESSAGE;
+import com.github.ldavid432.cleanchat.data.ChatChannel;
+import com.github.ldavid432.cleanchat.data.ChatTab;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.SCRIPT_REBUILD_CHATBOX;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.SCRIPT_SCROLLBAR_MAX;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.SCRIPT_SCROLLBAR_MIN;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.sanitizeChannelName;
 import static com.github.ldavid432.cleanchat.util.CleanChatUtil.wrapWithBrackets;
-import com.github.ldavid432.cleanchat.data.ChatChannel;
-import com.github.ldavid432.cleanchat.data.ChatTab;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Inject;
@@ -32,8 +30,6 @@ import static net.runelite.api.widgets.WidgetPositionMode.ABSOLUTE_TOP;
 import static net.runelite.api.widgets.WidgetSizeMode.ABSOLUTE;
 import static net.runelite.api.widgets.WidgetSizeMode.MINUS;
 import net.runelite.client.eventbus.Subscribe;
-import net.runelite.client.util.Text;
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * <ul>
@@ -177,93 +173,54 @@ public class ChatWidgetEditor
 					i -> i < chatWidgets.length,
 					i -> i + 4
 				)
-				.map(i -> {
-					int rankWidgetIndex = i + 3;
-					int messageWidgetIndex = i + 1;
-					int nameWidgetIndex = i;
-
-					// TODO: Improve widget type association by matching against known channels? Maybe fallback to the current method
-
-					Widget channelWidget = chatWidgets[i + 2];
-					if (channelWidget.getText().isEmpty())
+				.filter(i -> !chatWidgets[i].isHidden() || !chatWidgets[i + 1].isHidden() || !chatWidgets[i + 2].isHidden() || !chatWidgets[i + 3].isHidden())
+				.map(i -> ChatWidgetGroup.of(
+					chatWidgets[i],
+					chatWidgets[i + 1],
+					chatWidgets[i + 2],
+					chatWidgets[i + 3],
+					clickboxWidgets[i / 4],
+					channelNameManager
+				))
+				.peek(group -> {
+					if (group.channelMatch != null && group.channel != null)
 					{
-						// Channel is not at [2]. This is either a message with channel at [0] or a message without a channel
+						ChatChannel channel = group.channelMatch.getChannel();
+						String matchedChannelName = group.channelMatch.getText();
+						String widgetChannelText = sanitizeChannelName(group.channel.getText());
+						String shortName = channel.getShortName(channelNameManager, matchedChannelName);
 
-						if (!chatWidgets[i].getText().isEmpty())
+						if (channel.isChannelNameRemovalEnabled(config))
 						{
-							// Channel is at [0], this is a special message, adjust indices accordingly
+							group.removeFromChannel(matchedChannelName, client, group.channel);
 
-							Widget messageWidget = chatWidgets[i + 1];
-							// For some reason the fc now talking message specifically, has the CLAN chat join message here...
-							if (messageWidget.getText().isEmpty() || Text.removeTags(messageWidget.getText()).equals(CLAN_INSTRUCTION_MESSAGE))
-							{
-								// Friends chat message
-
-								messageWidgetIndex = i;
-								// Empty widget in this case, but still good to handle it
-								nameWidgetIndex = i + 1;
-							}
-							else
-							{
-								// Other special message
-
-								channelWidget = chatWidgets[i];
-								// Empty widget in this case, but still good to handle it
-								nameWidgetIndex = i + 2;
-							}
+							matchedChannelName = wrapWithBrackets(matchedChannelName);
 						}
-						else if (chatWidgets[messageWidgetIndex].getText().isEmpty())
+						else if (!shortName.isBlank() && !channel.isShortNameDefault(channelNameManager))
 						{
-							return null;
+							String updatedChannelText = group.replaceChannelName(matchedChannelName, shortName, client, group.channel);
+
+							matchedChannelName = sanitizeChannelName(shortName);
+							widgetChannelText = sanitizeChannelName(updatedChannelText);
 						}
 						else
 						{
-							// Clan/GIM broadcast after world hopping - just use default setup since we mainly care about the message in this case
+							matchedChannelName = wrapWithBrackets(matchedChannelName);
 						}
-					}
 
-					return new ChatWidgetGroup(channelWidget, chatWidgets[rankWidgetIndex], chatWidgets[nameWidgetIndex], chatWidgets[messageWidgetIndex], clickboxWidgets[i / 4]);
-				})
-				.filter(Objects::nonNull)
-				.peek(group -> {
-					if (!group.getChannelText().isEmpty())
-					{
-						Pair<ChatChannel, String> match = ChatChannel.findChannelMatch(group.getChannelText(), channelNameManager);
-						if (match != null)
+						if (channel.isRemoveRankEnabled(config))
 						{
-							ChatChannel channel = match.getLeft();
-							String matchedChannelName = match.getRight();
-							String widgetChannelText = sanitizeChannelName(group.getChannelText());
-							String shortName = channel.getShortName(channelNameManager, matchedChannelName);
-
-							group.setChannelType(channel);
-
-							if (channel.isChannelNameRemovalEnabled(config))
-							{
-								group.removeFromChannel(matchedChannelName, client);
-
-								matchedChannelName = wrapWithBrackets(matchedChannelName);
-							}
-							else if (!shortName.isBlank() && !channel.isShortNameDefault(channelNameManager))
-							{
-								String updatedChannelText = group.replaceChannelName(matchedChannelName, shortName, client);
-
-								matchedChannelName = sanitizeChannelName(shortName);
-								widgetChannelText = sanitizeChannelName(updatedChannelText);
-							}
-							else
-							{
-								matchedChannelName = wrapWithBrackets(matchedChannelName);
-							}
-
-							if (channel.isRemoveRankEnabled(config))
-							{
-								group.removeRank();
-							}
-
-							group.calculateChannelIndent(config, matchedChannelName, widgetChannelText, client);
+							group.removeRank();
 						}
+
+						group.calculateChannelWidgetSizes(matchedChannelName, widgetChannelText, client);
 					}
+					else
+					{
+						group.calculateWidgetSizes(client);
+					}
+
+					group.calculateMessageIndent(config, client);
 
 					if (timestampIntegration.isFixedWidthTimestampEnabled())
 					{

@@ -1,0 +1,36 @@
+0,1,2,3,Channel
+Empty,Hidden,Hidden,Hidden,None
+[08:49:05] <col=ffff00>Message DIDYOUKNOW</col>,Hidden,Hidden,Hidden,DIDYOUKNOW
+[08:49:05] Message NPC_SAY:,<col=9090ff></col>,Hidden,Hidden,NPC_SAY
+[08:49:05] [<col=9070ff>Sender</col>],<col=00d6d6>Message CLAN_GIM_MESSAGE</col>,Hidden,Hidden,CLAN_GIM_MESSAGE
+Name:,<col=3dffbb>Message CLAN_GIM_CHAT</col>,[08:49:05] [<col=9070ff>Sender</col>],Hidden,CLAN_GIM_CHAT
+[08:49:05] <col=1a31f2></col>,Hidden,Hidden,Hidden,None
+[08:49:05] <col=1a31f2></col>,Hidden,Hidden,Hidden,None
+[08:49:05] <col=ff20df>Message CHALREQ_CLANCHAT</col>,Hidden,Hidden,Hidden,CHALREQ_CLANCHAT
+[08:49:05] <col=1a31f2>Message CLAN_CREATION_INVITATION</col>,Hidden,Hidden,Hidden,CLAN_CREATION_INVITATION
+[08:49:05] Message WELCOME,Hidden,Hidden,Hidden,WELCOME
+[08:49:05] Message TENSECTIMEOUT,Hidden,Hidden,Hidden,TENSECTIMEOUT
+[08:49:05] Message PLAYERRELATED,Hidden,Hidden,Hidden,PLAYERRELATED
+[08:49:05] <col=ff20df>Message CHALREQ_FRIENDSCHAT</col>,Hidden,Hidden,Hidden,CHALREQ_FRIENDSCHAT
+[08:49:05] <col=ff20df>Message CHALREQ_TRADE</col>,Hidden,Hidden,Hidden,CHALREQ_TRADE
+[08:49:05] Message TRADE,Hidden,Hidden,Hidden,TRADE
+[08:49:05] <col=df20ff>Message TRADEREQ</col>,Hidden,Hidden,Hidden,TRADEREQ
+[08:49:05] Message CONSOLE,Hidden,Hidden,Hidden,CONSOLE
+Hidden,Message CLAN_GUEST_MESSAGE,[09:45:06] [<col=9070ff>Sender</col>],Hidden,CLAN_GUEST_MESSAGE
+Name:,<col=00d300>Message CLAN_GUEST_CHAT</col>,[08:49:05] [<col=9070ff>Sender</col>],Hidden,CLAN_GUEST_CHAT
+Hidden,<col=80ff80>Message CLAN_MESSAGE</col>,[08:49:05] [<col=9070ff>Sender</col>],Hidden,CLAN_MESSAGE
+Name:,<col=80ff80>Message CLAN_CHAT</col>,[08:49:05] [<col=9070ff>Sender</col>],3061,CLAN_CHAT
+[08:49:05] Message IGNORENOTIFICATION,Hidden,Hidden,Hidden,IGNORENOTIFICATION
+[08:49:05] Message FRIENDNOTIFICATION,Hidden,Hidden,Hidden,FRIENDNOTIFICATION
+[08:49:05] Message OBJECT_EXAMINE,Hidden,Hidden,Hidden,OBJECT_EXAMINE
+[08:49:05] Message NPC_EXAMINE,Hidden,Hidden,Hidden,NPC_EXAMINE
+[08:49:05] Message ITEM_EXAMINE,Hidden,Hidden,Hidden,ITEM_EXAMINE
+[08:49:05] Message SNAPSHOTFEEDBACK,Hidden,Hidden,Hidden,SNAPSHOTFEEDBACK
+[08:49:05] <col=30ff30>Broadcast:</col>,<col=ffffff>Message BROADCAST</col>,Hidden,Hidden,BROADCAST
+[08:49:05] Message TRADE_SENT,Hidden,Hidden,Hidden,TRADE_SENT
+[08:49:05] Message FRIENDSCHATNOTIFICATION,Hidden,Hidden,Hidden,FRIENDSCHATNOTIFICATION
+[08:49:05] [<col=9070ff>Sender</col>] Name:,<col=ef5050>Message FRIENDSCHAT</col>,Hidden,Hidden,FRIENDSCHAT
+[08:49:05] Message ENGINE,Hidden,Hidden,Hidden,ENGINE
+[08:49:05] Name:,<col=9090ff>Message PUBLICCHAT</col>,Hidden,Hidden,PUBLICCHAT
+[08:49:05] Name:,<col=9090ff>Message MODCHAT</col>,Hidden,Hidden,MODCHAT
+[08:49:05] Message GAMEMESSAGE,Hidden,Hidden,Hidden,GAMEMESSAGE

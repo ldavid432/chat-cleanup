@@ -13,8 +13,9 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+import javax.annotation.Nullable;
 import lombok.AllArgsConstructor;
-import org.apache.commons.lang3.tuple.Pair;
+import lombok.Value;
 
 @AllArgsConstructor
 public enum ChatChannel
@@ -106,16 +107,23 @@ public enum ChatChannel
 	private final Function<CleanChatChannelsConfig, Boolean> isRemoveRank;
 	private final Function<CleanChatChannelsConfig, Color> getColor;
 
-	public static Pair<ChatChannel, String> findChannelMatch(String channel, ChannelNameManager channelNameManager)
+	@Value
+	public static class ChannelMatch {
+		ChatChannel channel;
+		String text;
+	}
+
+	@Nullable
+	public static ChannelMatch findChannelMatch(String channel, ChannelNameManager channelNameManager)
 	{
-		for (ChatChannel channelRemoval : ChatChannel.values())
+		if (channel == null)
 		{
-			if (channel == null)
-			{
-				break;
-			}
+			return null;
+		}
+		for (ChatChannel chatChannel : ChatChannel.values())
+		{
 			String widgetChannelName = sanitizeChannelName(channel);
-			String matchedChannelName = channelRemoval.getNames(channelNameManager).stream()
+			String matchedChannelName = chatChannel.getNames(channelNameManager).stream()
 				.map(CleanChatUtil::sanitizeChannelName)
 				.filter(name -> Pattern.compile(wrapWithChannelNameRegex(name)).matcher(widgetChannelName).find())
 				.findFirst()
@@ -123,7 +131,7 @@ public enum ChatChannel
 
 			if (matchedChannelName != null)
 			{
-				return Pair.of(channelRemoval, matchedChannelName);
+				return new ChannelMatch(chatChannel, matchedChannelName);
 			}
 		}
 

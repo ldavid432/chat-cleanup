@@ -26,8 +26,8 @@
  */
 package com.github.ldavid432.cleanchat;
 
-import com.github.ldavid432.cleanchat.data.ChatChannel;
 import com.github.ldavid432.cleanchat.data.ChatBlock;
+import com.github.ldavid432.cleanchat.data.ChatChannel;
 import com.github.ldavid432.cleanchat.data.ChatTab;
 import java.util.stream.Stream;
 import javax.inject.Inject;
@@ -38,7 +38,6 @@ import net.runelite.api.MessageNode;
 import net.runelite.api.events.ScriptCallbackEvent;
 import net.runelite.api.gameval.VarClientID;
 import net.runelite.client.eventbus.Subscribe;
-import org.apache.commons.lang3.tuple.Pair;
 
 @Slf4j
 @Singleton
@@ -83,12 +82,12 @@ public class ChatBlocker
 
 		if (!blockChat && !message.isEmpty())
 		{
-			Pair<ChatChannel, String> match = ChatChannel.findChannelMatch("[" + channelText + "]", channelNameManager);
+			ChatChannel.ChannelMatch match = ChatChannel.findChannelMatch("[" + channelText + "]", channelNameManager);
 			if (match == null) {
 				return;
 			}
 
-			ChatChannel channel = match.getLeft();
+			ChatChannel channel = match.getChannel();
 
 			blockChat = channel.isTabBlocked(config, selectedChatTab);
 		}
