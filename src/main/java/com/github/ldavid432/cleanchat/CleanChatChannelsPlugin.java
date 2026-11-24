@@ -20,7 +20,7 @@ import net.runelite.client.ui.overlay.OverlayManager;
 	name = "Clean Chat",
 	description = "Hide clan name and more to clean your chat channels, includes GIM, friends, and clan chats",
 	tags = {"clean", "chat", "clan", "friends", "gim", "group", "iron", "ironman", "channel", "color", "hide", "remove",
-		"custom", "timestamp", "indent"}
+		"custom", "timestamp", "indent", "guest"}
 )
 public class CleanChatChannelsPlugin extends Plugin
 {
