@@ -61,6 +61,7 @@ public class ChatWidgetGroup
 
 	public int messageIndent = 0;
 	public int channelIndent = 0;
+	public int nameIndent = 0;
 
 	// Actual widths of text, not necessarily widths of the Widgets since sometimes widgets are combined and/or not really what the parameter is named
 	@VisibleForTesting
@@ -234,23 +235,19 @@ public class ChatWidgetGroup
 
 	public void applyIndent()
 	{
-		if (channel == null && channelIndent > 0)
-		{
-			messageIndent += channelIndent;
-		}
-
 		if (messageIndent > 0)
 		{
-			// Using spaces to keep the first line at the initial position (+/-2 pixels)
-			message.setText(" ".repeat(messageIndent / 3) + message.getText());
-			message.revalidate();
+			indent(message, messageIndent);
 		}
 
 		if (channelIndent > 0 && channel != null)
 		{
-			channel.setText(" ".repeat( channelIndent / 3) + channel.getText());
-			// TODO: shiftRight(channel, channelIndent);
-			expand(channel, channelIndent);
+			indent(channel, channelIndent);
+		}
+
+		if (nameIndent > 0 && name != null)
+		{
+			indent(name, nameIndent);
 		}
 	}
 
@@ -353,6 +350,13 @@ public class ChatWidgetGroup
 		widget.revalidate();
 	}
 
+	private void indent(Widget widget, int width)
+	{
+		// Using spaces to keep the first line at the initial position (+/-2 pixels)
+		widget.setText(" ".repeat(width / 3) + widget.getText());
+		widget.revalidate();
+	}
+
 	private void place(Widget widget, int y)
 	{
 		widget.setOriginalY(y);
@@ -367,47 +371,62 @@ public class ChatWidgetGroup
 			return;
 		}
 
-		Widget widget;
-		Widget oppositeWidget;
-
+		// TODO: Surely this can be abstracted
 		if (channel != null)
 		{
-			widget = channel;
-			oppositeWidget = message;
-		}
-		else
-		{
-			widget = message;
-			oppositeWidget = null;
-		}
-
-		timestamp = FormatterExtractor.extractFromText(template, widget.getText());
-
-		if (timestamp == null && oppositeWidget != null)
-		{
-			timestamp = FormatterExtractor.extractFromText(template, oppositeWidget.getText());
-
-			if (timestamp == null)
+			timestamp = FormatterExtractor.extractFromText(template, channel.getText());
+			if (timestamp != null)
 			{
-				log.debug("Timestamp could not be extracted from template: `{}`, widget:`{}`, or opposite widget:`{}`", template, widget.getText(), oppositeWidget.getText());
-				return;
-			}
-			else
-			{
-				widget = oppositeWidget;
+				channelIndent += max(0, timestampWidth);
+				processExtractedTimestamp(
+					timestamp,
+					channel,
+					client,
+					timestampWidth,
+					Stream.of(rank, name, message).filter(Objects::nonNull).collect(Collectors.toList())
+				);
 			}
 		}
-		else if (timestamp == null)
+
+		if (name != null && timestamp == null)
 		{
-			log.debug("Timestamp could not be extracted from template: `{}`, widget:`{}`. opposite widget was null", template, widget.getText());
-			return;
+			timestamp = FormatterExtractor.extractFromText(template, name.getText());
+			if (timestamp != null)
+			{
+				nameIndent += max(0, timestampWidth);
+				processExtractedTimestamp(
+					timestamp,
+					name,
+					client,
+					timestampWidth,
+					List.of(message)
+				);
+			}
 		}
 
+		if (timestamp == null)
+		{
+			timestamp = FormatterExtractor.extractFromText(template, message.getText());
+			if (timestamp != null)
+			{
+				messageIndent += max(0, timestampWidth);
+				processExtractedTimestamp(
+					timestamp,
+					message,
+					client,
+					timestampWidth,
+					List.of()
+				);
+			}
+		}
+	}
+
+	private void processExtractedTimestamp(FormatterExtractor.ExtractionResult timestamp, Widget widget, Client client,
+		int timestampWidth, List<Widget> widgetsToShift)
+	{
 		int originalTimestampWidth = getTextLength(widget.getText(), client) - getTextLength(timestamp.getRemainingText(), client);
 		int timestampWidthAdded = max(0, timestampWidth - originalTimestampWidth);
 		widget.setText(timestamp.getRemainingText());
-
-		channelIndent += max(0, timestampWidth);
 
 		if (rank != null)
 		{
@@ -418,22 +437,14 @@ public class ChatWidgetGroup
 			shiftRight(name, timestampWidthAdded);
 		}
 
-		if (channelType != null)
+		if (widgetsToShift.isEmpty())
 		{
 			messageIndent += timestampWidthAdded;
 		}
 		else
 		{
-			if (name != null || channel != null)
-			{
-				shiftRight(message, timestampWidthAdded);
-				shrink(message, timestampWidthAdded);
-			}
-			else
-			{
-				// Messages with just one widget don't need anything shifted, just message indented
-				messageIndent += timestampWidthAdded;
-			}
+			widgetsToShift.forEach(w -> shiftRight(w, timestampWidthAdded));
+			shrink(message, timestampWidthAdded);
 		}
 	}
 
