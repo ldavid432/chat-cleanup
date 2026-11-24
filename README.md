@@ -46,7 +46,7 @@ All the below options are toggleable (_most_ are **off** by default)
 - GIM chat
   - Remove 'To talk in your Ironman Group's channel...' message
   - Remove group name from messages
-  - Remove group broadcasts from the clan chat tab (only display them in group tab)
+  - Remove group broadcasts from the clan chat and game tab (only display them in group and all tabs)
 
 ### Screenshots
 

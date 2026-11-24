@@ -48,7 +48,7 @@ public enum ChatChannel
 	GROUP_IRON(
 		CleanChatChannelsConfig::removeGroupIronName,
 		ChannelNameManager::getGroupIronNames,
-		(config, tab) -> config.removeGroupIronFromClan() && tab == ChatTab.CLAN,
+		(config, tab) -> config.removeGroupIronFromClan() && tab != ChatTab.ALL && tab != ChatTab.TRADE ,
 		ChannelNameManager::getShortGroupIronName,
 		c -> false,
 		CleanChatChannelsConfig::groupIronChannelColor

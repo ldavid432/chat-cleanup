@@ -405,8 +405,8 @@ public interface CleanChatChannelsConfig extends Config
 
 	@ConfigItem(
 		keyName = "moveGroupIronBroadcasts",
-		name = "Move GIM broadcasts",
-		description = "Remove GIM broadcasts from the clan chat tab, only display them in the group tab",
+		name = "Fix GIM broadcasts",
+		description = "Remove GIM broadcasts from the clan chat & game tabs, only display them in the group and all tabs",
 		section = ironSection,
 		position = 2
 	)
