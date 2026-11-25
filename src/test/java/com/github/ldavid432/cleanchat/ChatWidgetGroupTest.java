@@ -3,6 +3,7 @@ package com.github.ldavid432.cleanchat;
 import com.github.ldavid432.cleanchat.data.ChatChannel;
 import java.awt.Color;
 import java.util.List;
+import net.runelite.api.Point;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.util.ColorUtil;
 import static org.junit.Assert.assertEquals;
@@ -216,7 +217,7 @@ public class ChatWidgetGroupTest
 			unusedSize++;
 		}
 
-		assertEquals(chatChannel, actual.channelType);
+		assertEquals(chatChannel, actual.getChannelType());
 
 		for (Widget widget : actual.unused)
 		{
@@ -233,6 +234,8 @@ public class ChatWidgetGroupTest
 			when(widget.getText()).thenReturn(text);
 		}
 		when(widget.isHidden()).thenReturn(text == null);
+		when(widget.getOriginalX()).thenReturn(0);
+		when(widget.getCanvasLocation()).thenReturn(new Point(0, 0));
 		return widget;
 	}
 }

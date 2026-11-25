@@ -183,10 +183,10 @@ public class ChatWidgetEditor
 					channelNameManager
 				))
 				.peek(group -> {
-					if (group.channelMatch != null && group.channel != null)
+					if (group.getChannelMatch() != null && group.channel != null)
 					{
-						ChatChannel channel = group.channelMatch.getChannel();
-						String matchedChannelName = group.channelMatch.getText();
+						ChatChannel channel = group.getChannelMatch().getChannel();
+						String matchedChannelName = group.getChannelMatch().getText();
 						String widgetChannelText = sanitizeChannelName(group.channel.getText());
 						String shortName = channel.getShortName(channelNameManager, matchedChannelName);
 

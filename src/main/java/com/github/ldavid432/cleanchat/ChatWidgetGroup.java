@@ -53,11 +53,12 @@ public class ChatWidgetGroup
 	public final List<Widget> unused;
 
 	@Nullable
-	public final ChatChannel.ChannelMatch channelMatch;
+	@Getter
+	private final ChatChannel.ChannelMatch channelMatch;
 
-	// TODO: Remove and replace with channelMatch
+	@Getter(onMethod_ = @VisibleForTesting)
 	@Nullable
-	public final ChatChannel channelType;
+	private final ChatChannel channelType;
 
 	// X of group at creation within game canvas
 	@Getter
