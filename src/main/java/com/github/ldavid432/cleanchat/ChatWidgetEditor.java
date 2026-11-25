@@ -217,7 +217,8 @@ public class ChatWidgetEditor
 					}
 					else
 					{
-						if (config.removePrivateToFrom() && group.name != null && selectedChatTab == ChatTab.PRIVATE)
+						if (config.removePrivateToFrom() && group.name != null &&
+							(selectedChatTab == ChatTab.PRIVATE || selectedChatTab == ChatTab.ALL))
 						{
 							group.replaceText("To ", "", "To ", client, group.name, group.message);
 							group.replaceText("From ", "", "From ", client, group.name, group.message);
