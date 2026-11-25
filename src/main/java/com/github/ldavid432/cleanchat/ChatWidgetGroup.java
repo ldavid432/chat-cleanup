@@ -153,7 +153,7 @@ public class ChatWidgetGroup
 	{
 		if (name != null)
 		{
-			nameWidth = getTextLength(name.getText(), client);
+			nameWidth = getTextLength(name.getText(), client) + 3;
 		}
 	}
 
@@ -183,12 +183,11 @@ public class ChatWidgetGroup
 		}
 		else if (name != null)
 		{
-			nameWidth = name.getWidth();
+			nameWidth = name.getWidth() + 3;
 		}
-		nameWidth += 3;
 		if (rank != null)
 		{
-			rankWidth = rank.getWidth() + 3;
+			rankWidth = rank.getWidth();
 		}
 	}
 
