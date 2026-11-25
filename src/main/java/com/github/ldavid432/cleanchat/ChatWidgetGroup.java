@@ -59,8 +59,11 @@ public class ChatWidgetGroup
 	@Nullable
 	public final ChatChannel channelType;
 
+	// X of group at creation within game canvas
 	@Getter
 	private int x;
+	// X of group at creation within parent
+	private int widgetX;
 
 	public int messageIndent = 0;
 	public int channelIndent = 0;
@@ -85,9 +88,8 @@ public class ChatWidgetGroup
 	{
 		this(channel, name, message, clickBox, unused, channelMatch, channelMatch != null ? channelMatch.getChannel() : null);
 		this.rank = rank;
-		x = Stream.of(channel, message, name, rank)
-			.filter(Objects::nonNull)
-			.filter(widget -> !widget.isHidden())
+		Widget leftmost = Stream.of(channel, message, name, rank)
+			.filter(widget -> widget != null && !widget.isHidden())
 			.reduce((widget1, widget2) -> {
 				if (widget1.getOriginalX() < widget2.getOriginalX())
 				{
@@ -98,8 +100,10 @@ public class ChatWidgetGroup
 					return widget2;
 				}
 			})
-			.orElseGet(() -> Objects.requireNonNullElse(channel, message))
-			.getCanvasLocation().getX();
+			.orElseGet(() -> Objects.requireNonNullElse(channel, message));
+
+		x = leftmost.getCanvasLocation().getX();
+		widgetX = leftmost.getOriginalX();
 	}
 
 	private void onNonNullWidgets(Consumer<Widget> action, Widget... widgets)
@@ -215,12 +219,11 @@ public class ChatWidgetGroup
 		{
 			messageIndent += indentWidth;
 
-			// TODO: Should this be exact instead of rounded (/ 3 * 3)
 			// TODO: Should this be combined with applyIndent?
 			if (messageIndent > 0)
 			{
-				shiftLeft(message, indentWidth / 3 * 3);
-				expand(message, indentWidth / 3 * 3);
+				shiftLeft(message, indentWidth);
+				expand(message, indentWidth);
 			}
 		}
 	}
@@ -322,7 +325,9 @@ public class ChatWidgetGroup
 	private void shiftLeft(Widget widget, int width)
 	{
 		if (widget == null) return;
-		widget.setOriginalX(widget.getOriginalX() - width);
+		// TODO: It would be nice to actually make the shifting perform the correct amount instead of
+		//  resorting to a hard cap. Currently this only seems to be an issue for guest clan chat
+		widget.setOriginalX(Math.max(widget.getOriginalX() - width, widgetX));
 		widget.revalidate();
 	}
 
@@ -350,7 +355,7 @@ public class ChatWidgetGroup
 	private void indent(Widget widget, int width)
 	{
 		// Using spaces to keep the first line at the initial position (+/-2 pixels)
-		widget.setText(" ".repeat(width / 3) + widget.getText());
+		widget.setText(" ".repeat((int) Math.ceil(width / 3d)) + widget.getText());
 		widget.revalidate();
 	}
 
