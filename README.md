@@ -20,7 +20,7 @@ All the below options are toggleable (_most_ are **off** by default)
       - Top separator at the top of the chat box (only in transparent mode)
       - You may occasionally see them flicker in for a second when the chat is rebuilt
     - Hide username game mode icons
-      - Can hide: ironman, hardcore main, leagues and/or quest speedrunning icons in usernames in the chat
+      - Can hide: ironman helmets, hardcore main, leagues and/or quest speedrunning icons in usernames in the chat
   - Set a custom name for each channel
     - Intended to help you reduce the channel name size instead of full removal, but can also be customized to anything you want
     - See below for more details on customization
