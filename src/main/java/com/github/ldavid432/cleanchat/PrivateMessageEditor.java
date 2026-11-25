@@ -68,7 +68,7 @@ public class PrivateMessageEditor
 
 					group.calculateWidgetSizes(client);
 
-					group.calculateMessageIndent(config, client);
+					group.calculateMessageIndent(config);
 
 					if (!config.hiddenGameModeIcons().isEmpty())
 					{
@@ -106,6 +106,7 @@ public class PrivateMessageEditor
 				assert chatbox != null;
 				y = chatbox.getOriginalY();
 			}
+			y += 4;
 
 			for (ChatWidgetGroup group : chatWidgetGroups)
 			{

@@ -231,7 +231,7 @@ public class ChatWidgetEditor
 						group.hideGameModeIcons(config.hiddenGameModeIcons(), client);
 					}
 
-					group.calculateMessageIndent(config, client);
+					group.calculateMessageIndent(config);
 
 					if (timestampIntegration.isFixedWidthTimestampEnabled())
 					{

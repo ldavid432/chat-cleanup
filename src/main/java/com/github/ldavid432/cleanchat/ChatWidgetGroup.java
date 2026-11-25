@@ -194,7 +194,7 @@ public class ChatWidgetGroup
 		}
 	}
 
-	public void calculateMessageIndent(CleanChatChannelsConfig config, Client client)
+	public void calculateMessageIndent(CleanChatChannelsConfig config)
 	{
 		int indentWidth = 0;
 		switch (config.indentationMode())
