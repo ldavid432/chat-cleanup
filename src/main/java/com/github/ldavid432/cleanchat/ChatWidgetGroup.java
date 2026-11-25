@@ -59,6 +59,9 @@ public class ChatWidgetGroup
 	@Nullable
 	public final ChatChannel channelType;
 
+	@Getter
+	private int x;
+
 	public int messageIndent = 0;
 	public int channelIndent = 0;
 	public int nameIndent = 0;
@@ -82,6 +85,21 @@ public class ChatWidgetGroup
 	{
 		this(channel, name, message, clickBox, unused, channelMatch, channelMatch != null ? channelMatch.getChannel() : null);
 		this.rank = rank;
+		x = Stream.of(channel, message, name, rank)
+			.filter(Objects::nonNull)
+			.filter(widget -> !widget.isHidden())
+			.reduce((widget1, widget2) -> {
+				if (widget1.getOriginalX() < widget2.getOriginalX())
+				{
+					return widget1;
+				}
+				else
+				{
+					return widget2;
+				}
+			})
+			.orElseGet(() -> Objects.requireNonNullElse(channel, message))
+			.getCanvasLocation().getX();
 	}
 
 	private void onNonNullWidgets(Consumer<Widget> action, Widget... widgets)
@@ -99,26 +117,6 @@ public class ChatWidgetGroup
 	public int getY()
 	{
 		return Objects.requireNonNullElse(channel, message).getCanvasLocation().getY();
-	}
-
-	public int getX()
-	{
-		// Find left-most widget
-		return Stream.of(channel, message, name, rank)
-			.filter(Objects::nonNull)
-			.filter(widget -> !widget.isHidden())
-			.reduce((widget1, widget2) -> {
-				if (widget1.getOriginalX() < widget2.getOriginalX())
-				{
-					return widget1;
-				}
-				else
-				{
-					return widget2;
-				}
-			})
-			.orElseGet(() -> Objects.requireNonNullElse(channel, message))
-			.getCanvasLocation().getX();
 	}
 
 	public Color getColor(CleanChatChannelsConfig config)

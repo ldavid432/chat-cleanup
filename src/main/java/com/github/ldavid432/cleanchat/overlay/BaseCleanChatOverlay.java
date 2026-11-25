@@ -108,7 +108,7 @@ public abstract class BaseCleanChatOverlay extends Overlay
 
 		for (ChatWidgetGroup group: visibleChats)
 		{
-			render(graphics, container.getCanvasLocation().getX(), group.getY(), group, isPrivateSplitChat);
+			render(graphics, group.getX(), group.getY(), group, isPrivateSplitChat);
 		}
 	}
 
