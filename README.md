@@ -47,6 +47,9 @@ All the below options are toggleable (_most_ are **off** by default)
   - Remove 'To talk in your Ironman Group's channel...' message
   - Remove group name from messages
   - Remove group broadcasts from the clan chat and game tab (only display them in group and all tabs)
+- Private chat
+  - Remove 'To' and 'From' from the start of private chat messages
+  - Note: **only applies to the private tab and split private chat, not private chat in the ALL tab**
 
 ### Screenshots
 
@@ -78,8 +81,9 @@ I am not against adding support for other characters (i.e. letters) so if you us
 
 ## Known Issues
 
-- Setting an indentation mode other than the default (`Message`) may shift multi-line messages to the right by one or two pixels
+- **Setting an indentation mode other than the default (`Message`) may shift multi-line messages to the right by one or two pixels**
 - `Channel`/`Name` Indent modes for non-chat channels (i.e. public chat) act like `Start`
 - After hopping clan/gim broadcasts don't have a channel for a few seconds
   - Unfortunately this seems to just be a Chat History plugin or maybe even Jagex bug where the channel is not populated until you actually reconnect to it
   - I may look at fixing this as a new "feature" in the future, but it is not caused by the Clean Chat plugin
+- To and From removal in private chat doesn't happen on ALL tab

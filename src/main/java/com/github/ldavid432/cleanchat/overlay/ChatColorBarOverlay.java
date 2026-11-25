@@ -13,8 +13,10 @@ public class ChatColorBarOverlay extends BaseCleanChatOverlay
 {
 
 	@Override
-	protected void render(Graphics2D graphics, int x, int y, ChatWidgetGroup group)
+	protected void render(Graphics2D graphics, int x, int y, ChatWidgetGroup group, boolean isPrivateSplitChat)
 	{
+		if (isPrivateSplitChat) return;
+
 		Widget chatbox = client.getWidget(InterfaceID.Chatbox.SCROLLAREA);
 
 		x = Math.min(

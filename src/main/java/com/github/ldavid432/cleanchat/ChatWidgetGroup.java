@@ -77,7 +77,7 @@ public class ChatWidgetGroup
 	@Nullable
 	public FormatterExtractor.ExtractionResult timestamp = null;
 
-	private ChatWidgetGroup(@Nullable Widget channel, @Nullable Widget rank, @Nullable Widget name,
+	public ChatWidgetGroup(@Nullable Widget channel, @Nullable Widget rank, @Nullable Widget name,
 	                        @NonNull Widget message, @NonNull Widget clickBox, @NonNull List<Widget> unused, @Nullable ChatChannel.ChannelMatch channelMatch)
 	{
 		this(channel, name, message, clickBox, unused, channelMatch, channelMatch != null ? channelMatch.getChannel() : null);
@@ -137,12 +137,12 @@ public class ChatWidgetGroup
 		clickBox.revalidate();
 	}
 
-	public void calculateHeight(Client client)
+	public void calculateHeight(Client client, int lineHeight)
 	{
 		if (!message.getText().isEmpty() && message.getWidth() > 0)
 		{
 			int numLines = getTextLineCount(message.getText(), message.getWidth(), messageIndent / 3, client);
-			int height = numLines * 14; // Height of each line is always 14
+			int height = numLines * lineHeight;
 			message.setOriginalHeight(height);
 			message.revalidate();
 
@@ -207,11 +207,6 @@ public class ChatWidgetGroup
 				{
 					indentWidth += channelWidth;
 				}
-				else
-				{
-					// TODO: is this needed
-					indentWidth -= getTextLength(" ", client);
-				}
 			case NAME:
 				indentWidth += rankWidth;
 				indentWidth += nameWidth;
@@ -269,7 +264,12 @@ public class ChatWidgetGroup
 		int newWidth = getTextLength(replacementText, client);
 		int removedWidth = currentWidth - newWidth;
 
+		String originalWidgetText = widget.getText();
 		String newText = widget.getText().replaceFirst(originalTextRegex, replacementText);
+		if (newText.equals(originalWidgetText))
+		{
+			return originalWidgetText;
+		}
 
 		// Remove trailing spaces - probably only happens with timestamps turned on
 		if (newText.endsWith(" "))
@@ -382,8 +382,7 @@ public class ChatWidgetGroup
 					timestamp,
 					channel,
 					client,
-					timestampWidth,
-					Stream.of(rank, name, message).filter(Objects::nonNull).collect(Collectors.toList())
+					timestampWidth
 				);
 			}
 		}
@@ -398,8 +397,7 @@ public class ChatWidgetGroup
 					timestamp,
 					name,
 					client,
-					timestampWidth,
-					List.of(message)
+					timestampWidth
 				);
 			}
 		}
@@ -414,38 +412,20 @@ public class ChatWidgetGroup
 					timestamp,
 					message,
 					client,
-					timestampWidth,
-					List.of()
+					timestampWidth
 				);
 			}
 		}
 	}
 
 	private void processExtractedTimestamp(FormatterExtractor.ExtractionResult timestamp, Widget widget, Client client,
-		int timestampWidth, List<Widget> widgetsToShift)
+		int timestampWidth)
 	{
 		int originalTimestampWidth = getTextLength(widget.getText(), client) - getTextLength(timestamp.getRemainingText(), client);
 		int timestampWidthAdded = max(0, timestampWidth - originalTimestampWidth);
 		widget.setText(timestamp.getRemainingText());
 
-		if (rank != null)
-		{
-			shiftRight(rank, timestampWidthAdded);
-		}
-		if (name != null)
-		{
-			shiftRight(name, timestampWidthAdded);
-		}
-
-		if (widgetsToShift.isEmpty())
-		{
-			messageIndent += timestampWidthAdded;
-		}
-		else
-		{
-			widgetsToShift.forEach(w -> shiftRight(w, timestampWidthAdded));
-			shrink(message, timestampWidthAdded);
-		}
+		messageIndent += timestampWidthAdded;
 	}
 
 	public void hideGameModeIcons(Set<GameModeIcon> hiddenIcons, Client client)
@@ -498,7 +478,7 @@ public class ChatWidgetGroup
 			fallback message is 0
 	 */
 	public static ChatWidgetGroup of(Widget widget0, Widget widget1, Widget widget2, Widget widget3, Widget clickBox,
-	                                 ChannelNameManager channelNameManager)
+									 @Nullable ChannelNameManager channelNameManager)
 	{
 		Widget rank = null;
 		Widget channel = null;

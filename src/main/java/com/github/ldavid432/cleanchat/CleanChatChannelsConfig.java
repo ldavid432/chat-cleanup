@@ -503,4 +503,24 @@ public interface CleanChatChannelsConfig extends Config
 		return DEFAULT_CUSTOM_CHANNEL_NAME;
 	}
 
+	@ConfigSection(
+		name = "Private Chat",
+		description = "Configure private chat",
+		position = 40,
+		closedByDefault = true
+	)
+	String privateSection = "privateSection";
+
+	@ConfigItem(
+		keyName = "removeToFrom",
+		name = "Remove To & From",
+		description = "Remove <b>To</b> and <b>From</b> from private chat messages",
+		section = privateSection,
+		position = 0
+	)
+	default boolean removePrivateToFrom()
+	{
+		return false;
+	}
+
 }

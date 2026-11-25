@@ -3,6 +3,7 @@ package com.github.ldavid432.cleanchat.overlay;
 import com.github.ldavid432.cleanchat.ChatWidgetEditor;
 import com.github.ldavid432.cleanchat.ChatWidgetGroup;
 import com.github.ldavid432.cleanchat.CleanChatChannelsConfig;
+import com.github.ldavid432.cleanchat.PrivateMessageEditor;
 import com.github.ldavid432.cleanchat.data.ChatTab;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
@@ -31,6 +32,9 @@ public abstract class BaseCleanChatOverlay extends Overlay
 	protected ChatWidgetEditor chatWidgetEditor;
 
 	@Inject
+	protected PrivateMessageEditor privateMessageEditor;
+
+	@Inject
 	protected CleanChatChannelsConfig config;
 
 	protected abstract boolean isEnabled();
@@ -51,30 +55,32 @@ public abstract class BaseCleanChatOverlay extends Overlay
 			return null;
 		}
 
-		Widget chatbox = client.getWidget(InterfaceID.Chatbox.SCROLLAREA);
 		ChatTab selectedChatTab = ChatTab.of(client.getVarcIntValue(VarClientID.CHAT_VIEW));
-
-		if (chatbox == null || chatbox.isHidden() || selectedChatTab == ChatTab.CLOSED)
+		if (selectedChatTab != ChatTab.CLOSED)
 		{
-			return null;
+			renderOnChats(client.getWidget(InterfaceID.Chatbox.SCROLLAREA),
+				List.copyOf(chatWidgetEditor.getChatWidgetGroups()), graphics, false);
 		}
 
-		graphics.setClip(chatbox.getCanvasLocation().getX(), chatbox.getCanvasLocation().getY(), chatbox.getWidth(), chatbox.getHeight());
+		renderOnChats(client.getWidget(InterfaceID.PmChat.CONTAINER),
+			List.copyOf(privateMessageEditor.getChatWidgetGroups()), graphics, true);
 
-		List<ChatWidgetGroup> allChats = List.copyOf(chatWidgetEditor.getChatWidgetGroups());
-		if (allChats.isEmpty())
-		{
-			return null;
-		}
+		return null;
+	}
 
+	private void renderOnChats(Widget container, List<ChatWidgetGroup> chatWidgetGroups, Graphics2D graphics, boolean isPrivateSplitChat)
+	{
+		if (container == null || container.isHidden() || chatWidgetGroups.isEmpty()) return;
+
+		graphics.setClip(container.getCanvasLocation().getX(), container.getCanvasLocation().getY(), container.getWidth(), container.getHeight());
 		List<ChatWidgetGroup> visibleChats = new ArrayList<>();
 		ChatWidgetGroup previousGroup = null;
 		boolean foundStart = false;
 
-		for (ChatWidgetGroup group : allChats)
+		for (ChatWidgetGroup group : chatWidgetGroups)
 		{
-			boolean isVisibleInChat = group.getY() >= chatbox.getCanvasLocation().getY() &&
-				group.getY() + group.getHeight() <= chatbox.getCanvasLocation().getY() + chatbox.getHeight();
+			boolean isVisibleInChat = group.getY() >= container.getCanvasLocation().getY() &&
+				group.getY() + group.getHeight() <= container.getCanvasLocation().getY() + container.getHeight();
 
 			if (isVisibleInChat)
 			{
@@ -100,18 +106,14 @@ public abstract class BaseCleanChatOverlay extends Overlay
 			previousGroup = group;
 		}
 
-		visibleChats.forEach(group -> {
-			int x = group.getX();
-			int y = group.getY();
-
-			render(graphics, x, y, group);
-		});
-
-		return null;
+		for (ChatWidgetGroup group: visibleChats)
+		{
+			render(graphics, container.getCanvasLocation().getX(), group.getY(), group, isPrivateSplitChat);
+		}
 	}
 
 	/**
 	 * Called on each visible chat message
 	 */
-	protected abstract void render(Graphics2D graphics, int x, int y, ChatWidgetGroup group);
+	protected abstract void render(Graphics2D graphics, int x, int y, ChatWidgetGroup group, boolean isPrivateSplitChat);
 }

@@ -15,6 +15,7 @@ public class CleanChatUtil
 	public static final String CLAN_INSTRUCTION_MESSAGE = "To talk in your clan's channel, start each line of chat with // or /c.";
 	public static final int GUEST_CLAN = -1;
 	public static final int SCRIPT_REBUILD_CHATBOX = 84;
+	public static final int SCRIPT_REBUILD_PMBOX = 89;
 	// Scripts 32-36 are all about scrolling in different ways
 	public static final int SCRIPT_SCROLLBAR_MIN = 32;
 	public static final int SCRIPT_SCROLLBAR_MAX = 36;

@@ -61,6 +61,9 @@ public class CleanChatChannelsPlugin extends Plugin
 	@Inject
 	private ConfigManager configManager;
 
+	@Inject
+	private PrivateMessageEditor privateMessageEditor;
+
 	@Provides
 	CleanChatChannelsConfig provideConfig(ConfigManager configManager)
 	{
@@ -77,6 +80,7 @@ public class CleanChatChannelsPlugin extends Plugin
 		eventBus.register(channelNameManager);
 		eventBus.register(timestampIntegration);
 		eventBus.register(hider);
+		eventBus.register(privateMessageEditor);
 		channelNameManager.startup();
 		eventBus.register(timestampOverlay);
 		overlayManager.add(timestampOverlay);
@@ -101,6 +105,7 @@ public class CleanChatChannelsPlugin extends Plugin
 		eventBus.unregister(channelNameManager);
 		eventBus.unregister(timestampIntegration);
 		eventBus.unregister(hider);
+		eventBus.unregister(privateMessageEditor);
 		channelNameManager.shutdown();
 		overlayManager.remove(timestampOverlay);
 		eventBus.unregister(timestampOverlay);

@@ -14,6 +14,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import net.runelite.api.events.VarbitChanged;
+import net.runelite.api.gameval.VarPlayerID;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
@@ -38,8 +40,10 @@ public class ChatTimestampOverlay extends BaseCleanChatOverlay
 		return timestampIntegration.isFixedWidthTimestampEnabled();
 	}
 
+	private Color splitChatColor = null;
+
 	@Override
-	protected void render(Graphics2D graphics, int x, int y, ChatWidgetGroup group)
+	protected void render(Graphics2D graphics, int x, int y, ChatWidgetGroup group, boolean isPrivateSplitChat)
 	{
 		FormatterExtractor.ExtractionResult timestamp = group.getTimestamp();
 
@@ -50,7 +54,7 @@ public class ChatTimestampOverlay extends BaseCleanChatOverlay
 
 		int timestampY = y + 14;
 
-		Color timestampColor = getTimestampColour();
+		Color timestampColor = getTimestampColour(isPrivateSplitChat);
 		graphics.setColor(timestampColor);
 
 		graphics.setFont(FontManager.getRunescapeFont());
@@ -106,6 +110,15 @@ public class ChatTimestampOverlay extends BaseCleanChatOverlay
 		if (event.getGroup().equals(TimestampConfig.GROUP) && event.getKey().equals(TIMESTAMP_FORMAT_KEY))
 		{
 			updateTemplate();
+		}
+	}
+
+	@Subscribe
+	public void onVarbitChanged(VarbitChanged event)
+	{
+		if (event.getVarpId() == VarPlayerID.OPTION_CHAT_COLOUR_PRIVATE_SPLIT)
+		{
+			splitChatColor = new Color(client.getVarpValue(VarPlayerID.OPTION_CHAT_COLOUR_PRIVATE_SPLIT) - 1);
 		}
 	}
 
@@ -178,8 +191,17 @@ public class ChatTimestampOverlay extends BaseCleanChatOverlay
 		client.refreshChat();
 	}
 
-	private Color getTimestampColour()
+	private Color getTimestampColour(boolean isPrivateSplitChat)
 	{
+		if (isPrivateSplitChat)
+		{
+			if (splitChatColor == null)
+			{
+				splitChatColor = new Color(client.getVarpValue(VarPlayerID.OPTION_CHAT_COLOUR_PRIVATE_SPLIT) - 1);
+			}
+			return splitChatColor;
+		}
+
 		boolean isChatboxTransparent = client.isResized() && client.getVarbitValue(VarbitID.CHATBOX_TRANSPARENCY) == 1;
 
 		Color color = isChatboxTransparent ? timestampIntegration.getTransparentTimestampColor() : timestampIntegration.getOpaqueTimestampColor();

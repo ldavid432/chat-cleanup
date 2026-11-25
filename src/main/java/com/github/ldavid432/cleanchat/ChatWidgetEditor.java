@@ -217,6 +217,12 @@ public class ChatWidgetEditor
 					}
 					else
 					{
+						if (config.removePrivateToFrom() && group.name != null && selectedChatTab == ChatTab.PRIVATE)
+						{
+							group.replaceText("To ", "", "To ", client, group.name, group.message);
+							group.replaceText("From ", "", "From ", client, group.name, group.message);
+						}
+
 						group.calculateWidgetSizes(client);
 					}
 
@@ -235,7 +241,7 @@ public class ChatWidgetEditor
 					group.applyIndent();
 
 					// Calculate height last
-					group.calculateHeight(client);
+					group.calculateHeight(client, 14);
 				})
 				.collect(Collectors.toList());
 
