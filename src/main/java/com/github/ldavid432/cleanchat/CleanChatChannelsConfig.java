@@ -25,7 +25,7 @@ public interface CleanChatChannelsConfig extends Config
 	String HIDE_SCROLLBAR_KEY = "hideScrollbar";
 	String HIDE_TOP_SEPARATOR_KEY = "hideTopSeparator";
 	String HIDE_BOT_SEPARATOR_KEY = "hideBotSeparator";
-	int CURRENT_VERSION = 4;
+	int CURRENT_VERSION = 5;
 	String DEFAULT_CUSTOM_CHANNEL_NAME = wrapWithBrackets(wrapWithColorTag(CURRENT_CLAN_REPLACER, Color.BLUE));
 
 	@ConfigItem(

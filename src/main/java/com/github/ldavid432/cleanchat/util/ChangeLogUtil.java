@@ -18,6 +18,7 @@ public class ChangeLogUtil
 		Integer lastSeen = configManager.getConfiguration(CleanChatChannelsConfig.GROUP, LAST_SEEN, Integer.class);
 		if (lastSeen == null || lastSeen >= CleanChatChannelsConfig.CURRENT_VERSION)
 		{
+			configManager.setConfiguration(CleanChatChannelsConfig.GROUP, LAST_SEEN, CleanChatChannelsConfig.CURRENT_VERSION);
 			return;
 		}
 
@@ -35,10 +36,19 @@ public class ChangeLogUtil
 		// 2.9.0
 		if (lastSeen < 4)
 		{
-			// Existing install (theoretically)
 			builder
 				.append(changelogLine("Added option to hide the separator above the text input"))
 				.append(changelogLine("As well as hide the top separator (in transparent mode only)"));
+		}
+
+		// 2.12.0
+		if (lastSeen < 5)
+		{
+			builder
+				.append(changelogLine("Split private chat is now supported!"))
+				.append(changelogLine("Added option to hide username icons (i.e ironman helmets)"))
+				.append(changelogLine("Added Option to remove 'To' and 'From' in private chats"))
+				.append(changelogLine("Indent mode now applies to all chat types, not just chat channels"));
 		}
 
 		if (builder.length() != 0) {

@@ -23,7 +23,7 @@ All the below options are toggleable (_most_ are **off** by default)
       - Can hide: ironman helmets, hardcore main, leagues and/or quest speedrunning icons in usernames in the chat
   - Set a custom name for each channel
     - Intended to help you reduce the channel name size instead of full removal, but can also be customized to anything you want
-    - See below for more details on customization
+    - See [below](#custom-channel-name) for more details on customization
   - Remove special attack messages
     - Dragon/Crystal/Infernal tools
   - Chat color bar
@@ -49,7 +49,6 @@ All the below options are toggleable (_most_ are **off** by default)
   - Remove group broadcasts from the clan chat and game tab (only display them in group and all tabs)
 - Private chat
   - Remove 'To' and 'From' from the start of private chat messages
-  - Note: **only applies to the private tab and split private chat, not private chat in the ALL tab**
 
 ### Screenshots
 
@@ -79,11 +78,10 @@ This works well in combination with the chat color bar.
 **Limitation**: Currently this assumes that all dynamic characters in your timestamp are numbers (and therefore sets the spacing to the max width of a number).
 I am not against adding support for other characters (i.e. letters) so if you use a particular formatting character that you want to be correctly fixed-width please let me know with a GitHub issue
 
-## Known Issues
+### Known Issues
 
-- **Setting an indentation mode other than the default (`Message`) may shift multi-line messages to the right by one or two pixels**
+- **Setting an indentation mode other than the default (`Message`) may shift the start of multi-line messages to the right +/- 1/2 pixels**
 - `Channel`/`Name` Indent modes for non-chat channels (i.e. public chat) act like `Start`
 - After hopping clan/gim broadcasts don't have a channel for a few seconds
   - Unfortunately this seems to just be a Chat History plugin or maybe even Jagex bug where the channel is not populated until you actually reconnect to it
   - I may look at fixing this as a new "feature" in the future, but it is not caused by the Clean Chat plugin
-- To and From removal in private chat doesn't happen on ALL tab
