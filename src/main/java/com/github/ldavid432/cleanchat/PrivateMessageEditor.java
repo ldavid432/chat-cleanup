@@ -1,5 +1,6 @@
 package com.github.ldavid432.cleanchat;
 
+import com.github.ldavid432.cleanchat.data.ChatTab;
 import com.github.ldavid432.cleanchat.util.CleanChatUtil;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -10,6 +11,7 @@ import lombok.Getter;
 import net.runelite.api.Client;
 import net.runelite.api.events.ScriptPostFired;
 import net.runelite.api.gameval.InterfaceID;
+import net.runelite.api.gameval.VarClientID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.eventbus.Subscribe;
 
@@ -85,8 +87,25 @@ public class PrivateMessageEditor
 				.collect(Collectors.toList());
 
 			Widget chatbox = client.getWidget(InterfaceID.Chatbox.UNIVERSE);
+			Widget chatboxControls = client.getWidget(InterfaceID.Chatbox.CONTROLS);
+			ChatTab selectedChatTab = ChatTab.of(client.getVarcIntValue(VarClientID.CHAT_VIEW));
 
-			int y = chatbox.getOriginalY() + chatbox.getHeight();
+			int y;
+			if (selectedChatTab == ChatTab.CLOSED)
+			{
+				assert chatboxControls != null;
+				y = chatboxControls.getOriginalY() + chatboxControls.getHeight();
+			}
+			else if (client.isResized())
+			{
+				assert chatbox != null;
+				y = chatbox.getOriginalY() + chatbox.getHeight();
+			}
+			else
+			{
+				assert chatbox != null;
+				y = chatbox.getOriginalY();
+			}
 
 			for (ChatWidgetGroup group : chatWidgetGroups)
 			{
