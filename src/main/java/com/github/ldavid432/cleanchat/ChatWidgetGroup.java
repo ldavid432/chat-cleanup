@@ -385,7 +385,9 @@ public class ChatWidgetGroup
 					timestamp,
 					channel,
 					client,
-					timestampWidth
+					timestampWidth,
+					rank,
+					name
 				);
 			}
 		}
@@ -422,13 +424,18 @@ public class ChatWidgetGroup
 	}
 
 	private void processExtractedTimestamp(FormatterExtractor.ExtractionResult timestamp, Widget widget, Client client,
-		int timestampWidth)
+		int timestampWidth, Widget... widgetsToShift)
 	{
 		int originalTimestampWidth = getTextLength(widget.getText(), client) - getTextLength(timestamp.getRemainingText(), client);
 		int timestampWidthAdded = max(0, timestampWidth - originalTimestampWidth);
 		widget.setText(timestamp.getRemainingText());
 
 		messageIndent += timestampWidthAdded;
+
+		for (Widget widgetToShift : widgetsToShift)
+		{
+			shiftRight(widgetToShift, timestampWidthAdded);
+		}
 	}
 
 	public void hideGameModeIcons(Set<GameModeIcon> hiddenIcons, Client client)

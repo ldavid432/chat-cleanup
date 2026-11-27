@@ -52,7 +52,7 @@ public class ChatTimestampOverlay extends BaseCleanChatOverlay
 			return;
 		}
 
-		int timestampY = y + 14;
+		int timestampY = y + (isPrivateSplitChat ? 13 : 14);
 
 		Color timestampColor = getTimestampColour(isPrivateSplitChat);
 		graphics.setColor(timestampColor);
